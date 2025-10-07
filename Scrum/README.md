@@ -13,7 +13,7 @@
 
 #### 2. Novo Scrum Master
 
-- **Preencher a Tabela das Tarefas para a Próxima Semana:**
+- **Preencher a Tabela de task dependecies para a Próxima Semana:**
   - Preencher as tarefas da próxima semana
   - Estimar essas tarefas
   - Voltar a estimar as tarefas que vieram da semana passada e perceber o que fazer para corrigir o problema encontrado nessas tarefas para não terem sido realizadas
