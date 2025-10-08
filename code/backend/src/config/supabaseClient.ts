@@ -1,0 +1,47 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+@Injectable()
+export class SupabaseService {
+  private supabase: SupabaseClient;
+
+  constructor(private configService: ConfigService) {
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase URL and Key must be provided');
+    }
+
+    this.supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false,
+      },
+    });
+  }
+
+  getClient(): SupabaseClient {
+    return this.supabase;
+  }
+
+  async signUp(email: string, password: string) {
+    return await this.supabase.auth.signUp({
+      email,
+      password,
+    });
+  }
+
+  async createProfile(userId: string, name: string, email: string) {
+    return await this.supabase
+      .from('users')
+      .insert([
+        {
+          id: userId,
+          name,
+          email,
+        },
+      ])
+      .select();
+  }
+}
