@@ -1,18 +1,19 @@
+
 import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException } from '@nestjs/common';
-import { SupabaseService } from '../config/supabaseClient';
+import { UserService } from './userService';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(private readonly userService: UserService) { }
 
   @Post('register')
   async register(@Body(ValidationPipe) registerUserDto: RegisterUserDto): Promise<RegisterResponseDto> {
     const { email, password, name } = registerUserDto;
 
     try {
-      const { data: authData, error: authError } = await this.supabaseService.signUp(
+      const { data: authData, error: authError } = await this.userService.signUp(
         email,
         password,
       );
@@ -39,7 +40,7 @@ export class UserController {
         );
       }
 
-      const { data: profileData, error: profileError } = await this.supabaseService.createProfile(
+      const { data: profileData, error: profileError } = await this.userService.createProfile(
         authData.user.id,
         name,
         email,

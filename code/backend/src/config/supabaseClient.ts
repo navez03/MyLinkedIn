@@ -26,23 +26,5 @@ export class SupabaseService {
     return this.supabase;
   }
 
-  async signUp(email: string, password: string) {
-    return await this.supabase.auth.signUp({
-      email,
-      password,
-    });
-  }
-
-  async createProfile(userId: string, name: string, email: string) {
-    return await this.supabase
-      .from('users')
-      .insert([
-        {
-          id: userId,
-          name,
-          email,
-        },
-      ])
-      .select();
-  }
+  // ...existing code...
 }
