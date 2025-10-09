@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { Mail, Lock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Mail, Lock, CheckCircle, XCircle, AlertCircle, User } from 'lucide-react';
+import { authAPI } from './services/api';
 
 export default function RegistrationForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [apiError, setApiError] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Simulated existing emails database
-  const existingEmails = ['test@example.com', 'user@demo.com'];
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,9 +18,6 @@ export default function RegistrationForm() {
     }
     if (!emailRegex.test(email)) {
       return 'Please enter a valid email address';
-    }
-    if (existingEmails.includes(email.toLowerCase())) {
-      return 'An account with this email already exists';
     }
     return '';
   };
@@ -41,10 +37,11 @@ export default function RegistrationForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     setEmailError('');
     setPasswordError('');
+    setApiError('');
     setIsSubmitting(true);
 
     // Validate email
@@ -63,11 +60,20 @@ export default function RegistrationForm() {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
+    // Call API to register user
+    try {
+      const result = await authAPI.register(email, password);
+
+      if (result.success) {
+        setIsRegistered(true);
+      } else {
+        setApiError(result.error);
+      }
+    } catch (error) {
+      setApiError('Erro inesperado. Tente novamente.');
+    } finally {
       setIsSubmitting(false);
-      setIsRegistered(true);
-    }, 1000);
+    }
   };
 
   const getPasswordStrength = () => {
@@ -116,7 +122,7 @@ export default function RegistrationForm() {
           <p className="text-gray-600">Sign up to get started</p>
         </div>
 
-        <div className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Email Input */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -131,9 +137,8 @@ export default function RegistrationForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border ${
-                  emailError ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
+                className={`block w-full pl-10 pr-3 py-3 border ${emailError ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                 placeholder="you@example.com"
               />
             </div>
@@ -159,9 +164,8 @@ export default function RegistrationForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border ${
-                  passwordError ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
+                className={`block w-full pl-10 pr-3 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                 placeholder="Enter your password"
               />
             </div>
@@ -184,19 +188,26 @@ export default function RegistrationForm() {
             </p>
           </div>
 
+          {/* API Error Display */}
+          {apiError && (
+            <div className="text-red-600 text-sm flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {apiError}
+            </div>
+          )}
+
           {/* Submit Button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all ${
-              isSubmitting
-                ? 'bg-blue-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
-            }`}
+            className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all ${isSubmitting
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+              }`}
           >
             {isSubmitting ? 'Creating Account...' : 'Create Account'}
           </button>
-        </div>
+        </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}

@@ -10,7 +10,7 @@ export class UserController {
 
   @Post('register')
   async register(@Body(ValidationPipe) registerUserDto: RegisterUserDto): Promise<RegisterResponseDto> {
-    const { email, password, name } = registerUserDto;
+    const { email, password } = registerUserDto;
 
     try {
       const { data: authData, error: authError } = await this.userService.signUp(
@@ -42,7 +42,6 @@ export class UserController {
 
       const { data: profileData, error: profileError } = await this.userService.createProfile(
         authData.user.id,
-        name,
         email,
       );
 
@@ -64,7 +63,6 @@ export class UserController {
         user: {
           id: authData.user.id,
           email: authData.user.email!,
-          name: name,
         },
       };
     } catch (error) {

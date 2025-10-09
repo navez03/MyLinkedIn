@@ -12,13 +12,12 @@ export class UserService {
     });
   }
 
-  async createProfile(userId: string, name: string, email: string) {
+  async createProfile(userId: string, email: string) {
     return await this.supabaseService.getClient()
       .from('users')
       .insert([
         {
           id: userId,
-          name,
           email,
         },
       ])
