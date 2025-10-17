@@ -3,6 +3,8 @@ import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException } fro
 import { UserService } from './userService';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Controller('user')
 export class UserController {
@@ -10,26 +12,13 @@ export class UserController {
 
   @Post('register')
   async register(@Body(ValidationPipe) registerUserDto: RegisterUserDto): Promise<RegisterResponseDto> {
-    const { email, password } = registerUserDto;
-
     try {
-      const { data: authData, error: authError } = await this.userService.signUp(
-        email,
-        password,
+      const result = await this.userService.register(
+        registerUserDto.email,
+        registerUserDto.password,
       );
 
-      if (authError) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Error creating account',
-            error: authError.message,
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      if (!authData.user) {
+      if (!result.user) {
         throw new HttpException(
           {
             success: false,
@@ -40,29 +29,15 @@ export class UserController {
         );
       }
 
-      const { data: profileData, error: profileError } = await this.userService.createProfile(
-        authData.user.id,
-        email,
-      );
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Account created but error saving profile',
-            error: profileError.message,
-          },
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
+      await this.handleCreateProfile(result.user.id, registerUserDto.name, result.user.email!);
 
       return {
         success: true,
         message: 'Account created successfully! Please check your email to confirm your account.',
         user: {
-          id: authData.user.id,
-          email: authData.user.email!,
+          id: result.user.id,
+          name: registerUserDto.name,
+          email: result.user.email!,
         },
       };
     } catch (error) {
@@ -74,10 +49,50 @@ export class UserController {
       throw new HttpException(
         {
           success: false,
-          message: 'Internal server error',
-          error: 'Internal server error',
+          message: 'Error creating account',
+          error: error.message || 'Internal server error',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  private async handleCreateProfile(userId: string, name: string, email: string): Promise<void> {
+    const result = await this.userService.createProfile(userId, name, email);
+    if (result.error) {
+      console.error('Error creating profile:', result.error);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Account created but error saving profile',
+          error: result.error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('login')
+  async login(@Body(ValidationPipe) loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
+    try {
+      const result = await this.userService.login(
+        loginUserDto.email,
+        loginUserDto.password,
+      );
+      return {
+        accessToken: result.session?.access_token || '',
+        refreshToken: result.session?.refresh_token,
+        userId: result.user?.id || '',
+        email: result.user?.email || '',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Error logging in',
+          error: error.message,
+        },
+        HttpStatus.UNAUTHORIZED,
       );
     }
   }

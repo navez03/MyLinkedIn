@@ -4,6 +4,7 @@ export class RegisterResponseDto {
   user?: {
     id: string;
     email: string;
+    name: string;
   };
   error?: string;
 }
