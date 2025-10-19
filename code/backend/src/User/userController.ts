@@ -5,6 +5,9 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { CreateProfileDto } from './dto/create-profile.dto';
+import { CheckEmailVerifiedDto } from './dto/check-email-verified.dto';
+import { CheckEmailVerifiedResponseDto } from './dto/check-email-verified-response.dto';
 
 @Controller('user')
 export class UserController {
@@ -29,14 +32,13 @@ export class UserController {
         );
       }
 
-      await this.handleCreateProfile(result.user.id, registerUserDto.name, result.user.email!);
+      // Não criar o perfil aqui - será criado após a verificação do email e nome
 
       return {
         success: true,
         message: 'Account created successfully! Please check your email to confirm your account.',
         user: {
           id: result.user.id,
-          name: registerUserDto.name,
           email: result.user.email!,
         },
       };
@@ -72,6 +74,33 @@ export class UserController {
     }
   }
 
+  @Post('create-profile')
+  async createProfile(
+    @Body(ValidationPipe) createProfileDto: CreateProfileDto
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.handleCreateProfile(createProfileDto.userId, createProfileDto.name, createProfileDto.email);
+      return {
+        success: true,
+        message: 'Profile created successfully',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      console.error('Unexpected error:', error);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Error creating profile',
+          error: error.message || 'Internal server error',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Post('login')
   async login(@Body(ValidationPipe) loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
     try {
@@ -93,6 +122,29 @@ export class UserController {
           error: error.message,
         },
         HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
+  @Post('check-email-verified')
+  async checkEmailVerified(
+    @Body(ValidationPipe) checkEmailVerifiedDto: CheckEmailVerifiedDto
+  ): Promise<CheckEmailVerifiedResponseDto> {
+    try {
+      const isVerified = await this.userService.isEmailVerified(checkEmailVerifiedDto.userId);
+      return {
+        success: true,
+        isVerified,
+        message: isVerified ? 'Email is verified' : 'Email is not verified',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Error checking email verification status',
+          error: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
       );
     }
   }
