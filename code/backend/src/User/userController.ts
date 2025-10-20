@@ -1,10 +1,10 @@
 
 import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException } from '@nestjs/common';
 import { UserService } from './userService';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { RegisterResponseDto } from './dto/register-response.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
+import { RegisterUserDto, RegisterResponseDto } from './dto/register-user.dto';
+import { LoginUserDto, LoginResponseDto } from './dto/login-user.dto';
+import { CreateProfileDto } from './dto/create-profile.dto';
+import { CheckEmailVerifiedDto, CheckEmailVerifiedResponseDto } from './dto/check-email-verified.dto';
 
 @Controller('user')
 export class UserController {
@@ -18,42 +18,16 @@ export class UserController {
         registerUserDto.password,
       );
 
-      if (!result.user) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Internal Error: User data is null',
-            error: 'User data is null',
-          },
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      await this.handleCreateProfile(result.user.id, registerUserDto.name, result.user.email!);
-
       return {
         success: true,
         message: 'Account created successfully! Please check your email to confirm your account.',
         user: {
           id: result.user.id,
-          name: registerUserDto.name,
           email: result.user.email!,
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      console.error('Unexpected error:', error);
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error creating account',
-          error: error.message || 'Internal server error',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error creating account');
     }
   }
 
@@ -72,6 +46,23 @@ export class UserController {
     }
   }
 
+
+  @Post('create-profile')
+  async createProfile(
+    @Body(ValidationPipe) createProfileDto: CreateProfileDto
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.handleCreateProfile(createProfileDto.userId, createProfileDto.name, createProfileDto.email);
+      return {
+        success: true,
+        message: 'Profile created successfully',
+      };
+    } catch (error) {
+      this.handleException(error, 'Error creating profile');
+    }
+  }
+
+
   @Post('login')
   async login(@Body(ValidationPipe) loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
     try {
@@ -86,14 +77,38 @@ export class UserController {
         email: result.user?.email || '',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error logging in',
-          error: error.message,
-        },
-        HttpStatus.UNAUTHORIZED,
-      );
+      this.handleException(error, 'Error logging in', HttpStatus.UNAUTHORIZED);
     }
+  }
+
+  @Post('check-email-verified')
+  async checkEmailVerified(
+    @Body(ValidationPipe) checkEmailVerifiedDto: CheckEmailVerifiedDto
+  ): Promise<CheckEmailVerifiedResponseDto> {
+    try {
+      const isVerified = await this.userService.isEmailVerified(checkEmailVerifiedDto.userId);
+      return {
+        success: true,
+        isVerified,
+        message: isVerified ? 'Email is verified' : 'Email is not verified',
+      };
+    } catch (error) {
+      this.handleException(error, 'Error checking email verification status');
+    }
+  }
+
+  private handleException(error: any, defaultMessage: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    console.error('Unexpected error:', error);
+    throw new HttpException(
+      {
+        success: false,
+        message: defaultMessage,
+        error: error.message || 'Internal server error',
+      },
+      status,
+    );
   }
 }

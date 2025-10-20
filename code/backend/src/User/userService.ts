@@ -15,7 +15,8 @@ export class UserService {
       throw new Error(`Error registering user: ${error.message}`);
     }
 
-    return data;
+    const isVerified = data.user?.email_confirmed_at ? true : false;
+    return { ...data, isVerified };
   }
 
   async createProfile(userId: string, name: string, email: string) {
@@ -42,5 +43,15 @@ export class UserService {
     }
 
     return data;
+  }
+
+  async isEmailVerified(userId: string) {
+    const { data, error } = await this.supabaseService.getClient().auth.admin.getUserById(userId);
+
+    if (error) {
+      throw new Error(`Error fetching user: ${error.message}`);
+    }
+
+    return !!data.user?.email_confirmed_at;
   }
 }
