@@ -25,6 +25,4 @@ export class SupabaseService {
   getClient(): SupabaseClient {
     return this.supabase;
   }
-
-  // ...existing code...
 }

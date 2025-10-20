@@ -23,16 +23,13 @@ const SetName = () => {
         return;
       }
 
-      // Call API to create profile
       const response = await authAPI.createProfile(userId, fullName, email);
 
       if (response.success) {
-        // Store the name in localStorage
         localStorage.setItem('userName', fullName);
 
 
 
-        // Redirect to feed after success
         setTimeout(() => {
           window.location.href = '/feed';
         }, 1000);
@@ -46,12 +43,10 @@ const SetName = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-2 py-8">
         <div className="w-full max-w-7xl">
           <Card className="overflow-hidden">
             <div className="grid md:grid-cols-2 gap-0">
-              {/* Left Side - Image */}
               <div className="hidden md:block relative">
                 <img
                   src={registerImage}
@@ -60,17 +55,14 @@ const SetName = () => {
                 />
               </div>
 
-              {/* Right Side - Form */}
               <div className="flex items-center justify-center p-8 md:p-12 lg:p-16">
                 <div className="w-full max-w-md space-y-8">
-                  {/* Header */}
                   <div className="text-center space-y-4 mb-20">
                     <h2 className="text-4xl font-bold tracking-tight text-foreground mb-4">
                       Complete Your Profile
                     </h2>
                   </div>
 
-                  {/* Form */}
                   <form onSubmit={handleSubmit} className="space-y-2">
                     <div className="space-y-2">
                       <Input

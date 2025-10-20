@@ -15,9 +15,7 @@ export class UserService {
       throw new Error(`Error registering user: ${error.message}`);
     }
 
-    // Verifica se o email está confirmado
     const isVerified = data.user?.email_confirmed_at ? true : false;
-
     return { ...data, isVerified };
   }
 

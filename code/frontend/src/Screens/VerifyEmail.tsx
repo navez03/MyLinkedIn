@@ -12,7 +12,6 @@ const VerifyEmail = () => {
 
   useEffect(() => {
     const checkVerification = async () => {
-      // Se não há userId, não faz verificação (usuário ainda está se registrando)
       if (!userId) {
         setIsVerifying(false);
         return;
@@ -22,12 +21,9 @@ const VerifyEmail = () => {
         const response = await authAPI.checkEmailVerified(userId);
 
         if (response.success && response.data?.isVerified) {
-          // Email já verificado, redirecionar para SetName
           navigate('/set-name', { state: { userId, email: location.state?.email } });
         } else {
-          // Email não verificado, continuar verificando
           setIsVerifying(false);
-          // Tentar verificar novamente após 3 segundos
           setTimeout(checkVerification, 3000);
         }
       } catch (error) {
@@ -45,7 +41,6 @@ const VerifyEmail = () => {
         <div className="w-full max-w-7xl">
           <Card className="overflow-hidden">
             <div className="grid md:grid-cols-2 gap-0">
-              {/* Left Side - Image */}
               <div className="hidden md:block relative">
                 <img
                   src={registerImage}
@@ -53,8 +48,6 @@ const VerifyEmail = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-
-              {/* Right Side - Text */}
               <div className="flex items-center justify-center p-8 md:p-12 lg:p-16">
                 <div className="w-full max-w-md space-y-8">
                   <div className="text-center space-y-3 mb-10">

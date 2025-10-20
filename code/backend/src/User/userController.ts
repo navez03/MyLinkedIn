@@ -1,13 +1,10 @@
 
 import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException } from '@nestjs/common';
 import { UserService } from './userService';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { RegisterResponseDto } from './dto/register-response.dto';
-import { LoginUserDto } from './dto/login-user.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
+import { RegisterUserDto, RegisterResponseDto } from './dto/register-user.dto';
+import { LoginUserDto, LoginResponseDto } from './dto/login-user.dto';
 import { CreateProfileDto } from './dto/create-profile.dto';
-import { CheckEmailVerifiedDto } from './dto/check-email-verified.dto';
-import { CheckEmailVerifiedResponseDto } from './dto/check-email-verified-response.dto';
+import { CheckEmailVerifiedDto, CheckEmailVerifiedResponseDto } from './dto/check-email-verified.dto';
 
 @Controller('user')
 export class UserController {
@@ -21,19 +18,6 @@ export class UserController {
         registerUserDto.password,
       );
 
-      if (!result.user) {
-        throw new HttpException(
-          {
-            success: false,
-            message: 'Internal Error: User data is null',
-            error: 'User data is null',
-          },
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      // Não criar o perfil aqui - será criado após a verificação do email e nome
-
       return {
         success: true,
         message: 'Account created successfully! Please check your email to confirm your account.',
@@ -43,19 +27,7 @@ export class UserController {
         },
       };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      console.error('Unexpected error:', error);
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error creating account',
-          error: error.message || 'Internal server error',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error creating account');
     }
   }
 
@@ -74,6 +46,7 @@ export class UserController {
     }
   }
 
+
   @Post('create-profile')
   async createProfile(
     @Body(ValidationPipe) createProfileDto: CreateProfileDto
@@ -85,21 +58,10 @@ export class UserController {
         message: 'Profile created successfully',
       };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      console.error('Unexpected error:', error);
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error creating profile',
-          error: error.message || 'Internal server error',
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error creating profile');
     }
   }
+
 
   @Post('login')
   async login(@Body(ValidationPipe) loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
@@ -115,14 +77,7 @@ export class UserController {
         email: result.user?.email || '',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error logging in',
-          error: error.message,
-        },
-        HttpStatus.UNAUTHORIZED,
-      );
+      this.handleException(error, 'Error logging in', HttpStatus.UNAUTHORIZED);
     }
   }
 
@@ -138,14 +93,22 @@ export class UserController {
         message: isVerified ? 'Email is verified' : 'Email is not verified',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error checking email verification status',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error checking email verification status');
     }
+  }
+
+  private handleException(error: any, defaultMessage: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    console.error('Unexpected error:', error);
+    throw new HttpException(
+      {
+        success: false,
+        message: defaultMessage,
+        error: error.message || 'Internal server error',
+      },
+      status,
+    );
   }
 }

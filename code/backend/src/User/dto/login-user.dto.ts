@@ -9,3 +9,10 @@ export class LoginUserDto {
   @MinLength(6)
   password: string;
 }
+
+export class LoginResponseDto {
+  accessToken: string;
+  refreshToken?: string;
+  userId: string;
+  email: string;
+}

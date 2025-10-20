@@ -5,3 +5,9 @@ export class CheckEmailVerifiedDto {
   @IsString()
   userId: string;
 }
+
+export class CheckEmailVerifiedResponseDto {
+  success: boolean;
+  isVerified: boolean;
+  message: string;
+}
