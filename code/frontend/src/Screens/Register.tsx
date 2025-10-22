@@ -23,6 +23,10 @@ const RegistrationForm = () => {
       setErrorMsg("Please fill in all fields.");
       return;
     }
+    if (!isLogin && password.length < 6) {
+      setErrorMsg("The password must have at least 6 characters.");
+      return;
+    }
     setErrorMsg("");
     setIsLoading(true);
 
@@ -40,7 +44,7 @@ const RegistrationForm = () => {
             navigate('/feed');
           }, 1000);
         } else {
-          setErrorMsg(response.error || "Erro ao iniciar sessão.");
+          setErrorMsg("Invalid credentials. Please try again.");
         }
       } else {
         const response = await authAPI.register(email, password);
@@ -56,11 +60,18 @@ const RegistrationForm = () => {
             navigate('/verify-email', { state: { userId: response.data?.user?.id, email: response.data?.user?.email } });
           }, 1000);
         } else {
-          setErrorMsg(response.error || "Erro ao criar conta.");
+          if (
+            response.error?.toLowerCase().includes('password') &&
+            response.error?.toLowerCase().includes('6 characters')
+          ) {
+            setErrorMsg('The password must have at least 6 characters.');
+          } else {
+            setErrorMsg("Error creating account.");
+          }
         }
       }
     } catch (error) {
-      setErrorMsg("Ocorreu um erro inesperado. Tente novamente.");
+      setErrorMsg("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
