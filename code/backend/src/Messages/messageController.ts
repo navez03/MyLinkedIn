@@ -15,7 +15,7 @@ export class MessageController {
     @Req() req: any
   ): Promise<SendMessageResponseDto> {
     try {
-      const senderId = req.headers['user-id'];
+      const senderId = dto.senderId;
       if (!senderId) {
         throw new HttpException(
           {
