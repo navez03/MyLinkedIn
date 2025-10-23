@@ -50,6 +50,34 @@ export class MessageController {
     }
   }
 
+  @Get('conversations/:userId')
+  async getUserConversations(
+    @Param('userId') userId: string
+  ) {
+    console.log('[Controller] getUserConversations called with userId:', userId);
+    try {
+      const users = await this.messageService.getUserConversations(userId);
+      console.log('[Controller] getUserConversations success, users count:', users?.length || 0);
+      return {
+        success: true,
+        message: 'Conversations retrieved successfully',
+        users,
+      };
+    } catch (error: any) {
+      console.error('[Controller] getUserConversations error:', error.message);
+      console.error('[Controller] Full error:', error);
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Error retrieving conversations',
+          error: error.message,
+          users: [],
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Get(':user1Id/:user2Id')
   async getMessagesBetweenUsers(
     @Param('user1Id') user1Id: string,
