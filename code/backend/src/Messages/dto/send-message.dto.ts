@@ -1,6 +1,8 @@
 import { IsUUID, IsString, Length } from 'class-validator';
 
 export class SendMessageDto {
+  @IsUUID()
+  senderId: string;
 
   @IsUUID()
   receiverId: string;
