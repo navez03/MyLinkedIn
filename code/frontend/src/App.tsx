@@ -6,6 +6,7 @@ import Home from './Screens/Home';
 import BackToRegister from './Screens/BackToRegister';
 import Landing from './Screens/Landing';
 import Notifications from './Screens/Notifications';
+import Messages from './Screens/Messages';
 
 function App() {
   return (
@@ -19,7 +20,7 @@ function App() {
         <Route path="/backToRegister" element={<BackToRegister />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/network" element={<Home />} />
-        <Route path="/messages" element={<Home />} />
+        <Route path="/messages" element={<Messages />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
