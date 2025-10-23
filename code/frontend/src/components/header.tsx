@@ -1,13 +1,22 @@
 import { Home, Users, Briefcase, MessageSquare, Bell, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
+
 const Navigation = () => {
+  const navigate = useNavigate();
 
   const navItems = [
     { icon: Home, label: "Home", path: "/feed" },
-    { icon: Users, label: "My Network" },
-    { icon: MessageSquare, label: "Messages" },
-    { icon: Bell, label: "Notifications" },
+    { icon: Users, label: "My Network", path: "/network" },
+    { icon: MessageSquare, label: "Messages", path: "/messages" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
+
+  const handleNavClick = (path?: string) => {
+    if (path) {
+      navigate(path);
+    }
+  };
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
@@ -23,12 +32,12 @@ const Navigation = () => {
               />
             </div>
           </div>
-
           <div className="flex items-center gap-6">
             {navItems.map((item) => (
               <div
                 key={item.label}
-                className={`flex flex-col items-center gap-1 px-3 py-1 hover:text-foreground transition-colors`}
+                onClick={() => handleNavClick(item.path)}
+                className={`flex flex-col items-center gap-1 px-3 py-1 hover:text-foreground transition-colors cursor-pointer`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="text-xs font-normal">{item.label}</span>
