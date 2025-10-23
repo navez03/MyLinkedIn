@@ -8,16 +8,15 @@ import { ConnectionService } from './connectService';
 
 @Controller('connection')
 export class ConnectionController {
-  constructor(private readonly userService: ConnectionService) { }
+  constructor(private readonly connectionService: ConnectionService) { }
 
 
   @Post('request')
   async sendConnectionRequest(
     @Body(ValidationPipe) sendConnectionRequestDto: SendConnectionRequestDto,
-    @Req() req: any
   ): Promise<ConnectionRequestResponseDto> {
     try {
-      const senderId = req.headers['user-id'] || req.body.senderId;
+      const senderId = sendConnectionRequestDto.senderId;
 
       if (!senderId) {
         throw new HttpException(
@@ -30,7 +29,7 @@ export class ConnectionController {
         );
       }
 
-      const request = await this.userService.sendConnectionRequest(
+      const request = await this.connectionService.sendConnectionRequest(
         senderId,
         sendConnectionRequestDto.receiverId,
         sendConnectionRequestDto.receiverEmail
@@ -42,24 +41,16 @@ export class ConnectionController {
         request,
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error sending connection request',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error sending connection request');
     }
   }
 
   @Post('accept')
   async acceptConnectionRequest(
     @Body(ValidationPipe) acceptConnectionRequestDto: AcceptConnectionRequestDto,
-    @Req() req: any
   ): Promise<ConnectionRequestResponseDto> {
     try {
-      const userId = req.headers['user-id'] || req.body.userId;
+      const userId = acceptConnectionRequestDto.userId;
 
       if (!userId) {
         throw new HttpException(
@@ -72,7 +63,7 @@ export class ConnectionController {
         );
       }
 
-      await this.userService.acceptConnectionRequest(
+      await this.connectionService.acceptConnectionRequest(
         acceptConnectionRequestDto.requestId,
         userId
       );
@@ -82,24 +73,17 @@ export class ConnectionController {
         message: 'Connection request accepted successfully',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error accepting connection request',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error accepting connection request');
     }
   }
 
   @Post('reject/:requestId')
   async rejectConnectionRequest(
     @Param('requestId') requestId: string,
-    @Req() req: any
+    @Body(ValidationPipe) body: { userId: string },
   ): Promise<ConnectionRequestResponseDto> {
     try {
-      const userId = req.headers['user-id'] || req.body.userId;
+      const userId = body.userId;
 
       if (!userId) {
         throw new HttpException(
@@ -112,28 +96,21 @@ export class ConnectionController {
         );
       }
 
-      await this.userService.rejectConnectionRequest(requestId, userId);
+      await this.connectionService.rejectConnectionRequest(requestId, userId);
 
       return {
         success: true,
         message: 'Connection request rejected successfully',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error rejecting connection request',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error rejecting connection request');
     }
   }
 
   @Get('connections')
   async getConnections(@Req() req: any): Promise<GetConnectionsResponseDto> {
     try {
-      const userId = req.headers['user-id'] || req.query.userId;
+      const userId = req.query.userId;
 
       if (!userId) {
         throw new HttpException(
@@ -146,7 +123,7 @@ export class ConnectionController {
         );
       }
 
-      const result = await this.userService.getConnections(userId);
+      const result = await this.connectionService.getConnections(userId);
 
       return {
         success: true,
@@ -155,26 +132,17 @@ export class ConnectionController {
         pendingRequests: result.pendingRequests,
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error retrieving connections',
-          error: error.message,
-          connections: [],
-          pendingRequests: { sent: [], received: [] },
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error retrieving connections');
     }
   }
 
   @Delete('connections/:connectionId')
   async removeConnection(
     @Param('connectionId') connectionId: string,
-    @Req() req: any
+    @Body(ValidationPipe) body: { userId: string },
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const userId = req.headers['user-id'] || req.body.userId;
+      const userId = body.userId;
 
       if (!userId) {
         throw new HttpException(
@@ -187,21 +155,29 @@ export class ConnectionController {
         );
       }
 
-      await this.userService.removeConnection(userId, connectionId);
+      await this.connectionService.removeConnection(userId, connectionId);
 
       return {
         success: true,
         message: 'Connection removed successfully',
       };
     } catch (error) {
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Error removing connection',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
+      this.handleException(error, 'Error removing connection');
     }
+  }
+
+  private handleException(error: any, defaultMessage: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+    console.error('Unexpected error:', error);
+    throw new HttpException(
+      {
+        success: false,
+        message: defaultMessage,
+        error: error.message || 'Internal server error',
+      },
+      status,
+    );
   }
 }

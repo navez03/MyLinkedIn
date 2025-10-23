@@ -60,4 +60,35 @@ export class MessageService {
 
     return messages;
   }
+
+  async getUserConversations(userId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: messages, error: messagesError } = await supabase
+      .from('messages')
+      .select('sender_id, receiver_id')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (messagesError) {
+      throw new Error(`Error getting conversations: ${messagesError.message}`);
+    }
+
+    const userIds = new Set<string>();
+    messages.forEach((msg) => {
+      if (msg.sender_id !== userId) userIds.add(msg.sender_id);
+      if (msg.receiver_id !== userId) userIds.add(msg.receiver_id);
+    });
+
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, name')
+      .in('id', Array.from(userIds));
+
+    if (usersError) {
+      throw new Error(`Error getting users: ${usersError.message}`);
+    }
+
+    return users || [];
+  }
 }
