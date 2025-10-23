@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import RegistrationForm from './Screens/Register';
 import VerifyEmail from './Screens/VerifyEmail';
@@ -6,6 +5,7 @@ import SetName from './Screens/SetName';
 import Home from './Screens/Home';
 import BackToRegister from './Screens/BackToRegister';
 import Landing from './Screens/Landing';
+import Notifications from './Screens/Notifications';
 
 function App() {
   return (
@@ -17,6 +17,9 @@ function App() {
         <Route path="/set-name" element={<SetName />} />
         <Route path="/feed" element={<Home />} />
         <Route path="/backToRegister" element={<BackToRegister />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/network" element={<Home />} />
+        <Route path="/messages" element={<Home />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
