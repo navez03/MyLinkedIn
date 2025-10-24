@@ -1,10 +1,12 @@
 
-import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException, Get, Query } from '@nestjs/common';
 import { UserService } from './userService';
 import { RegisterUserDto, RegisterResponseDto } from './dto/register-user.dto';
 import { LoginUserDto, LoginResponseDto } from './dto/login-user.dto';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { CheckEmailVerifiedDto, CheckEmailVerifiedResponseDto } from './dto/check-email-verified.dto';
+import { GetUserProfileDto, UserProfileResponseDto } from './dto/get-user-profile.dto';
+import { GetAllUsersDto, GetAllUsersResponseDto } from './dto/get-all-users.dto';
 
 @Controller('user')
 export class UserController {
@@ -94,6 +96,54 @@ export class UserController {
       };
     } catch (error) {
       this.handleException(error, 'Error checking email verification status');
+    }
+  }
+
+  @Get('profile')
+  async getUserProfile(
+    @Query(ValidationPipe) getUserProfileDto: GetUserProfileDto
+  ): Promise<UserProfileResponseDto> {
+    try {
+      const userProfile = await this.userService.getUserProfile(getUserProfileDto.userId);
+      return {
+        success: true,
+        data: userProfile,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error fetching user profile');
+    }
+  }
+
+  @Get('all')
+  async getAllUsers(
+    @Query(ValidationPipe) getAllUsersDto: GetAllUsersDto
+  ): Promise<GetAllUsersResponseDto> {
+    try {
+      const users = await this.userService.getAllUsers(getAllUsersDto.userId);
+      return {
+        success: true,
+        message: 'Users fetched successfully',
+        users,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error fetching users');
+    }
+  }
+
+  @Get('search')
+  async searchUsers(
+    @Query('query') query: string,
+    @Query('userId') userId: string
+  ): Promise<GetAllUsersResponseDto> {
+    try {
+      const users = await this.userService.searchUsers(query, userId);
+      return {
+        success: true,
+        message: 'Users fetched successfully',
+        users,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error searching users');
     }
   }
 

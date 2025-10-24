@@ -14,9 +14,18 @@ const Landing = () => {
       {/* Header Section */}
       <header className="border-b border-border/60 py-5 px-6 bg-card/90 backdrop-blur-xl shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <h1 className="text-4xl font-bold text-primary tracking-tight hover:scale-105 transition-transform cursor-pointer">
-            MyLinkedIn
-          </h1>
+          <div
+            className="flex items-center mr-2 select-none">
+            <span className="text-4xl font-bold tracking-tight">
+              <span className="text-[#004182]">My</span>
+              <span className="text-primary">Linked</span>
+            </span>
+            <span className="ml-1">
+              <span className="inline-block align-middle w-10 h-10 bg-primary rounded-md flex items-center justify-center animate-none">
+                <span className="text-2xl font-bold text-primary-foreground" style={{ fontFamily: 'inherit' }}>in</span>
+              </span>
+            </span>
+          </div>
           <div className="flex gap-4">
             <Button
               variant="ghost"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Loading from "../components/loading";
 import { Card } from "../components/card";
 import { Button } from "../components/button";
 import { Users, UserPlus } from "lucide-react";
@@ -96,10 +97,17 @@ const Network = () => {
   };
 
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
       <div className="max-w-[1128px] mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-3">
@@ -123,7 +131,6 @@ const Network = () => {
               </div>
             </Card>
           </div>
-
           <div className="col-span-12 lg:col-span-9 space-y-4">
             {activeSection === 'invites' && (
               <Card className="p-6">
@@ -131,36 +138,39 @@ const Network = () => {
                   <UserPlus className="w-5 h-5" />
                   <h2 className="text-xl font-semibold">Invitations to connect</h2>
                 </div>
-                {loading ? (
-                  <p className="text-center text-muted-foreground">Loading...</p>
-                ) : invitations.length === 0 ? (
+                {invitations.length === 0 ? (
                   <p className="text-center text-muted-foreground">No pending invitations</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {invitations.map((invitation) => (
-                      <div key={invitation.id} className="flex gap-3 p-4 border border-border rounded-lg">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate">User {invitation.sender_id}</h3>
-                          <p className="text-sm text-muted-foreground mb-2 truncate">
-                            Sent on {new Date(invitation.created_at).toLocaleDateString()}
-                          </p>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => handleAcceptInvitation(invitation.id)}
-                            >
-                              Accept
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1"
-                              onClick={() => handleRejectInvitation(invitation.id)}
-                            >
-                              Ignore
-                            </Button>
+                      <div key={invitation.id} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
+                        <div className="flex items-center w-full mb-2">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary">
+                            {getInitials(invitation.sender_id)}
                           </div>
+                          <div className="ml-4 flex-1 min-w-0">
+                            <h3 className="font-semibold truncate">User {invitation.sender_id}</h3>
+                            <p className="text-sm text-muted-foreground mb-2 truncate">
+                              Sent on {new Date(invitation.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 w-full mt-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleAcceptInvitation(invitation.id)}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => handleRejectInvitation(invitation.id)}
+                          >
+                            Ignore
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -168,16 +178,13 @@ const Network = () => {
                 )}
               </Card>
             )}
-
             {activeSection === 'connections' && (
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="w-5 h-5" />
                   <h2 className="text-xl font-semibold">My connections</h2>
                 </div>
-                {loading ? (
-                  <p className="text-center text-muted-foreground">Loading...</p>
-                ) : connections.length === 0 ? (
+                {connections.length === 0 ? (
                   <p className="text-center text-muted-foreground">No connections yet</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

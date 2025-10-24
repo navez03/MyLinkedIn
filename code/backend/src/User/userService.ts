@@ -65,4 +65,55 @@ export class UserService {
 
     return !!data.user?.email_confirmed_at;
   }
+
+  async getUserProfile(userId: string) {
+    const { data, error } = await this.supabaseService.getClient()
+      .from('users')
+      .select('id, name, email')
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(`Error fetching user profile: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error(`User profile not found for userId: ${userId}`);
+    }
+
+    return data[0];
+  }
+
+
+  async getAllUsers(currentUserId: string) {
+    const { data, error } = await this.supabaseService.getClient()
+      .from('users')
+      .select('id, name, email')
+      .neq('id', currentUserId);
+
+    if (error) {
+      throw new Error(`Error fetching users: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  async searchUsers(query: string, currentUserId: string) {
+    if (!query || query.trim() === '') {
+      return [];
+    }
+
+    const searchTerm = `${query.trim()}%`;
+
+    const { data, error } = await this.supabaseService.getClient()
+      .from('users')
+      .select('id, name, email')
+      .neq('id', currentUserId)
+      .or(`name.ilike.${searchTerm},email.ilike.${searchTerm}`);
+
+    if (error) {
+      throw new Error(`Error searching users: ${error.message}`);
+    }
+
+    return data || [];
+  }
 }
