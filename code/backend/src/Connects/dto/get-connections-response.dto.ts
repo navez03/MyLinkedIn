@@ -32,7 +32,19 @@ export interface ConnectionRequest {
 export class GetConnectionsResponseDto {
   success: boolean;
   message: string;
-  connections: Connection[];
+  connections: Array<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  }>;
+  error?: string;
+}
+
+export class GetPendingRequestsResponseDto {
+  success: boolean;
+  message: string;
   pendingRequests: {
     sent: ConnectionRequest[];
     received: ConnectionRequest[];

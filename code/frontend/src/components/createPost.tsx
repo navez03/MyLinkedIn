@@ -5,6 +5,7 @@ import { Button } from "./button";
 import { Image, Video, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../utils";
+import { postsAPI } from "../services/postsService";
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
@@ -78,12 +79,36 @@ Textarea.displayName = "Textarea";
 
 const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [content, setContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (content.trim()) {
-      console.log("Post publicado:", content);
-      setContent("");
-      onOpenChange(false);
+      try {
+        setIsLoading(true);
+        const userId = localStorage.getItem('userId');
+
+        if (!userId) {
+          alert('You must be logged in to create a post');
+          return;
+        }
+
+        const response = await postsAPI.createPost({
+          userId,
+          content: content.trim(),
+        });
+
+        if (response.success) {
+          setContent("");
+          onOpenChange(false);
+          window.location.reload();
+        } else {
+          alert('Error creating post: ' + response.error);
+        }
+      } catch (error) {
+        alert('Failed to create post. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -116,8 +141,8 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 <Video className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-            <Button onClick={handlePost} disabled={!content.trim()}>
-              Publish
+            <Button onClick={handlePost} disabled={!content.trim() || isLoading}>
+              {isLoading ? 'Publishing...' : 'Publish'}
             </Button>
           </div>
         </div>

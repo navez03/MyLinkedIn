@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../config/supabaseClient';
+import { ConnectionService } from '../Connects/connectService';
 import { CreatePostDto, PostResponseDto, GetPostsResponseDto } from './dto/create-post.dto';
 
 @Injectable()
 export class PostService {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly connectionService: ConnectionService,
+  ) { }
 
   async createPost(createPostDto: CreatePostDto): Promise<PostResponseDto> {
     const supabase = this.supabaseService.getClient();
@@ -109,6 +113,46 @@ export class PostService {
         *,
         users:user_id (name, email)
       `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw new Error(`Error fetching posts: ${error.message}`);
+    }
+
+    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+      id: post.id,
+      userId: post.user_id,
+      content: post.content,
+      createdAt: post.created_at,
+      authorName: post.users?.name,
+      authorEmail: post.users?.email,
+    }));
+
+    return {
+      posts: postResponses,
+      total: count || 0,
+    };
+  }
+
+  async getPostsByUserAndConnections(userId: string, limit: number = 20, offset: number = 0): Promise<GetPostsResponseDto> {
+    const connections = await this.connectionService.getConnections(userId);
+
+    const connectedUserIds = [userId];
+    if (connections && connections.length > 0) {
+      connections.forEach((connection: any) => {
+        connectedUserIds.push(connection.user.id);
+      });
+    }
+
+    const supabase = this.supabaseService.getClient();
+    const { data: posts, error, count } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        users:user_id (name, email)
+      `, { count: 'exact' })
+      .in('user_id', connectedUserIds)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
