@@ -65,6 +65,10 @@ const RegistrationForm = () => {
             response.error?.toLowerCase().includes('6 characters')
           ) {
             setErrorMsg('The password must have at least 6 characters.');
+          } else if (
+            response.error?.toLowerCase().includes('account already exists')
+          ) {
+            setErrorMsg('An account with this email already exists.');
           } else {
             setErrorMsg("Error creating account.");
           }

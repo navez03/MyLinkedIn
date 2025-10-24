@@ -9,10 +9,12 @@ interface ConnectionRequest {
 }
 
 interface Connection {
-  id: string;
-  user1_id: string;
-  user2_id: string;
-  created_at: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  connected_at: string;
 }
 
 interface SendConnectionRequestDto {
@@ -36,6 +38,11 @@ interface GetConnectionsResponse {
   success: boolean;
   message: string;
   connections: Connection[];
+}
+
+interface GetPendingRequestsResponse {
+  success: boolean;
+  message: string;
   pendingRequests: {
     sent: ConnectionRequest[];
     received: ConnectionRequest[];
@@ -57,6 +64,10 @@ export const connectionAPI = {
 
   getConnections: async (userId: string): Promise<ApiResponse<GetConnectionsResponse>> => {
     return apiHelpers.get(`/connection/connections?userId=${userId}`);
+  },
+
+  getPendingRequests: async (userId: string): Promise<ApiResponse<GetPendingRequestsResponse>> => {
+    return apiHelpers.get(`/connection/pending-requests?userId=${userId}`);
   },
 
   removeConnection: async (userId: string, connectionId: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {

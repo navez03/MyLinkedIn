@@ -6,6 +6,17 @@ export class UserService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
   async register(email: string, password: string) {
+    const { data: usersData, error: usersError } = await this.supabaseService.getClient().auth.admin.listUsers();
+
+    if (usersError) {
+      throw new Error(`Error fetching users: ${usersError.message}`);
+    }
+
+    const userExists = usersData?.users?.some((user: any) => user.email === email);
+    if (userExists) {
+      throw new Error(`Account already exists with this email`);
+    }
+
     const { data, error } = await this.supabaseService.getClient().auth.signUp({
       email,
       password,

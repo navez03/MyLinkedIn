@@ -3,6 +3,8 @@ import Navigation from '../components/header';
 import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
+import { useLocation } from 'react-router-dom';
+
 
 interface User {
   id: string;
@@ -26,6 +28,15 @@ const Messages: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const currentUserId = localStorage.getItem('userId') || '';
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const userIdFromQuery = params.get('userId');
+    if (userIdFromQuery) {
+      setSelectedChat(userIdFromQuery);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     loadConversations();

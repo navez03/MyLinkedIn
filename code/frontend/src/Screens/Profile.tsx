@@ -9,46 +9,18 @@ const Profile: React.FC = () => {
     location: null,
     avatar: 'Eu',
     connections: 0,
-    coverImage: null, 
+    coverImage: null,
   };
-
-  const experience = [
-    {
-      id: 0,
-      title: null,
-      company: null,
-      location: null,
-      period: null,
-      description:null,
-    },
-    {
-      id: 0,
-      title: null,
-      company: null,
-      location: null,
-      period: null,
-      description: null,
-    },
-  ];
-
-  const education = [
-    {
-      id: 0,
-      school: null,
-      degree: null,
-      period: null,
-    },
-  ];
 
   const skills = [''];
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="max-w-[1128px] mx-auto px-4 py-6">
         <div className="max-w-[880px] mx-auto space-y-2">
-          
+
           {/* Profile Card */}
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Cover Image */}
@@ -57,7 +29,7 @@ const Profile: React.FC = () => {
                 <img src={user.coverImage} alt="Cover" className="w-full h-full object-cover" />
               )}
             </div>
-            
+
             {/* Profile Info */}
             <div className="px-6 pb-6">
               {/* Avatar */}
@@ -107,7 +79,7 @@ const Profile: React.FC = () => {
                 <Edit2 className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
-            
+
             <div className="space-y-6">
             </div>
           </div>
@@ -120,7 +92,7 @@ const Profile: React.FC = () => {
                 <Edit2 className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
-            
+
             <div className="space-y-6">
             </div>
           </div>
@@ -133,7 +105,7 @@ const Profile: React.FC = () => {
                 <Edit2 className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               {skills.map((skill, index) => (
                 <span

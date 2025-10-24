@@ -141,6 +141,28 @@ export class ConnectionService {
       throw new Error(`Error fetching connections: ${connectionsError.message}`);
     }
 
+    if (!connections || connections.length === 0) {
+      return [];
+    }
+
+    const connectedUsers = await Promise.all(connections.map(async (conn: any) => {
+      const otherUserId = conn.user1_id === userId ? conn.user2_id : conn.user1_id;
+      const { data: userData } = await this.supabaseService.getClient()
+        .from('users')
+        .select('id, name, email')
+        .eq('id', otherUserId)
+        .single();
+
+      return {
+        user: userData || { id: otherUserId, name: 'Unknown User', email: '' },
+        connected_at: conn.created_at
+      };
+    }));
+
+    return connectedUsers;
+  }
+
+  async getPendingRequests(userId: string) {
     const { data: sentRequests, error: sentError } = await this.supabaseService.getClient()
       .from('connection_requests')
       .select('*')
@@ -162,11 +184,8 @@ export class ConnectionService {
     }
 
     return {
-      connections: connections || [],
-      pendingRequests: {
-        sent: sentRequests || [],
-        received: receivedRequests || []
-      }
+      sent: sentRequests || [],
+      received: receivedRequests || []
     };
   }
 

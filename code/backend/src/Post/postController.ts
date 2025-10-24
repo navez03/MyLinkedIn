@@ -55,6 +55,28 @@ export class PostController {
     }
   }
 
+  @Get('feed/:userId')
+  async getPostsByUserAndConnections(
+    @Param('userId') userId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+  ): Promise<{ success: boolean; posts: PostResponseDto[]; total: number }> {
+    try {
+      const result = await this.postService.getPostsByUserAndConnections(
+        userId,
+        limit ? Number(limit) : 20,
+        offset ? Number(offset) : 0,
+      );
+      return {
+        success: true,
+        posts: result.posts,
+        total: result.total,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error fetching feed posts');
+    }
+  }
+
   @Get()
   async getAllPosts(
     @Query('limit') limit?: number,

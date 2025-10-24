@@ -3,7 +3,7 @@ import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException, Get,
 import { SendConnectionRequestDto } from '../Connects/dto/send-connection-request.dto';
 import { AcceptConnectionRequestDto } from '../Connects/dto/accept-connection-request.dto';
 import { ConnectionRequestResponseDto } from '../Connects/dto/connection-request-response.dto';
-import { GetConnectionsResponseDto } from '../Connects/dto/get-connections-response.dto';
+import { GetConnectionsResponseDto, GetPendingRequestsResponseDto } from '../Connects/dto/get-connections-response.dto';
 import { ConnectionService } from './connectService';
 
 @Controller('connection')
@@ -123,16 +123,43 @@ export class ConnectionController {
         );
       }
 
-      const result = await this.connectionService.getConnections(userId);
+      const connections = await this.connectionService.getConnections(userId);
 
       return {
         success: true,
         message: 'Connections retrieved successfully',
-        connections: result.connections,
-        pendingRequests: result.pendingRequests,
+        connections,
       };
     } catch (error) {
       this.handleException(error, 'Error retrieving connections');
+    }
+  }
+
+  @Get('pending-requests')
+  async getPendingRequests(@Req() req: any): Promise<GetPendingRequestsResponseDto> {
+    try {
+      const userId = req.query.userId;
+
+      if (!userId) {
+        throw new HttpException(
+          {
+            success: false,
+            message: 'User ID is required',
+            error: 'Authentication required',
+          },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const pendingRequests = await this.connectionService.getPendingRequests(userId);
+
+      return {
+        success: true,
+        message: 'Pending requests retrieved successfully',
+        pendingRequests,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error retrieving pending requests');
     }
   }
 
