@@ -43,7 +43,10 @@ const Navigation = () => {
                 <span className="text-xs font-normal">{item.label}</span>
               </div>
             ))}
-            <div className="flex flex-col items-center gap-1">
+            <div 
+              className="flex flex-col items-center gap-1 cursor-pointer"
+              onClick={() => handleNavClick('/profile')}
+            >
               <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
                 <span className="text-xs text-primary-foreground font-bold">Eu</span>
               </div>

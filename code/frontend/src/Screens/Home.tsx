@@ -1,8 +1,10 @@
 import Navigation from "../components/header";
 import CreatePostCard from "../components/createPost";
+import ProfileCard from "../components/profileCard";
 import { Card } from "../components/card";
 import { Heart, MessageCircle, SendIcon, Share2 } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Post {
   id: number;
@@ -40,7 +42,8 @@ const examplePosts: Post[] = [
 ];
 
 export default function Home() {
-  // Mantemos estado local de likes/comentários/shares
+  const navigate = useNavigate();
+  
   const [postStats, setPostStats] = useState(
     examplePosts.map((p) => ({ id: p.id, likes: 0, comments: 0, shares: 0 }))
   );
@@ -53,12 +56,25 @@ export default function Home() {
     );
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-background">
-        <div className="max-w-[1128px] mx-auto px-6 py-6">
-          <div className="max-w-[540px] mx-auto space-y-4">
+        {/* Contêiner Principal - Usa Flexbox para o layout de 3 colunas */}
+        <div className="max-w-[1128px] mx-auto px-6 py-6 flex gap-6">
+            
+            {/* 1. Profile Sidebar (Left) - Sticky para acompanhar o scroll */}
+            <div className="hidden md:block w-[225px] flex-shrink-0 space-y-4 sticky top-20">
+                <ProfileCard />
+            </div>
+
+            {/* 2. Main Content (Feed) - Ocupa a largura central */}
+            <div className="max-w-[540px] w-full space-y-4"> 
+
             {/* Criador de Post */}
             <CreatePostCard />
 
@@ -67,14 +83,23 @@ export default function Home() {
               {examplePosts.map((post) => {
                 const stats = postStats.find((p) => p.id === post.id)!;
                 return (
+                  
                   <Card key={post.id} className="p-4 space-y-3">
                     {/* Header */}
                     <div className="flex gap-3 mb-1">
-                      <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      <div 
+                        onClick={handleProfileClick}
+                        className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                      >
                         {post.avatar}
                       </div>
                       <div>
-                        <h3 className="font-semibold leading-tight">{post.author}</h3>
+                        <h3 
+                          onClick={handleProfileClick}
+                          className="font-semibold leading-tight cursor-pointer hover:underline"
+                        >
+                          {post.author}
+                        </h3>
                         <span className="text-xs text-muted-foreground">{post.time}</span>
                       </div>
                     </div>
@@ -130,6 +155,11 @@ export default function Home() {
                 );
               })}
             </div>
+          </div>
+
+          {/* 3. Coluna da Direita (Vazia para balancear o layout) - Sticky */}
+          <div className="hidden md:block w-[225px] flex-shrink-0 sticky top-20">
+             {/* Conteúdo da Sidebar Direita (opcional) */}
           </div>
         </div>
       </div>
