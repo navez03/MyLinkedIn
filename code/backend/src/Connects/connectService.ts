@@ -6,11 +6,9 @@ export class ConnectionService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
   async sendConnectionRequest(senderId: string, receiverId?: string, receiverEmail?: string) {
-    const supabase = this.supabaseService.getClient();
-
     let targetUserId = receiverId;
     if (receiverEmail && !receiverId) {
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      const { data: userData, error: userError } = await this.supabaseService.getClient().auth.admin.listUsers();
 
       if (userError) {
         throw new Error('Error searching for user by email');
@@ -31,7 +29,7 @@ export class ConnectionService {
       throw new Error('Cannot send connection request to yourself');
     }
 
-    const { data: existingConnection } = await supabase
+    const { data: existingConnection } = await this.supabaseService.getClient()
       .from('connections')
       .select('*')
       .or(`and(user1_id.eq.${senderId},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${senderId})`);
@@ -40,7 +38,7 @@ export class ConnectionService {
       throw new Error('You are already connected with this user');
     }
 
-    const { data: existingRequest } = await supabase
+    const { data: existingRequest } = await this.supabaseService.getClient()
       .from('connection_requests')
       .select('*')
       .or(`and(sender_id.eq.${senderId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${senderId})`);
@@ -49,8 +47,7 @@ export class ConnectionService {
       throw new Error('Connection request already exists between these users');
     }
 
-    // Create connection request without trying to join with users table
-    const { data, error } = await supabase
+    const { data, error } = await this.supabaseService.getClient()
       .from('connection_requests')
       .insert({
         sender_id: senderId,
@@ -68,9 +65,7 @@ export class ConnectionService {
   }
 
   async acceptConnectionRequest(requestId: number, userId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    const { data: request, error: requestError } = await supabase
+    const { data: request, error: requestError } = await this.supabaseService.getClient()
       .from('connection_requests')
       .select('*')
       .eq('id', requestId)
@@ -82,7 +77,7 @@ export class ConnectionService {
       throw new Error('Connection request not found or you are not authorized to accept it');
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await this.supabaseService.getClient()
       .from('connection_requests')
       .update({ status: 'accepted' })
       .eq('id', requestId);
@@ -94,7 +89,7 @@ export class ConnectionService {
     const user1_id = request.sender_id < request.receiver_id ? request.sender_id : request.receiver_id;
     const user2_id = request.sender_id < request.receiver_id ? request.receiver_id : request.sender_id;
 
-    const { data: connection, error: connectionError } = await supabase
+    const { data: connection, error: connectionError } = await this.supabaseService.getClient()
       .from('connections')
       .insert({
         user1_id,
@@ -104,7 +99,7 @@ export class ConnectionService {
       .single();
 
     if (connectionError) {
-      await supabase
+      await this.supabaseService.getClient()
         .from('connection_requests')
         .update({ status: 'pending' })
         .eq('id', requestId);
@@ -116,9 +111,7 @@ export class ConnectionService {
   }
 
   async rejectConnectionRequest(requestId: string, userId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    const { data, error } = await supabase
+    const { data, error } = await this.supabaseService.getClient()
       .from('connection_requests')
       .update({ status: 'rejected' })
       .eq('id', parseInt(requestId))
@@ -139,10 +132,7 @@ export class ConnectionService {
   }
 
   async getConnections(userId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    // Get connections without JOIN
-    const { data: connections, error: connectionsError } = await supabase
+    const { data: connections, error: connectionsError } = await this.supabaseService.getClient()
       .from('connections')
       .select('*')
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
@@ -151,8 +141,7 @@ export class ConnectionService {
       throw new Error(`Error fetching connections: ${connectionsError.message}`);
     }
 
-    // Get sent requests without JOIN
-    const { data: sentRequests, error: sentError } = await supabase
+    const { data: sentRequests, error: sentError } = await this.supabaseService.getClient()
       .from('connection_requests')
       .select('*')
       .eq('sender_id', userId)
@@ -162,8 +151,7 @@ export class ConnectionService {
       throw new Error(`Error fetching sent requests: ${sentError.message}`);
     }
 
-    // Get received requests without JOIN
-    const { data: receivedRequests, error: receivedError } = await supabase
+    const { data: receivedRequests, error: receivedError } = await this.supabaseService.getClient()
       .from('connection_requests')
       .select('*')
       .eq('receiver_id', userId)
@@ -183,9 +171,7 @@ export class ConnectionService {
   }
 
   async removeConnection(userId: string, connectionId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    const { data: connection, error: fetchError } = await supabase
+    const { data: connection, error: fetchError } = await this.supabaseService.getClient()
       .from('connections')
       .select('*')
       .eq('id', connectionId)
@@ -196,7 +182,7 @@ export class ConnectionService {
       throw new Error('Connection not found or you are not authorized to remove it');
     }
 
-    const { error } = await supabase
+    const { error } = await this.supabaseService.getClient()
       .from('connections')
       .delete()
       .eq('id', connectionId);

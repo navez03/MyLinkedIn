@@ -34,7 +34,7 @@ export const apiHelpers = {
     }
   },
 
-  getHeaders: (includeAuth: boolean = false): HeadersInit => {
+  getHeaders: (includeAuth: boolean = false, customHeaders?: Record<string, string>): HeadersInit => {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -46,37 +46,47 @@ export const apiHelpers = {
       }
     }
 
+    if (customHeaders) {
+      Object.assign(headers, customHeaders);
+    }
+
     return headers;
   },
 
-  post: async <T>(endpoint: string, body: any, includeAuth: boolean = false): Promise<ApiResponse<T>> => {
+  post: async <T>(endpoint: string, body: any, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
-      headers: apiHelpers.getHeaders(includeAuth),
+      headers: apiHelpers.getHeaders(includeAuth, customHeaders),
       body: JSON.stringify(body),
     });
   },
 
-  get: async <T>(endpoint: string, includeAuth: boolean = false): Promise<ApiResponse<T>> => {
+  get: async <T>(endpoint: string, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
-      headers: apiHelpers.getHeaders(includeAuth),
+      headers: apiHelpers.getHeaders(includeAuth, customHeaders),
     });
   },
 
-  put: async <T>(endpoint: string, body: any, includeAuth: boolean = false): Promise<ApiResponse<T>> => {
+  put: async <T>(endpoint: string, body: any, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
-      headers: apiHelpers.getHeaders(includeAuth),
+      headers: apiHelpers.getHeaders(includeAuth, customHeaders),
       body: JSON.stringify(body),
     });
   },
 
-  delete: async <T>(endpoint: string, includeAuth: boolean = false): Promise<ApiResponse<T>> => {
-    return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
+  delete: async <T>(endpoint: string, includeAuth: boolean = false, body?: any): Promise<ApiResponse<T>> => {
+    const options: RequestInit = {
       method: 'DELETE',
       headers: apiHelpers.getHeaders(includeAuth),
-    });
+    };
+
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, options);
   },
 };
 

@@ -22,11 +22,9 @@
     <task id="Activity_00r2b94" name="Create Job listing">
       <incoming>Flow_11gizd9</incoming>
       <outgoing>Flow_15zgduj</outgoing>
-      <property id="Property_0l8klzs" name="__targetRef_placeholder" />
-      <dataInputAssociation id="DataInputAssociation_1qk0kbf">
-        <sourceRef>DataStoreReference_02td5xl</sourceRef>
-        <targetRef>Property_0l8klzs</targetRef>
-      </dataInputAssociation>
+      <dataOutputAssociation id="DataOutputAssociation_1uasocu">
+        <targetRef>DataStoreReference_02td5xl</targetRef>
+      </dataOutputAssociation>
     </task>
     <endEvent id="Event_156wuun">
       <incoming>Flow_15zgduj</incoming>
@@ -98,9 +96,9 @@
         <omgdi:waypoint x="455" y="470" />
         <omgdi:waypoint x="455" y="230" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="DataInputAssociation_1qk0kbf_di" bpmnElement="DataInputAssociation_1qk0kbf">
-        <omgdi:waypoint x="830" y="400" />
-        <omgdi:waypoint x="812" y="470" />
+      <bpmndi:BPMNEdge id="DataOutputAssociation_1uasocu_di" bpmnElement="DataOutputAssociation_1uasocu">
+        <omgdi:waypoint x="810" y="470" />
+        <omgdi:waypoint x="836" y="395" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
