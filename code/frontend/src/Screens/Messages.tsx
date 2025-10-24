@@ -4,6 +4,7 @@ import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
 import { useLocation } from 'react-router-dom';
+import Loading from '../components/loading';
 
 
 interface User {
@@ -26,6 +27,7 @@ const Messages: React.FC = () => {
   const [conversations, setConversations] = useState<User[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currentUserId = localStorage.getItem('userId') || '';
   const location = useLocation();
@@ -39,11 +41,43 @@ const Messages: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => {
-    loadConversations();
+    const initializeMessages = async () => {
+      setLoading(true);
+      try {
+        // 1. Carregar conversas
+        const conversationsResponse = await messagesAPI.getUserConversations(currentUserId);
+        if (conversationsResponse.success && conversationsResponse.data.users.length > 0) {
+          setConversations(conversationsResponse.data.users);
+
+          // 2. Carregar todas as mensagens de todas as conversas
+          await Promise.all(
+            conversationsResponse.data.users.map(async (conv) => {
+              const messagesResponse = await messagesAPI.getMessagesBetweenUsers(currentUserId, conv.id);
+              if (messagesResponse.success) {
+                setMessages((prev) => {
+                  // Evita duplicatas
+                  const newMsgs = messagesResponse.data.messages.filter(m => !prev.some(pm => pm.id === m.id));
+                  return [...prev, ...newMsgs];
+                });
+              }
+            })
+          );
+        } else if (conversationsResponse.success) {
+          setConversations([]);
+        }
+      } catch (error) {
+        console.error('Error initializing messages:', error);
+      } finally {
+        // Só desliga o loading após tudo estar carregado
+        setLoading(false);
+      }
+    };
+
+    initializeMessages();
   }, []);
 
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && !loading) {
       loadMessages(selectedChat);
     }
   }, [selectedChat]);
@@ -56,8 +90,6 @@ const Messages: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -65,14 +97,47 @@ const Messages: React.FC = () => {
     try {
       const response = await messagesAPI.getMessagesBetweenUsers(currentUserId, otherUserId);
       if (response.success) {
-        setMessages(response.data.messages);
+        setMessages((prev) => {
+          // Remove mensagens antigas desta conversa
+          const filtered = prev.filter(
+            (m) =>
+              !(m.sender_id === otherUserId && m.receiver_id === currentUserId) &&
+              !(m.sender_id === currentUserId && m.receiver_id === otherUserId)
+          );
+          // Adiciona as mensagens atualizadas
+          return [...filtered, ...response.data.messages];
+        });
       }
     } catch (error) {
       console.error('Error loading messages:', error);
     }
   };
 
+  const getLastMessage = (userId: string) => {
+    const relevantMessages = messages.filter(
+      (msg) =>
+        (msg.sender_id === userId && msg.receiver_id === currentUserId) ||
+        (msg.sender_id === currentUserId && msg.receiver_id === userId)
+    );
+    if (relevantMessages.length === 0) return '';
+    const sorted = [...relevantMessages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return sorted[0].content;
+  };
+
   const selectedConversation = conversations.find(c => c.id === selectedChat);
+
+  // Filtrar conversas com base na pesquisa
+  const filteredConversations = conversations.filter((conversation) =>
+    conversation.name.toLowerCase().startsWith(searchQuery.toLowerCase())
+  );
+
+  const currentMessages = selectedChat
+    ? messages.filter(
+      (msg) =>
+        (msg.sender_id === selectedChat && msg.receiver_id === currentUserId) ||
+        (msg.sender_id === currentUserId && msg.receiver_id === selectedChat)
+    )
+    : [];
 
   const handleSendMessage = async () => {
     if (messageText.trim() && selectedChat) {
@@ -103,13 +168,17 @@ const Messages: React.FC = () => {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return '1d ago';
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays === 1) return '1d';
+    if (diffDays < 7) return `${diffDays}d`;
 
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,22 +197,22 @@ const Messages: React.FC = () => {
                   <Input
                     placeholder="Search messages"
                     className="pl-9 bg-secondary border-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
 
               {/* Conversations */}
               <div className="flex-1 overflow-y-auto">
-                {loading ? (
+                {filteredConversations.length === 0 ? (
                   <div className="flex items-center justify-center p-8">
-                    <p className="text-muted-foreground">Loading conversations...</p>
-                  </div>
-                ) : conversations.length === 0 ? (
-                  <div className="flex items-center justify-center p-8">
-                    <p className="text-muted-foreground">No conversations yet</p>
+                    <p className="text-muted-foreground">
+                      {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                    </p>
                   </div>
                 ) : (
-                  conversations.map((conversation) => (
+                  filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
                       onClick={() => setSelectedChat(conversation.id)}
@@ -167,7 +236,7 @@ const Messages: React.FC = () => {
                           </h3>
                         </div>
                         <p className="text-sm truncate text-muted-foreground">
-                          {conversation.email}
+                          {getLastMessage(conversation.id) || 'No messages yet'}
                         </p>
                       </div>
                     </div>
@@ -204,12 +273,12 @@ const Messages: React.FC = () => {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.length === 0 ? (
+                    {currentMessages.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
                         <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
                       </div>
                     ) : (
-                      messages.map((message) => (
+                      currentMessages.map((message) => (
                         <div
                           key={message.id}
                           className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}

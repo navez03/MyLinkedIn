@@ -2,10 +2,11 @@ import Navigation from "../components/header";
 import CreatePostCard from "../components/createPost";
 import ProfileCard from "../components/profileCard";
 import { Card } from "../components/card";
-import { Heart, MessageCircle, SendIcon, Share2 } from "lucide-react";
+import { ThumbsUp, MessageCircle, SendIcon, Share2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
+import Loading from "../components/loading";
 
 interface Post {
   id: string;
@@ -22,7 +23,24 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [postStats, setPostStats] = useState<{ id: string; likes: number; comments: number; shares: number }[]>([]);
+  const style = document.createElement('style');
+  style.innerHTML = `
+  html, body {
+    overflow: hidden !important;
+    height: 100%;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+  if (typeof window !== 'undefined' && !document.head.querySelector('style[data-scrollbar-hide]')) {
+    style.setAttribute('data-scrollbar-hide', 'true');
+    document.head.appendChild(style);
+  }
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -57,7 +75,6 @@ export default function Home() {
           });
 
           setPosts(formattedPosts);
-          setPostStats(formattedPosts.map((p) => ({ id: p.id, likes: 0, comments: 0, shares: 0 })));
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -84,17 +101,24 @@ export default function Home() {
     return postDate.toLocaleDateString();
   };
 
-  const handleAction = (id: string, type: "likes" | "comments" | "shares") => {
-    setPostStats((prev) =>
-      prev.map((post) =>
-        post.id === id ? { ...post, [type]: post[type] + 1 } : post
-      )
-    );
+
+
+  const handleProfileClick = (userId: string) => {
+    const currentUserId = localStorage.getItem('userId');
+    if (userId === currentUserId) {
+      navigate('/profile');
+    } else {
+      navigate(`/profile/${userId}`);
+    }
   };
 
-  const handleProfileClick = () => {
-    navigate('/profile');
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -105,91 +129,89 @@ export default function Home() {
             <ProfileCard />
           </div>
 
-          <div className="max-w-[540px] w-full space-y-4">
+          <div
+            className="max-w-[540px] w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
+            style={{ minHeight: 0 }}
+          >
 
             <CreatePostCard />
 
-            {isLoading ? (
-              <Card className="p-4">
-                <p className="text-center text-muted-foreground">Loading posts...</p>
-              </Card>
-            ) : posts.length === 0 ? (
+            {posts.length === 0 ? (
               <Card className="p-4">
                 <p className="text-center text-muted-foreground">No posts to display. Start connecting with people or create your first post!</p>
               </Card>
             ) : (
               <div className="space-y-4">
-                {posts.map((post) => {
-                  const stats = postStats.find((p) => p.id === post.id)!;
-                  return (
-                    <Card key={post.id} className="p-4 space-y-3">
-                      <div className="flex gap-3 mb-1">
-                        <div
-                          onClick={handleProfileClick}
-                          className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          {post.avatar}
-                        </div>
-                        <div>
-                          <h3
-                            onClick={handleProfileClick}
-                            className="font-semibold leading-tight cursor-pointer hover:underline"
-                          >
-                            {post.author}
-                          </h3>
-                          <span className="text-xs text-muted-foreground">{post.time}</span>
-                        </div>
+                {posts.map((post) => (
+                  <Card key={post.id} className="p-4 space-y-3">
+                    <div className="flex gap-3 mb-1">
+                      <div
+                        onClick={() => handleProfileClick(post.userId)}
+                        className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                      >
+                        {post.avatar}
                       </div>
-
-                      <p className="text-sm text-foreground whitespace-pre-line">
-                        {post.content}
-                      </p>
-
-                      {post.image && (
-                        <img
-                          src={post.image}
-                          alt="Post Image"
-                          className="w-full rounded-md object-cover max-h-[400px]"
-                        />
-                      )}
-
-                      <div className="flex justify-between text-sm text-muted-foreground pt-2 border-t border-border">
-                        <span>{stats.likes} Likes</span>
-                        <span>{stats.comments} Comments</span>
-                        <span>{stats.shares} Shares</span>
+                      <div>
+                        <h3
+                          onClick={() => handleProfileClick(post.userId)}
+                          className="font-semibold leading-tight cursor-pointer hover:underline"
+                        >
+                          {post.author}
+                        </h3>
+                        <span className="text-xs text-muted-foreground">{post.time}</span>
                       </div>
+                    </div>
 
-                      <div className="flex justify-around pt-2 border-t border-border">
-                        <button
-                          onClick={() => handleAction(post.id, "likes")}
-                          className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                        >
-                          <Heart className="w-4 h-4" /> Like
-                        </button>
-                        <button
-                          onClick={() => handleAction(post.id, "comments")}
-                          className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                        >
-                          <MessageCircle className="w-4 h-4" /> Comment
-                        </button>
-                        <button
-                          onClick={() => handleAction(post.id, "shares")}
-                          className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                        >
-                          <Share2 className="w-4 h-4" /> Share
-                        </button>
-                        <button
-                          className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                        >
-                          <SendIcon className="w-4 h-4" /> Send
-                        </button>
+                    <p className="text-sm text-foreground whitespace-pre-line">
+                      {post.content}
+                    </p>
+
+                    {post.image && (
+                      <img
+                        src={post.image}
+                        alt="Post Image"
+                        className="w-full rounded-md object-cover max-h-[400px]"
+                      />
+                    )}
+
+                    {/* Interactions visual only, no logic */}
+                    <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
+                      <div className="flex items-center gap-1">
+                        <ThumbsUp className="w-4 h-4 text-primary fill-primary" />
+                        <span className="font-medium text-foreground">0</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">0 comentários</span>
+                    </div>
+
+                    <div className="flex justify-around pt-2 border-t border-border">
+                      <button
+                        className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                        type="button"
+                        tabIndex={0}
+                      >
+                        <ThumbsUp className="w-4 h-4" /> Like
+                      </button>
+                      <button
+                        className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                        type="button"
+                        tabIndex={0}
+                      >
+                        <MessageCircle className="w-4 h-4" /> Comment
+                      </button>
+                      <button
+                        className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                        type="button"
+                        tabIndex={0}
+                      >
+                        <SendIcon className="w-4 h-4" /> Send
+                      </button>
                     </div>
                   </Card>
-                  );
-                })}
+                ))}
               </div>
             )}
-          </div>        </div>
+          </div>
+        </div>
       </div>
     </>
   );
