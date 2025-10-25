@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Gantt Chart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .info {
+            color: #718096;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        
+        .gantt-wrapper {
+            overflow-x: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        .gantt {
+            display: grid;
+            grid-template-columns: 50px 350px repeat(auto-fill, 60px);
+            min-width: 100%;
+            background: white;
+        }
+        
+        .gantt-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 8px;
+            font-weight: 600;
+            font-size: 13px;
+            border-bottom: 2px solid #5a67d8;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .gantt-row {
+            display: contents;
+        }
+        
+        .gantt-cell {
+            padding: 12px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f7fafc;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .task-id {
+            font-weight: 600;
+            color: #5a67d8;
+        }
+        
+        .task-name {
+            color: #2d3748;
+            line-height: 1.4;
+        }
+        
+        .timeline-cell {
+            position: relative;
+            min-height: 40px;
+        }
+        
+        .task-bar {
+            position: absolute;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .task-bar:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+        }
+        
+        .weekend {
+            background: #f7fafc;
+        }
+        
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+        
+        .legend-box {
+            width: 24px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .type-bpmn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .type-frontend { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .type-backend { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .type-requirements { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .type-other { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗓️ Project Gantt Chart</h1>
+        <p class="info">Project timeline from September 30 to December 30, 2024</p>
+        
+        <div class="gantt-wrapper">
+            <div class="gantt" id="gantt"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box type-bpmn"></div>
+                <span>BPMN Tasks</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box type-frontend"></div>
+                <span>Frontend Tasks</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box type-backend"></div>
+                <span>Backend Tasks</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box type-requirements"></div>
+                <span>Requirements</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box type-other"></div>
+                <span>Other Tasks</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const tasks = [
+            {id: 1, name: "BPMN Register Account", start: "2024-09-30", end: "2024-10-02", duration: 3, responsible: "Francisco Mendes"},
+            {id: 2, name: "BPMN Post Content", start: "2024-10-01", end: "2024-10-03", duration: 3, responsible: "Beatriz"},
+            {id: 3, name: "BPMN Get Notifications", start: "2024-09-30", end: "2024-10-02", duration: 3, responsible: "Vicente"},
+            {id: 4, name: "BPMN Adicionar Contacto", start: "2024-10-01", end: "2024-10-03", duration: 3, responsible: "Francisco Jorge"},
+            {id: 5, name: "BPMN Send a Message", start: "2024-10-02", end: "2024-10-04", duration: 3, responsible: "Daniel"},
+            {id: 6, name: "Frontend Adicionar User", start: "2024-10-05", end: "2024-10-10", duration: 6, responsible: "Vicente, Daniel"},
+            {id: 7, name: "Frontend Adicionar Contacto", start: "2024-10-16", end: "2024-10-18", duration: 3, responsible: "Vicente, Daniel"},
+            {id: 8, name: "Backend Adicionar User", start: "2024-10-05", end: "2024-10-10", duration: 6, responsible: "Beatriz, Francisco Jorge, Francisco Mendes"},
+            {id: 9, name: "Backend Adicionar Contacto", start: "2024-10-15", end: "2024-10-17", duration: 3, responsible: "Beatriz, Francisco Jorge, Francisco Mendes"},
+            {id: 10, name: "BPMN Interact with Posts", start: "2024-10-07", end: "2024-10-07", duration: 1, responsible: "Beatriz"},
+            {id: 11, name: "BPMN Add Skill", start: "2024-10-06", end: "2024-10-06", duration: 1, responsible: "Beatriz"},
+            {id: 12, name: "BPMN Search Posts/People", start: "2024-10-07", end: "2024-10-07", duration: 1, responsible: "Francisco Jorge"},
+            {id: 13, name: "BPMN Create and Reply to Listing", start: "2024-10-05", end: "2024-10-05", duration: 1, responsible: "Francisco Jorge"},
+            {id: 14, name: "BPMN Create and Interact with Events", start: "2024-10-06", end: "2024-10-06", duration: 1, responsible: "Daniel"},
+            {id: 15, name: "BPMN Create Groups", start: "2024-10-07", end: "2024-10-07", duration: 1, responsible: "Daniel"},
+            {id: 16, name: "BPMN Discover Groups", start: "2024-10-05", end: "2024-10-05", duration: 1, responsible: "Francisco Mendes"},
+            {id: 17, name: "BPMN AI Assistant", start: "2024-10-06", end: "2024-10-06", duration: 1, responsible: "Francisco Mendes"},
+            {id: 18, name: "BPMN Post CV with anonymous reviews", start: "2024-10-06", end: "2024-10-06", duration: 1, responsible: "Vicente"},
+            {id: 19, name: "BPMN Send GIFs in the comments", start: "2024-10-05", end: "2024-10-05", duration: 1, responsible: "Vicente"},
+            {id: 20, name: "Functional Requirements (2,10,11)", start: "2024-10-13", end: "2024-10-15", duration: 3, responsible: "Beatriz"},
+            {id: 21, name: "Functional Requirements (1,16,17)", start: "2024-10-17", end: "2024-10-19", duration: 3, responsible: "Francisco Mendes"},
+            {id: 22, name: "Functional Requirements (3,18,19)", start: "2024-10-14", end: "2024-10-16", duration: 3, responsible: "Vicente"},
+            {id: 23, name: "Functional Requirements (4,12,13)", start: "2024-10-14", end: "2024-10-16", duration: 3, responsible: "Francisco Jorge"},
+            {id: 24, name: "Functional Requirements (5,14,15)", start: "2024-10-15", end: "2024-10-17", duration: 3, responsible: "Daniel"},
+            {id: 25, name: "Non-Functional Requirements", start: "2024-10-18", end: "2024-10-18", duration: 1, responsible: "Todos"},
+            {id: 26, name: "Frontend Messages", start: "2024-10-20", end: "2024-10-22", duration: 3, responsible: "Vicente, Daniel"},
+            {id: 27, name: "Frontend Notifications", start: "2024-10-22", end: "2024-10-24", duration: 3, responsible: "Vicente, Daniel"},
+            {id: 28, name: "Frontend Posts", start: "2024-10-23", end: "2024-10-26", duration: 4, responsible: "Vicente, Daniel"},
+            {id: 29, name: "Backend Messages", start: "2024-10-22", end: "2024-10-24", duration: 3, responsible: "Beatriz, Francisco Jorge, Francisco Mendes"},
+            {id: 30, name: "Backend Notifications", start: "2024-10-20", end: "2024-10-22", duration: 3, responsible: "Beatriz, Francisco Jorge, Francisco Mendes"},
+            {id: 31, name: "Backend Posts", start: "2024-10-23", end: "2024-10-26", duration: 4, responsible: "Beatriz, Francisco Jorge, Francisco Mendes"},
+            {id: 32, name: "BPMN Main Process", start: "2024-12-30", end: "2024-12-30", duration: 1, responsible: "Beatriz"},
+            {id: 33, name: "Criação do Gant Chart", start: "2024-10-26", end: "2024-10-26", duration: 1, responsible: "Todos"}
+        ];
+        
+        const startDate = new Date('2024-09-30');
+        const endDate = new Date('2024-12-31');
+        
+        function getTaskType(name) {
+            if (name.includes('BPMN')) return 'type-bpmn';
+            if (name.includes('Frontend')) return 'type-frontend';
+            if (name.includes('Backend')) return 'type-backend';
+            if (name.includes('Requirements')) return 'type-requirements';
+            return 'type-other';
+        }
+        
+        function daysBetween(d1, d2) {
+            return Math.floor((d2 - d1) / (1000 * 60 * 60 * 24));
+        }
+        
+        function isWeekend(date) {
+            const day = date.getDay();
+            return day === 0 || day === 6;
+        }
+        
+        const gantt = document.getElementById('gantt');
+        const totalDays = daysBetween(startDate, endDate) + 1;
+        
+        gantt.style.gridTemplateColumns = `50px 350px repeat(${totalDays}, 60px)`;
+        
+        gantt.innerHTML += '<div class="gantt-header">ID</div>';
+        gantt.innerHTML += '<div class="gantt-header">Task Name</div>';
+        
+        for (let i = 0; i < totalDays; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            const dateStr = `${currentDate.getDate()}/${currentDate.getMonth() + 1}`;
+            gantt.innerHTML += `<div class="gantt-header">${dateStr}</div>`;
+        }
+        
+        tasks.forEach(task => {
+            gantt.innerHTML += `
+                <div class="gantt-cell task-id">${task.id}</div>
+                <div class="gantt-cell task-name" title="${task.responsible}">${task.name}</div>
+            `;
+            
+            const taskStart = new Date(task.start);
+            const taskEnd = new Date(task.end);
+            
+            for (let i = 0; i < totalDays; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const isWeekendDay = isWeekend(currentDate);
+                const cellClass = `gantt-cell timeline-cell ${isWeekendDay ? 'weekend' : ''}`;
+                
+                if (currentDate >= taskStart && currentDate <= taskEnd) {
+                    const taskType = getTaskType(task.name);
+                    const isFirstDay = currentDate.getTime() === taskStart.getTime();
+                    const width = Math.min(daysBetween(taskStart, taskEnd) + 1, totalDays - i) * 60 - 4;
+                    
+                    if (isFirstDay) {
+                        gantt.innerHTML += `
+                            <div class="${cellClass}">
+                                <div class="task-bar ${taskType}" style="width: ${width}px" title="${task.name}\n${task.responsible}\n${task.duration} days">
+                                    ${task.duration}d
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        gantt.innerHTML += `<div class="${cellClass}"></div>`;
+                    }
+                } else {
+                    gantt.innerHTML += `<div class="${cellClass}"></div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
