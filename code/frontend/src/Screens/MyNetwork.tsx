@@ -5,6 +5,7 @@ import { Button } from "../components/button";
 import { Users, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
 import { connectionAPI } from "../services/connectionService";
+import { authAPI, UserProfileDto } from "../services/registerService";
 
 interface Connection {
   user: {
@@ -26,7 +27,7 @@ interface ConnectionRequest {
 const Network = () => {
   const [activeSection, setActiveSection] = useState<'connections' | 'invites'>('connections');
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
+  const [invitations, setInvitations] = useState<(ConnectionRequest & { senderName?: string })[]>([]);
   const [loading, setLoading] = useState(false);
 
   const currentUserId = localStorage.getItem('userId') || '';
@@ -54,7 +55,25 @@ const Network = () => {
     try {
       const response = await connectionAPI.getPendingRequests(currentUserId);
       if (response.success) {
-        setInvitations(response.data.pendingRequests.received);
+        const received = response.data.pendingRequests.received;
+        // Buscar nomes dos utilizadores
+        const invitationsWithNames = await Promise.all(
+          received.map(async (inv) => {
+            try {
+              const userResp = await authAPI.getUserProfile(inv.sender_id);
+              console.log('User profile response for sender:', inv.sender_id, userResp);
+              if (userResp.success && userResp.data) {
+                return { ...inv, senderName: userResp.data.name };
+              }
+              return { ...inv, senderName: inv.sender_id };
+            } catch (error) {
+              console.error('Error fetching user profile for sender:', inv.sender_id, error);
+              return { ...inv, senderName: inv.sender_id };
+            }
+          })
+        );
+        console.log('Invitations with names:', invitationsWithNames);
+        setInvitations(invitationsWithNames);
       }
     } catch (error) {
       console.error('Error loading connection requests:', error);
@@ -88,12 +107,11 @@ const Network = () => {
   };
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0]?.toUpperCase() || '';
   };
 
 
@@ -142,10 +160,10 @@ const Network = () => {
                       <div key={invitation.id} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
                         <div className="flex items-center w-full mb-2">
                           <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary">
-                            {getInitials(invitation.sender_id)}
+                            {getInitials(invitation.senderName || invitation.sender_id)}
                           </div>
                           <div className="ml-4 flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">User {invitation.sender_id}</h3>
+                            <h3 className="font-semibold truncate">{invitation.senderName}</h3>
                             <p className="text-sm text-muted-foreground mb-2 truncate">
                               Sent on {new Date(invitation.created_at).toLocaleDateString()}
                             </p>
@@ -165,7 +183,7 @@ const Network = () => {
                             className="flex-1"
                             onClick={() => handleRejectInvitation(invitation.id)}
                           >
-                            Ignore
+                            Reject
                           </Button>
                         </div>
                       </div>

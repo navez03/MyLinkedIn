@@ -77,7 +77,18 @@ export class UserService {
     }
 
     if (!data || data.length === 0) {
-      throw new Error(`User profile not found for userId: ${userId}`);
+      const { data: authUser, error: authError } = await this.supabaseService.getClient()
+        .auth.admin.getUserById(userId);
+
+      if (authError || !authUser.user) {
+        throw new Error(`User not found in authentication system for userId: ${userId}`);
+      }
+
+      return {
+        id: authUser.user.id,
+        name: authUser.user.email?.split('@')[0] || 'Unknown User',
+        email: authUser.user.email || '',
+      };
     }
 
     return data[0];
@@ -85,15 +96,18 @@ export class UserService {
 
 
   async getAllUsers(currentUserId: string) {
+    console.log('Getting all users except:', currentUserId);
     const { data, error } = await this.supabaseService.getClient()
       .from('users')
       .select('id, name, email')
       .neq('id', currentUserId);
 
     if (error) {
+      console.error('Error fetching all users:', error);
       throw new Error(`Error fetching users: ${error.message}`);
     }
 
+    console.log('All users found:', data?.length || 0);
     return data || [];
   }
 
@@ -104,6 +118,7 @@ export class UserService {
 
     const searchTerm = `${query.trim()}%`;
 
+    // Buscar na tabela users
     const { data, error } = await this.supabaseService.getClient()
       .from('users')
       .select('id, name, email')
@@ -111,9 +126,11 @@ export class UserService {
       .or(`name.ilike.${searchTerm},email.ilike.${searchTerm}`);
 
     if (error) {
+      console.error('Error searching users in database:', error);
       throw new Error(`Error searching users: ${error.message}`);
     }
 
+    console.log('Search results from database:', data);
     return data || [];
   }
 }

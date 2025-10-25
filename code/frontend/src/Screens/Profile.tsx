@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Loading from '../components/loading';
 import Navigation from '../components/header';
-import { Edit2, Mail, UserPlus, Check } from 'lucide-react';
+import { Edit2, Mail, UserPlus, Check, UserMinus } from 'lucide-react';
 import { connectionAPI } from '../services/connectionService';
 import { useNavigate, useParams } from 'react-router-dom';
 import { authAPI } from '../services/registerService';
@@ -12,18 +12,17 @@ const Profile: React.FC = () => {
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionId, setConnectionId] = useState<string | null>(null);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [isRemovingConnection, setIsRemovingConnection] = useState(false);
 
   const currentUserId = localStorage.getItem('userId') || '';
   const isOwnProfile = !profileUserId || profileUserId === currentUserId;
 
-  const currentUserName = localStorage.getItem('userName') || 'My Profile';
-  const currentUserEmail = localStorage.getItem('email') || '';
-
   const [profileData, setProfileData] = useState({
-    name: isOwnProfile ? currentUserName : 'Loading...',
-    email: isOwnProfile ? currentUserEmail : '',
+    name: 'Loading...',
+    email: '',
   });
 
   const getInitials = (name: string): string => {
@@ -31,7 +30,7 @@ const Profile: React.FC = () => {
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return parts[0].substring(0, 2).toUpperCase();
+    return parts[0][0]?.toUpperCase() || '';
   };
 
   const initials = getInitials(profileData.name);
@@ -44,53 +43,49 @@ const Profile: React.FC = () => {
         const userIdToFetch = profileUserId || currentUserId;
 
         if (!userIdToFetch) {
-          console.error('User not logged in');
           navigate('/');
           return;
         }
 
-        // ...
+        const userProfileResponse = await authAPI.getUserProfile(userIdToFetch);
 
-  // If it's the own profile, use localStorage data
-        if (isOwnProfile) {
+        if (userProfileResponse.success && userProfileResponse.data) {
+          // Response.data is now UserProfileDto: { id, name, email }
+          const userData = userProfileResponse.data;
+
           setProfileData({
-            name: currentUserName,
-            email: currentUserEmail,
+            name: userData.name || 'Unknown User',
+            email: userData.email || '',
           });
-        } else if (profileUserId) {
-          // If it's another user's profile, fetch from backend
-          // ...
-          const userProfileResponse = await authAPI.getUserProfile(profileUserId);
 
-          // ...
-
-          if (userProfileResponse.success) {
-            // ...
-
-            setProfileData({
-              name: userProfileResponse.data.name || 'Unknown User',
-              email: userProfileResponse.data.email || '',
-            });
-          } else {
-            console.error('Failed to fetch user profile. Error:', userProfileResponse.error);
-            setProfileData({
-              name: 'Unknown User',
-              email: '',
-            });
+          // Update localStorage if viewing own profile
+          if (isOwnProfile) {
+            localStorage.setItem('userName', userData.name || '');
+            localStorage.setItem('email', userData.email || '');
           }
+        } else {
+          setProfileData({
+            name: 'Unknown User',
+            email: '',
+          });
         }
 
-  // Fetch user connections
         const response = await connectionAPI.getConnections(userIdToFetch);
 
         if (response.success && response.data) {
           setConnectionsCount(response.data.connections.length);
-          
+
           if (!isOwnProfile && profileUserId) {
-            const isAlreadyConnected = response.data.connections.some(
+            const connection = response.data.connections.find(
               (conn: any) => conn.user.id === currentUserId
             );
-            setIsConnected(isAlreadyConnected);
+            if (connection) {
+              setIsConnected(true);
+              setConnectionId(connection.id);
+            } else {
+              setIsConnected(false);
+              setConnectionId(null);
+            }
           }
         }
 
@@ -104,14 +99,13 @@ const Profile: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserData();
-  }, [currentUserId, profileUserId, navigate, isOwnProfile, currentUserName, currentUserEmail]);
+  }, [currentUserId, profileUserId, navigate, isOwnProfile]);
 
   const skills = [''];
 
@@ -120,6 +114,7 @@ const Profile: React.FC = () => {
 
     try {
       setIsSendingRequest(true);
+      console.log('Sending connection request:', { senderId: currentUserId, receiverId: profileUserId });
       const response = await connectionAPI.sendConnectionRequest(currentUserId, {
         senderId: currentUserId,
         receiverId: profileUserId,
@@ -128,14 +123,38 @@ const Profile: React.FC = () => {
       if (response.success) {
         setHasPendingRequest(true);
       } else {
-        console.error('Failed to send connection request:', response.error);
-  alert('Error sending connection request');
+        console.error('Error response:', response);
+        alert(`Error sending connection request: ${response.success === false ? response.error : 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error sending connection request:', error);
-  alert('Error sending connection request');
+      console.error('Exception:', error);
+      alert('Error sending connection request');
     } finally {
       setIsSendingRequest(false);
+    }
+  };
+
+  const handleRemoveConnection = async () => {
+    if (!connectionId || !currentUserId) return;
+
+    try {
+      setIsRemovingConnection(true);
+      console.log('Removing connection:', { userId: currentUserId, connectionId });
+      const response = await connectionAPI.removeConnection(currentUserId, connectionId);
+
+      if (response.success) {
+        setIsConnected(false);
+        setConnectionId(null);
+        setConnectionsCount(prev => prev - 1);
+      } else {
+        console.error('Error response:', response);
+        alert(`Error removing connection: ${response.success === false ? response.error : 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Exception:', error);
+      alert('Error removing connection');
+    } finally {
+      setIsRemovingConnection(false);
     }
   };
 
@@ -179,15 +198,27 @@ const Profile: React.FC = () => {
                     ) : (
                       <div className="flex gap-2">
                         {isConnected ? (
-                          <button 
-                            disabled
-                            className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
-                          >
-                            <Check className="w-4 h-4" />
-                            <span className="font-medium">Connected</span>
-                          </button>
+                          <>
+                            <button
+                              disabled
+                              className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
+                            >
+                              <Check className="w-4 h-4" />
+                              <span className="font-medium">Connected</span>
+                            </button>
+                            <button
+                              onClick={handleRemoveConnection}
+                              disabled={isRemovingConnection}
+                              className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <UserMinus className="w-4 h-4" />
+                              <span className="font-medium">
+                                {isRemovingConnection ? 'Removing...' : 'Remove'}
+                              </span>
+                            </button>
+                          </>
                         ) : hasPendingRequest ? (
-                          <button 
+                          <button
                             disabled
                             className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
                           >
@@ -195,7 +226,7 @@ const Profile: React.FC = () => {
                             <span className="font-medium">Request Sent</span>
                           </button>
                         ) : (
-                          <button 
+                          <button
                             onClick={handleSendConnectionRequest}
                             disabled={isSendingRequest}
                             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

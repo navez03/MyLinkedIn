@@ -73,4 +73,12 @@ export const notificationAPI = {
   ): Promise<ApiResponse<{ success: boolean; message: string }>> => {
     return apiHelpers.post("/notifications/read/all", data);
   },
+  /**
+   * Apaga uma notificação pelo id
+   */
+  delete: async (
+    notificationId: string
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+    return apiHelpers.delete(`/notifications/${notificationId}`);
+  },
 };

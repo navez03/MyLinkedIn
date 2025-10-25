@@ -13,28 +13,29 @@ export type Notification = {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) { }
 
   async list(userId: string, unreadOnly = false, limit = 20, offset = 0) {
     const client = this.supabase.getClient();
 
-    // 👉 só estas colunas (adiciona 'created_at' se quiseres o tempo no futuro)
+    // Devolve todos os campos relevantes
     let query = client
       .from("notifications")
-      .select("user_id, kind")
+      .select("id, user_id, kind, source_table, source_id, created_at, is_read")
       .eq("user_id", userId)
-      .order("user_id", { ascending: true }) // ordenação indiferente aqui
+      .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (unreadOnly) query = query.eq("is_read", false);
 
     const { data, error } = await query;
     if (error) throw error;
-    // data aqui é { user_id, kind }[]
-    return data as Pick<Notification, "user_id" | "kind">[];
+    return data as Notification[];
   }
 
   async markRead(notificationId: string, read = true) {
+    console.log('markRead called with:', { notificationId, read });
+
     const { data, error } = await this.supabase
       .getClient()
       .from("notifications")
@@ -43,7 +44,12 @@ export class NotificationsService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error in markRead:', error);
+      throw error;
+    }
+
+    console.log('markRead result:', data);
     return data as Notification;
   }
 
@@ -55,6 +61,16 @@ export class NotificationsService {
       .eq("user_id", userId)
       .eq("is_read", false);
 
+    if (error) throw error;
+    return { ok: true };
+  }
+
+  async delete(notificationId: string) {
+    const { error } = await this.supabase
+      .getClient()
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId);
     if (error) throw error;
     return { ok: true };
   }

@@ -77,9 +77,20 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ classNa
 });
 Textarea.displayName = "Textarea";
 
+function getUserInitials(name: string) {
+  if (!name) return '';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return parts[0][0]?.toUpperCase() || '';
+}
+
 const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const userName = localStorage.getItem('userName') || '';
+  const initials = getUserInitials(userName);
 
   const handlePost = async () => {
     if (content.trim()) {
@@ -118,7 +129,7 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-              MP
+              {initials}
             </div>
             <div>
               <h3 className="font-semibold mt-3">My Profile</h3>
@@ -153,13 +164,15 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
 const CreatePostCard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const userName = localStorage.getItem('userName') || '';
+  const initials = getUserInitials(userName);
 
   return (
     <>
       <Card className="p-4">
         <div className="flex gap-3 mb-3">
           <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-            MP
+            {initials}
           </div>
           <button
             onClick={() => setIsModalOpen(true)}

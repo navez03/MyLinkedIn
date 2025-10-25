@@ -22,7 +22,7 @@ const ProfileCard: React.FC = () => {
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return parts[0].substring(0, 2).toUpperCase();
+    return parts[0][0]?.toUpperCase() || '';
   };
 
   const initials = getInitials(currentUserName);

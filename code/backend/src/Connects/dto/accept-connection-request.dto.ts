@@ -1,4 +1,4 @@
-import { IsInt, IsUUID } from 'class-validator';
+import { IsInt, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class AcceptConnectionRequestDto {
@@ -6,6 +6,6 @@ export class AcceptConnectionRequestDto {
   @IsInt()
   requestId: number;
 
-  @IsUUID()
+  @IsString()
   userId: string;
 }
