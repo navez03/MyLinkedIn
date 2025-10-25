@@ -216,6 +216,16 @@ const Profile: React.FC = () => {
                                 {isRemovingConnection ? 'Removing...' : 'Remove'}
                               </span>
                             </button>
+                            <button
+                              onClick={() => {
+                                window.location.href = `/messages?userId=${profileUserId}`;
+                              }}
+
+                              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Mail className="w-4 h-4" />
+                              <span className="font-medium">Send Message</span>
+                            </button>
                           </>
                         ) : hasPendingRequest ? (
                           <button
@@ -320,7 +330,7 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
