@@ -2,33 +2,33 @@ import React from 'react';
 
 const Loading: React.FC = () => {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="text-center">
-        {/* LinkedIn-style animated logo */}
-        <div className="relative inline-block">
-          <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mb-6 animate-pulse">
-            <span className="text-2xl font-bold text-primary-foreground">in</span>
-          </div>
-
-          {/* Loading spinner */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-            <div className="flex gap-1">
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+  <div className="min-h-screen bg-background flex flex-col font-sans">
+      {/* Card-like loading area */}
+  <div className="w-full max-w-2xl mx-auto mt-32 overflow-hidden shadow-2xl border-2 border-border/40 backdrop-blur-md bg-card/95 p-0 md:p-12 lg:p-16 xl:p-24 flex flex-col items-center">
+        {/* Logo dentro do card */}
+        <div className="flex items-center justify-center mb-10 select-none">
+          <span className="text-6xl md:text-7xl font-extrabold tracking-tight" style={{ fontFamily: 'inherit' }}>
+            <span className="text-[#004182]">My</span>
+            <span className="text-primary">Linked</span>
+          </span>
+          <span className="ml-2">
+            <span className="inline-block align-middle w-16 h-16 bg-primary rounded-md flex items-center justify-center animate-none">
+              <span className="text-4xl md:text-5xl font-extrabold text-primary-foreground" style={{ fontFamily: 'inherit' }}>in</span>
+            </span>
+          </span>
+        </div>
+  <div className="w-full flex flex-col items-center justify-center py-16">
+          {/* Spinner */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="flex gap-2">
+              <div className="w-4 h-4 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-4 h-4 bg-primary rounded-full animate-bounce" style={{ animationDelay: '120ms' }}></div>
+              <div className="w-4 h-4 bg-primary rounded-full animate-bounce" style={{ animationDelay: '240ms' }}></div>
             </div>
           </div>
-        </div>
-
-        {/* Loading text */}
-        <div className="mt-8 space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">Loading...</h2>
-          <p className="text-sm text-muted-foreground">Please wait while we load your content</p>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-6 w-64 h-1 bg-secondary rounded-full overflow-hidden mx-auto">
-          <div className="h-full bg-primary rounded-full animate-progress"></div>
+          {/* Loading text */}
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground mb-8" style={{ fontFamily: 'inherit' }}>Loading...</h2>
+          <p className="text-base text-muted-foreground mb-4" style={{ fontFamily: 'inherit' }}>Please wait while we load your content</p>
         </div>
       </div>
 
@@ -46,7 +46,6 @@ const Loading: React.FC = () => {
             margin-left: 100%;
           }
         }
-        
         .animate-progress {
           animation: progress 1.5s ease-in-out infinite;
         }
