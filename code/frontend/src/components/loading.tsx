@@ -2,7 +2,7 @@ import React from 'react';
 
 const Loading: React.FC = () => {
   return (
-  <div className="min-h-screen bg-background flex flex-col font-sans">
+  <div className="min-h-screen bg-blue-50 flex flex-col font-sans">
       {/* Card-like loading area */}
   <div className="w-full max-w-2xl mx-auto mt-32 overflow-hidden shadow-2xl border-2 border-border/40 backdrop-blur-md bg-card/95 p-0 md:p-12 lg:p-16 xl:p-24 flex flex-col items-center">
         {/* Logo dentro do card */}

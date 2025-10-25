@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navigation from '../components/header';
 import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
+import { socketService } from '../services/socketService';
 import { useLocation } from 'react-router-dom';
 import Loading from '../components/loading';
 
@@ -28,6 +29,9 @@ const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const currentUserId = localStorage.getItem('userId') || '';
   const location = useLocation();
@@ -39,6 +43,36 @@ const Messages: React.FC = () => {
       setSelectedChat(userIdFromQuery);
     }
   }, [location.search]);
+
+  // Conectar ao WebSocket quando o componente é montado
+  useEffect(() => {
+    if (currentUserId) {
+      socketService.connect(currentUserId);
+
+      // Escutar novas mensagens recebidas
+      socketService.onNewMessage((data) => {
+        console.log('New message received:', data);
+        setMessages((prev) => [...prev, data.message]);
+      });
+
+      // Escutar confirmação de mensagem enviada
+      socketService.onMessageSent((data) => {
+        console.log('Message sent confirmed:', data);
+        if (data.success) {
+          setMessages((prev) => [...prev, data.message]);
+        }
+      });
+    }
+
+    // Cleanup ao desmontar
+    return () => {
+      socketService.removeListener('new-message');
+      socketService.removeListener('message-sent');
+      socketService.removeListener('user-typing');
+      socketService.removeListener('user-stop-typing');
+      socketService.disconnect();
+    };
+  }, [currentUserId]);
 
   useEffect(() => {
     const initializeMessages = async () => {
@@ -139,14 +173,37 @@ const Messages: React.FC = () => {
     )
     : [];
 
+  // Função para rolar para o final das mensagens
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Rolar para o final quando as mensagens mudam
+  useEffect(() => {
+    scrollToBottom();
+  }, [currentMessages]);
+
   const handleSendMessage = async () => {
     if (messageText.trim() && selectedChat) {
       try {
-        await messagesAPI.sendMessage(currentUserId, selectedChat, messageText);
+        // Envia a mensagem via WebSocket em vez de HTTP
+        socketService.sendMessage(currentUserId, selectedChat, messageText);
         setMessageText('');
-        loadMessages(selectedChat);
+        
+        // Parar de digitar
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
       } catch (error) {
         console.error('Error sending message:', error);
+        // Fallback para HTTP se o WebSocket falhar
+        try {
+          await messagesAPI.sendMessage(currentUserId, selectedChat, messageText);
+          setMessageText('');
+          loadMessages(selectedChat);
+        } catch (httpError) {
+          console.error('Error sending message via HTTP:', httpError);
+        }
       }
     }
   };
@@ -159,6 +216,7 @@ const Messages: React.FC = () => {
       .toUpperCase()
       .slice(0, 2);
   };
+
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -278,37 +336,48 @@ const Messages: React.FC = () => {
                         <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
                       </div>
                     ) : (
-                      currentMessages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div className={`max-w-[70%] ${message.sender_id === currentUserId ? 'order-2' : ''}`}>
-                            <div
-                              className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary text-foreground'
-                                }`}
-                            >
-                              <p className="text-sm">{message.content}</p>
+                      <>
+                        {currentMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[70%] ${message.sender_id === currentUserId ? 'order-2' : ''}`}>
+                              <div
+                                className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary text-foreground'
+                                  }`}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 px-2">
+                                {formatTime(message.created_at)}
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1 px-2">
-                              {formatTime(message.created_at)}
-                            </p>
                           </div>
-                        </div>
-                      ))
+                        ))}
+                        {/* Elemento invisível para scroll automático */}
+                        <div ref={messagesEndRef} />
+                      </>
                     )}
                   </div>
 
                   {/* Message Input */}
                   <div className="p-4 border-t border-border">
+                    {isTyping && (
+                      <div className="mb-2 text-sm text-muted-foreground italic">
+                        {selectedConversation?.name} está digitando...
+                      </div>
+                    )}
                     <div className="flex items-end gap-2">
                       <Input
                         placeholder="Write a message..."
                         value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onChange={(e) => {
+                          setMessageText(e.target.value);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         className="flex-1 bg-secondary border-0 resize-none"
                       />
                       <button
