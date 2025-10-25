@@ -25,7 +25,7 @@ export interface UserProfileDto {
 
 export interface UserProfileResponseDto {
   success: boolean;
-  data: UserProfileDto;
+  data?: UserProfileDto;
   message?: string;
 }
 
@@ -71,8 +71,32 @@ export const authAPI = {
     return apiHelpers.post<{ isVerified: boolean }>('/user/check-email-verified', { userId });
   },
 
-  getUserProfile: async (userId: string): Promise<ApiResponse<UserProfileResponseDto>> => {
-    return apiHelpers.get<UserProfileResponseDto>(`/user/profile?userId=${userId}`, false);
+  getUserProfile: async (userId: string): Promise<ApiResponse<UserProfileDto>> => {
+    const response = await apiHelpers.get<any>(`/user/profile?userId=${userId}`, false);
+
+    // O backend retorna { success: true, data: { id, name, email } }
+    // O apiHelpers envolve isso em ApiResponse
+    if (response.success && response.data) {
+      // Se response.data tem a propriedade 'data', é a estrutura do backend
+      if (response.data.data) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      }
+      // Se response.data já é o UserProfileDto
+      if (response.data.id && response.data.name && response.data.email) {
+        return {
+          success: true,
+          data: response.data
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: 'Failed to fetch user profile'
+    };
   },
 
   getAllUsers: async (userId: string): Promise<ApiResponse<GetAllUsersResponse>> => {

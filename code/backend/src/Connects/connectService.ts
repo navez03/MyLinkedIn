@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../config/supabaseClient';
+import { MessageService } from '../Messages/messageService';
 
 @Injectable()
 export class ConnectionService {
-  constructor(private readonly supabaseService: SupabaseService) { }
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly messageService: MessageService
+  ) { }
 
   async sendConnectionRequest(senderId: string, receiverId?: string, receiverEmail?: string) {
     let targetUserId = receiverId;
@@ -77,15 +81,6 @@ export class ConnectionService {
       throw new Error('Connection request not found or you are not authorized to accept it');
     }
 
-    const { error: updateError } = await this.supabaseService.getClient()
-      .from('connection_requests')
-      .update({ status: 'accepted' })
-      .eq('id', requestId);
-
-    if (updateError) {
-      throw new Error(`Error updating connection request: ${updateError.message}`);
-    }
-
     const user1_id = request.sender_id < request.receiver_id ? request.sender_id : request.receiver_id;
     const user2_id = request.sender_id < request.receiver_id ? request.receiver_id : request.sender_id;
 
@@ -99,36 +94,35 @@ export class ConnectionService {
       .single();
 
     if (connectionError) {
-      await this.supabaseService.getClient()
-        .from('connection_requests')
-        .update({ status: 'pending' })
-        .eq('id', requestId);
-
       throw new Error(`Error creating connection: ${connectionError.message}`);
+    }
+
+    // Remove the connection request after accepting
+    const { error: deleteError } = await this.supabaseService.getClient()
+      .from('connection_requests')
+      .delete()
+      .eq('id', requestId);
+
+    if (deleteError) {
+      throw new Error(`Connection created, but failed to remove request: ${deleteError.message}`);
     }
 
     return connection;
   }
 
   async rejectConnectionRequest(requestId: string, userId: string) {
-    const { data, error } = await this.supabaseService.getClient()
+    const { error } = await this.supabaseService.getClient()
       .from('connection_requests')
-      .update({ status: 'rejected' })
+      .delete()
       .eq('id', parseInt(requestId))
       .eq('receiver_id', userId)
-      .eq('status', 'pending')
-      .select()
-      .single();
+      .eq('status', 'pending');
 
     if (error) {
-      throw new Error(`Error rejecting connection request: ${error.message}`);
+      throw new Error(`Error deleting connection request: ${error.message}`);
     }
 
-    if (!data) {
-      throw new Error('Connection request not found or you are not authorized to reject it');
-    }
-
-    return data;
+    return { success: true };
   }
 
   async getConnections(userId: string) {
@@ -154,6 +148,7 @@ export class ConnectionService {
         .single();
 
       return {
+        id: conn.id,
         user: userData || { id: otherUserId, name: 'Unknown User', email: '' },
         connected_at: conn.created_at
       };
@@ -200,6 +195,11 @@ export class ConnectionService {
     if (fetchError || !connection) {
       throw new Error('Connection not found or you are not authorized to remove it');
     }
+
+    // Delete all messages between the two users
+    const user1Id = connection.user1_id;
+    const user2Id = connection.user2_id;
+    await this.messageService.deleteMessagesBetweenUsers(user1Id, user2Id);
 
     const { error } = await this.supabaseService.getClient()
       .from('connections')

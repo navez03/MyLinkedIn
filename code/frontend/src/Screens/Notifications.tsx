@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navigation from "../components/header";
+import { MessageSquare, Users, Check, Trash2, CheckCheck } from "lucide-react";
 import {
   notificationAPI,
   Notification,
 } from "../services/notificationsService";
 
-// Util "2h ago"
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
   const sec = Math.floor(diffMs / 1000);
@@ -22,7 +22,8 @@ function mapToUIItem(n: Notification) {
   const type = n.kind === "connection_request" ? "connection" : "message";
   const isConnection = type === "connection";
   const user = isConnection ? "Connection" : "Message";
-  const avatar = isConnection ? "CR" : "MS";
+  // Usa componente de ícone do lucide-react
+  const IconComponent = isConnection ? Users : MessageSquare;
   const action = isConnection ? "new connection request" : "sent you a message";
   const time = timeAgo(n.created_at);
 
@@ -30,7 +31,7 @@ function mapToUIItem(n: Notification) {
     id: n.id,
     type,
     user,
-    avatar,
+    IconComponent,
     action,
     time,
     unread: !n.is_read,
@@ -83,6 +84,44 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
     loadNotifications();
   }, []);
 
+  const handleMarkRead = async (notificationId: string) => {
+    try {
+      const response = await notificationAPI.markRead({ notificationId, read: true });
+      if (response.success && response.data && response.data.notification) {
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === notificationId
+              ? { ...item, is_read: true, unread: false }
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleDelete = async (notificationId: string) => {
+    try {
+      await notificationAPI.delete(notificationId);
+      // Remove da lista localmente
+      setItems((prev) => prev.filter((item) => item.id !== notificationId));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!currentUserId) return;
+    try {
+      await notificationAPI.markAllRead({ userId: currentUserId });
+      // Marca todas como lidas localmente
+      setItems((prev) => prev.map((item) => ({ ...item, unread: false })));
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -90,10 +129,19 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
       <div className="max-w-[1128px] mx-auto px-4 py-6">
         <div className="max-w-[680px] mx-auto">
           {/* Header */}
-          <div className="bg-card rounded-lg border border-border p-4 mb-2">
+          <div className="bg-card rounded-lg border border-border p-4 mb-2 flex items-center justify-between">
             <h1 className="text-xl font-semibold text-foreground">
               Notifications
             </h1>
+            {items.length > 0 && items.some((item) => item.unread) && (
+              <button
+                onClick={handleMarkAllRead}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-primary hover:bg-secondary rounded-md transition-colors"
+              >
+                <CheckCheck className="w-4 h-4" />
+                Mark all as read
+              </button>
+            )}
           </div>
 
           {/* Notifications List */}
@@ -123,15 +171,12 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
             {items.map((notification, index) => (
               <div
                 key={notification.id}
-                className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer ${
-                  index !== items.length - 1 ? "border-b border-border" : ""
-                } ${notification.unread ? "bg-secondary/30" : ""}`}
+                className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors ${index !== items.length - 1 ? "border-b border-border" : ""
+                  } ${notification.unread ? "bg-secondary/30" : ""}`}
               >
                 {/* Avatar */}
                 <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm text-primary-foreground font-semibold">
-                    {notification.avatar}
-                  </span>
+                  <notification.IconComponent className="w-6 h-6 text-primary-foreground" />
                 </div>
 
                 {/* Content */}
@@ -145,6 +190,26 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
                   <p className="text-xs text-muted-foreground mt-1">
                     {notification.time}
                   </p>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2">
+                  {notification.unread && (
+                    <button
+                      onClick={() => handleMarkRead(notification.id)}
+                      className="p-2 hover:bg-secondary rounded-full transition-colors"
+                      title="Mark as read"
+                    >
+                      <Check className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(notification.id)}
+                    className="p-2 hover:bg-secondary rounded-full transition-colors"
+                    title="Delete notification"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500" />
+                  </button>
                 </div>
 
                 {/* Unread indicator */}

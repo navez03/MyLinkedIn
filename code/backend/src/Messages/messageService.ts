@@ -91,4 +91,19 @@ export class MessageService {
 
     return users || [];
   }
+
+  async deleteMessagesBetweenUsers(user1Id: string, user2Id: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { error: deleteError } = await supabase
+      .from('messages')
+      .delete()
+      .or(`and(sender_id.eq.${user1Id},receiver_id.eq.${user2Id}),and(sender_id.eq.${user2Id},receiver_id.eq.${user1Id})`);
+
+    if (deleteError) {
+      throw new Error(`Error deleting messages: ${deleteError.message}`);
+    }
+
+    return { success: true, message: 'All messages deleted successfully' };
+  }
 }

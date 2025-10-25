@@ -4,7 +4,7 @@ import Navigation from '../components/header';
 import { Edit2, Mail, UserPlus, Check, UserMinus } from 'lucide-react';
 import { connectionAPI } from '../services/connectionService';
 import { useNavigate, useParams } from 'react-router-dom';
-import { authAPI, UserProfileResponseDto } from '../services/registerService';
+import { authAPI } from '../services/registerService';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const Profile: React.FC = () => {
   const [connectionsCount, setConnectionsCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionId, setConnectionId] = useState<string | null>(null);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [isRemovingConnection, setIsRemovingConnection] = useState(false);
@@ -29,7 +30,7 @@ const Profile: React.FC = () => {
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return parts[0].substring(0, 2).toUpperCase();
+    return parts[0][0]?.toUpperCase() || '';
   };
 
   const initials = getInitials(profileData.name);
@@ -47,16 +48,16 @@ const Profile: React.FC = () => {
         }
 
         const userProfileResponse = await authAPI.getUserProfile(userIdToFetch);
-        
+
         if (userProfileResponse.success && userProfileResponse.data) {
-          // Backend returns { success: true, data: { id, name, email } }
-          const userData = userProfileResponse.data as any;
-          
+          // Response.data is now UserProfileDto: { id, name, email }
+          const userData = userProfileResponse.data;
+
           setProfileData({
             name: userData.name || 'Unknown User',
             email: userData.email || '',
           });
-          
+
           // Update localStorage if viewing own profile
           if (isOwnProfile) {
             localStorage.setItem('userName', userData.name || '');
@@ -73,12 +74,18 @@ const Profile: React.FC = () => {
 
         if (response.success && response.data) {
           setConnectionsCount(response.data.connections.length);
-          
+
           if (!isOwnProfile && profileUserId) {
-            const isAlreadyConnected = response.data.connections.some(
+            const connection = response.data.connections.find(
               (conn: any) => conn.user.id === currentUserId
             );
-            setIsConnected(isAlreadyConnected);
+            if (connection) {
+              setIsConnected(true);
+              setConnectionId(connection.id);
+            } else {
+              setIsConnected(false);
+              setConnectionId(null);
+            }
           }
         }
 
@@ -107,6 +114,7 @@ const Profile: React.FC = () => {
 
     try {
       setIsSendingRequest(true);
+      console.log('Sending connection request:', { senderId: currentUserId, receiverId: profileUserId });
       const response = await connectionAPI.sendConnectionRequest(currentUserId, {
         senderId: currentUserId,
         receiverId: profileUserId,
@@ -115,9 +123,11 @@ const Profile: React.FC = () => {
       if (response.success) {
         setHasPendingRequest(true);
       } else {
-    alert('Error sending connection request');
+        console.error('Error response:', response);
+        alert(`Error sending connection request: ${response.success === false ? response.error : 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Exception:', error);
       alert('Error sending connection request');
     } finally {
       setIsSendingRequest(false);
@@ -125,19 +135,23 @@ const Profile: React.FC = () => {
   };
 
   const handleRemoveConnection = async () => {
-    if (!profileUserId || !currentUserId) return;
+    if (!connectionId || !currentUserId) return;
 
     try {
       setIsRemovingConnection(true);
-      const response = await connectionAPI.removeConnection(currentUserId, profileUserId);
+      console.log('Removing connection:', { userId: currentUserId, connectionId });
+      const response = await connectionAPI.removeConnection(currentUserId, connectionId);
 
       if (response.success) {
         setIsConnected(false);
+        setConnectionId(null);
         setConnectionsCount(prev => prev - 1);
       } else {
-        alert('Error removing connection');
+        console.error('Error response:', response);
+        alert(`Error removing connection: ${response.success === false ? response.error : 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Exception:', error);
       alert('Error removing connection');
     } finally {
       setIsRemovingConnection(false);
@@ -185,14 +199,14 @@ const Profile: React.FC = () => {
                       <div className="flex gap-2">
                         {isConnected ? (
                           <>
-                            <button 
+                            <button
                               disabled
                               className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
                             >
                               <Check className="w-4 h-4" />
                               <span className="font-medium">Connected</span>
                             </button>
-                            <button 
+                            <button
                               onClick={handleRemoveConnection}
                               disabled={isRemovingConnection}
                               className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -204,7 +218,7 @@ const Profile: React.FC = () => {
                             </button>
                           </>
                         ) : hasPendingRequest ? (
-                          <button 
+                          <button
                             disabled
                             className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
                           >
@@ -212,7 +226,7 @@ const Profile: React.FC = () => {
                             <span className="font-medium">Request Sent</span>
                           </button>
                         ) : (
-                          <button 
+                          <button
                             onClick={handleSendConnectionRequest}
                             disabled={isSendingRequest}
                             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

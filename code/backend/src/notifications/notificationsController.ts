@@ -2,9 +2,12 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Body,
   Query,
   BadRequestException,
+  Delete,
+  Param,
 } from "@nestjs/common";
 import {
   NotificationsService,
@@ -14,15 +17,15 @@ import { MarkAllReadDto, MarkReadDto } from "./dto/mark-read.dto";
 
 type ListResponse =
   | {
-      success: true;
-      message: string;
-      notifications: Array<Pick<Notif, "user_id" | "kind">>;
-    }
+    success: true;
+    message: string;
+    notifications: Notif[];
+  }
   | { success: false; message: string; error?: string };
 
 @Controller("notifications")
 export class NotificationsController {
-  constructor(private readonly service: NotificationsService) {}
+  constructor(private readonly service: NotificationsService) { }
 
   @Get("list")
   async list(@Query() q: any): Promise<ListResponse> {
@@ -47,14 +50,38 @@ export class NotificationsController {
     };
   }
 
-  @Patch("read")
-  markRead(@Body() body: MarkReadDto) {
+  @Post("read")
+  async markRead(@Body() body: MarkReadDto) {
+    console.log('markRead endpoint called with body:', body);
     const { notificationId, read } = body;
-    return this.service.markRead(notificationId, read ?? true);
+    const notification = await this.service.markRead(notificationId, read ?? true);
+    console.log('markRead endpoint returning:', { success: true, message: "Notification marked as read/unread", notification });
+    return {
+      success: true,
+      message: "Notification marked as read/unread",
+      notification,
+    };
   }
 
-  @Patch("read/all")
-  markAllRead(@Body() body: MarkAllReadDto) {
-    return this.service.markAllRead(body.userId);
+  @Post("read/all")
+  async markAllRead(@Body() body: MarkAllReadDto) {
+    const result = await this.service.markAllRead(body.userId);
+    return {
+      success: true,
+      message: "All notifications marked as read",
+      ...result,
+    };
+  }
+  @Delete(":id")
+  async delete(@Param("id") id: string) {
+    if (!id) {
+      throw new BadRequestException({
+        success: false,
+        message: "Missing notification id",
+        error: "Bad Request",
+      });
+    }
+    await this.service.delete(id);
+    return { success: true, message: "Notification deleted" };
   }
 }

@@ -9,6 +9,7 @@ interface ConnectionRequest {
 }
 
 interface Connection {
+  id: string;
   user: {
     id: string;
     name: string;
@@ -51,7 +52,7 @@ interface GetPendingRequestsResponse {
 
 export const connectionAPI = {
   sendConnectionRequest: async (senderId: string, data: SendConnectionRequestDto): Promise<ApiResponse<ConnectionRequestResponse>> => {
-    return apiHelpers.post('/connection/request', { ...data, senderId });
+    return apiHelpers.post('/connection/request', data);
   },
 
   acceptConnectionRequest: async (userId: string, data: AcceptConnectionRequestDto): Promise<ApiResponse<ConnectionRequestResponse>> => {

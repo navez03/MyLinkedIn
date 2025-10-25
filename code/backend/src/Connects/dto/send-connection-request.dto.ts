@@ -1,11 +1,11 @@
-import { IsEmail, IsOptional, IsUUID } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class SendConnectionRequestDto {
-  @IsUUID()
+  @IsString()
   senderId: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   receiverId?: string;
 
   @IsOptional()

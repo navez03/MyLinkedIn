@@ -79,11 +79,11 @@ export class UserService {
     if (!data || data.length === 0) {
       const { data: authUser, error: authError } = await this.supabaseService.getClient()
         .auth.admin.getUserById(userId);
-      
+
       if (authError || !authUser.user) {
-        throw new Error(`User profile not found for userId: ${userId}`);
+        throw new Error(`User not found in authentication system for userId: ${userId}`);
       }
-      
+
       return {
         id: authUser.user.id,
         name: authUser.user.email?.split('@')[0] || 'Unknown User',
@@ -116,7 +116,7 @@ export class UserService {
       return [];
     }
 
-    const searchTerm = `%${query.trim()}%`;
+    const searchTerm = `${query.trim()}%`;
 
     // Buscar na tabela users
     const { data, error } = await this.supabaseService.getClient()
