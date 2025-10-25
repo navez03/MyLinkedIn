@@ -96,11 +96,7 @@ const Profile: React.FC = () => {
   const skills = [''];
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loading />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
