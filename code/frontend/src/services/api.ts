@@ -13,6 +13,11 @@ interface ApiErrorResponse {
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export const apiHelpers = {
+
+  getBackendUrl() {
+    return API_BASE_URL;
+  },
+
   request: async <T>(url: string, options: RequestInit): Promise<ApiResponse<T>> => {
     try {
       const response = await fetch(url, options);
@@ -22,12 +27,10 @@ export const apiHelpers = {
         throw new Error(data.error || data.message || 'Erro na requisição');
       }
 
-      // Se a resposta já tem a estrutura { success, data }, retornar diretamente
       if (data.success !== undefined && data.data !== undefined) {
         return data;
       }
 
-      // Caso contrário, envolver na estrutura esperada
       return {
         success: true,
         data: data,
