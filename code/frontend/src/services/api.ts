@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:3000';
+export const API_BASE_URL = "http://localhost:3000";
 
 interface ApiSuccessResponse<T> {
   success: true;
@@ -13,13 +13,16 @@ interface ApiErrorResponse {
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export const apiHelpers = {
-  request: async <T>(url: string, options: RequestInit): Promise<ApiResponse<T>> => {
+  request: async <T>(
+    url: string,
+    options: RequestInit
+  ): Promise<ApiResponse<T>> => {
     try {
       const response = await fetch(url, options);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Erro na requisição');
+        throw new Error(data.error || data.message || "Erro na requisição");
       }
 
       // Se a resposta já tem a estrutura { success, data }, retornar diretamente
@@ -35,20 +38,26 @@ export const apiHelpers = {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Erro de ligação ao servidor',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro de ligação ao servidor",
       };
     }
   },
 
-  getHeaders: (includeAuth: boolean = false, customHeaders?: Record<string, string>): HeadersInit => {
+  getHeaders: (
+    includeAuth: boolean = false,
+    customHeaders?: Record<string, string>
+  ): HeadersInit => {
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
     if (includeAuth) {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers["Authorization"] = `Bearer ${token}`;
       }
     }
 
@@ -59,32 +68,50 @@ export const apiHelpers = {
     return headers;
   },
 
-  post: async <T>(endpoint: string, body: any, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
+  post: async <T>(
+    endpoint: string,
+    body: any,
+    includeAuth: boolean = false,
+    customHeaders?: Record<string, string>
+  ): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: apiHelpers.getHeaders(includeAuth, customHeaders),
       body: JSON.stringify(body),
     });
   },
 
-  get: async <T>(endpoint: string, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
+  get: async <T>(
+    endpoint: string,
+    includeAuth: boolean = false,
+    customHeaders?: Record<string, string>
+  ): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers: apiHelpers.getHeaders(includeAuth, customHeaders),
     });
   },
 
-  put: async <T>(endpoint: string, body: any, includeAuth: boolean = false, customHeaders?: Record<string, string>): Promise<ApiResponse<T>> => {
+  put: async <T>(
+    endpoint: string,
+    body: any,
+    includeAuth: boolean = false,
+    customHeaders?: Record<string, string>
+  ): Promise<ApiResponse<T>> => {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, {
-      method: 'PUT',
+      method: "PUT",
       headers: apiHelpers.getHeaders(includeAuth, customHeaders),
       body: JSON.stringify(body),
     });
   },
 
-  delete: async <T>(endpoint: string, includeAuth: boolean = false, body?: any): Promise<ApiResponse<T>> => {
+  delete: async <T>(
+    endpoint: string,
+    includeAuth: boolean = false,
+    body?: any
+  ): Promise<ApiResponse<T>> => {
     const options: RequestInit = {
-      method: 'DELETE',
+      method: "DELETE",
       headers: apiHelpers.getHeaders(includeAuth),
     };
 
@@ -95,4 +122,3 @@ export const apiHelpers = {
     return apiHelpers.request<T>(`${API_BASE_URL}${endpoint}`, options);
   },
 };
-
