@@ -44,11 +44,15 @@ const Navigation = () => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {
         setIsSearching(true);
-        const response = await authAPI.searchUsers(searchQuery, localStorage.getItem('userId') || '');
+        const userId = localStorage.getItem('userId') || '';
+        console.log('Searching with userId:', userId);
+        const response = await authAPI.searchUsers(searchQuery, userId);
+        console.log('Search response:', response);
         if (response.success) {
           setSearchResults(response.data?.users || []);
           setShowDropdown(true);
         } else {
+          console.error('Search failed:', response.error);
           setSearchResults([]);
         }
         setIsSearching(false);

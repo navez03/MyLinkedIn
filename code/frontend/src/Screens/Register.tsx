@@ -35,11 +35,16 @@ const RegistrationForm = () => {
         const response = await authAPI.login(email, password);
 
         if (response.success) {
-          if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
+          console.log('Login response:', response.data);
+          if (response.data.accessToken) {
+            localStorage.setItem('token', response.data.accessToken);
+          }
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
           }
           localStorage.setItem('userId', response.data.userId);
           localStorage.setItem('email', response.data.email);
+          console.log('Saved userId:', localStorage.getItem('userId'));
           setTimeout(() => {
             navigate('/feed');
           }, 1000);

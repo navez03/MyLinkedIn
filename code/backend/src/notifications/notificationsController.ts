@@ -9,7 +9,7 @@ import {
 import {
   NotificationsService,
   Notification as Notif,
-} from "./notifications.service";
+} from "./notificationsService";
 import { MarkAllReadDto, MarkReadDto } from "./dto/mark-read.dto";
 
 type ListResponse =

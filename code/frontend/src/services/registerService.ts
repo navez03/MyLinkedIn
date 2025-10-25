@@ -13,7 +13,8 @@ interface RegisterResponse {
 interface LoginResponse {
   userId: string;
   email: string;
-  token?: string;
+  accessToken: string;
+  refreshToken?: string;
 }
 
 export interface UserProfileDto {
@@ -24,7 +25,7 @@ export interface UserProfileDto {
 
 export interface UserProfileResponseDto {
   success: boolean;
-  data?: UserProfileDto;
+  data: UserProfileDto;
   message?: string;
 }
 
@@ -70,8 +71,8 @@ export const authAPI = {
     return apiHelpers.post<{ isVerified: boolean }>('/user/check-email-verified', { userId });
   },
 
-  getUserProfile: async (userId: string): Promise<ApiResponse<UserProfileDto>> => {
-    return apiHelpers.get<UserProfileDto>(`/user/profile?userId=${userId}`, false);
+  getUserProfile: async (userId: string): Promise<ApiResponse<UserProfileResponseDto>> => {
+    return apiHelpers.get<UserProfileResponseDto>(`/user/profile?userId=${userId}`, false);
   },
 
   getAllUsers: async (userId: string): Promise<ApiResponse<GetAllUsersResponse>> => {
