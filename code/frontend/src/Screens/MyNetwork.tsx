@@ -56,7 +56,6 @@ const Network = () => {
       const response = await connectionAPI.getPendingRequests(currentUserId);
       if (response.success) {
         const received = response.data.pendingRequests.received;
-        // Buscar nomes dos utilizadores
         const invitationsWithNames = await Promise.all(
           received.map(async (inv) => {
             try {

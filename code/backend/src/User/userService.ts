@@ -1,9 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../config/supabaseClient';
 
+
 @Injectable()
 export class UserService {
   constructor(private readonly supabaseService: SupabaseService) { }
+
+  async logout(userId: string) {
+    try {
+      return { success: true, message: 'Logout realizado com sucesso.' };
+    } catch (error) {
+      return { success: false, message: 'Erro ao realizar logout.' };
+    }
+  }
 
   async register(email: string, password: string) {
     const { data: usersData, error: usersError } = await this.supabaseService.getClient().auth.admin.listUsers();

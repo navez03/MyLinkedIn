@@ -1,4 +1,4 @@
-import { Home, Users, Briefcase, MessageSquare, Bell, Search, User } from "lucide-react";
+import { Home, Users, Briefcase, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
@@ -18,10 +18,19 @@ const Navigation = () => {
     { icon: MessageSquare, label: "Messages", path: "/messages" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
     { icon: User, label: "Profile", path: "/profile" },
+    { icon: LogOut, label: "LogOut", path: "/" },
   ];
 
-  const handleNavClick = (path?: string) => {
-    if (path) {
+  const handleNavClick = async (path?: string) => {
+    if (path === "/") {
+      const userId = localStorage.getItem("userId") || "";
+      try {
+        await authAPI.logout(userId);
+      } catch (e) {
+      }
+      localStorage.clear();
+      navigate("/");
+    } else if (path) {
       navigate(path);
     }
   };

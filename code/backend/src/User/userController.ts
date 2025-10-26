@@ -33,6 +33,16 @@ export class UserController {
     }
   }
 
+  @Post('logout')
+  async logout(@Body('userId') userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await this.userService.logout(userId);
+      return result;
+    } catch (error) {
+      this.handleException(error, 'Erro ao fazer logout');
+    }
+  }
+
   private async handleCreateProfile(userId: string, name: string, email: string): Promise<void> {
     const result = await this.userService.createProfile(userId, name, email);
     if (result.error) {
