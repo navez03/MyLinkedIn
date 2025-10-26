@@ -74,17 +74,13 @@ export const authAPI = {
   getUserProfile: async (userId: string): Promise<ApiResponse<UserProfileDto>> => {
     const response = await apiHelpers.get<any>(`/user/profile?userId=${userId}`, false);
 
-    // O backend retorna { success: true, data: { id, name, email } }
-    // O apiHelpers envolve isso em ApiResponse
     if (response.success && response.data) {
-      // Se response.data tem a propriedade 'data', é a estrutura do backend
       if (response.data.data) {
         return {
           success: true,
           data: response.data.data
         };
       }
-      // Se response.data já é o UserProfileDto
       if (response.data.id && response.data.name && response.data.email) {
         return {
           success: true,
@@ -105,5 +101,9 @@ export const authAPI = {
 
   searchUsers: async (query: string, userId: string): Promise<ApiResponse<SearchUsersResponse>> => {
     return apiHelpers.get<SearchUsersResponse>(`/user/search?query=${encodeURIComponent(query)}&userId=${userId}`, true);
+  },
+
+  logout: async (userId: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+    return apiHelpers.post<{ success: boolean; message: string }>('/user/logout', { userId });
   }
 };

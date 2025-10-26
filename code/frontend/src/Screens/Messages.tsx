@@ -4,6 +4,7 @@ import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
 import { socketService } from '../services/socketService';
+import { authAPI } from '../services/registerService';
 import { useLocation } from 'react-router-dom';
 import Loading from '../components/loading';
 
@@ -39,12 +40,12 @@ const Messages: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const userIdFromQuery = params.get('userId');
-    if (userIdFromQuery) {
+    if (userIdFromQuery && !loading) {
       setSelectedChat(userIdFromQuery);
+      loadUserForNewConversation(userIdFromQuery);
     }
-  }, [location.search]);
+  }, [location.search, loading]);
 
-  // Conectar ao WebSocket quando o componente é montado
   useEffect(() => {
     if (currentUserId) {
       socketService.connect(currentUserId);
@@ -144,6 +145,26 @@ const Messages: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+    }
+  };
+
+  const loadUserForNewConversation = async (userId: string) => {
+    try {
+      // Buscar informações do usuário
+      const userResponse = await authAPI.getUserProfile(userId);
+      if (userResponse.success && userResponse.data) {
+        // Upsert: garante que não vamos adicionar duplicados mesmo com condições de corrida
+        setConversations(prev => {
+          const exists = prev.some(conv => conv.id === userResponse.data!.id);
+          if (exists) return prev;
+          return [userResponse.data!, ...prev];
+        });
+
+        // carregar mensagens desta nova conversa (caso ainda não existam)
+        await loadMessages(userId);
+      }
+    } catch (error) {
+      console.error('Error loading user for new conversation:', error);
     }
   };
 

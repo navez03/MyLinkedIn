@@ -1,7 +1,5 @@
-// NotificationService.ts
 import { apiHelpers, ApiResponse } from "./api";
 
-// --- Tipos/DTOs ---
 
 export type NotificationKind = "message" | "connection_request";
 
