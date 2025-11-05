@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsOptional } from 'class-validator';
 
 export class CreatePostDto {
   @IsUUID()
@@ -8,6 +8,10 @@ export class CreatePostDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }
 
 export class PostResponseDto {
@@ -17,6 +21,8 @@ export class PostResponseDto {
   createdAt: string;
   authorName?: string;
   authorEmail?: string;
+  authorAvatarUrl?: string;
+  imageUrl?: string;
 }
 
 export class GetPostsResponseDto {

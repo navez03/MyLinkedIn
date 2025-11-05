@@ -8,6 +8,7 @@ import Landing from './Screens/Landing';
 import Notifications from './Screens/Notifications';
 import Messages from './Screens/Messages';
 import Profile from './Screens/Profile';
+import UpdateProfile from './Screens/UpdateProfile';
 import Network from './Screens/MyNetwork';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
+        <Route path="/update-profile" element={<UpdateProfile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

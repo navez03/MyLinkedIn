@@ -3,9 +3,10 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Card } from "./card";
 import { Button } from "./button";
 import { Image, Video, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "../utils";
 import { postsAPI } from "../services/postsService";
+import { userAPI } from "../services/registerService";
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
@@ -89,11 +90,57 @@ function getUserInitials(name: string) {
 const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const userName = localStorage.getItem('userName') || '';
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const initials = getUserInitials(userName);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Fetch user data when modal opens
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (open) {
+        try {
+          const profileResponse = await userAPI.getUserProfile();
+          if (profileResponse.success && profileResponse.data) {
+            setUserName(profileResponse.data.name || '');
+            setUserAvatar(profileResponse.data.avatar_url || null);
+          }
+        } catch (e) {
+          console.error('Error fetching user data:', e);
+        }
+      }
+    };
+    fetchUserData();
+  }, [open]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please select an image file');
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handlePost = async () => {
-    if (content.trim()) {
+    if (content.trim() || selectedImage) {
       try {
         setIsLoading(true);
         const userId = localStorage.getItem('userId');
@@ -103,13 +150,30 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
           return;
         }
 
+        let imageUrl: string | undefined = undefined;
+
+        // Upload image if selected
+        if (selectedImage) {
+          const uploadResponse = await postsAPI.uploadImage(selectedImage);
+          if (uploadResponse.success && uploadResponse.data) {
+            imageUrl = uploadResponse.data.imageUrl;
+          } else {
+            const errorMsg = !uploadResponse.success ? (uploadResponse as any).error : 'Unknown error';
+            alert('Error uploading image: ' + errorMsg);
+            return;
+          }
+        }
+
         const response = await postsAPI.createPost({
           userId,
           content: content.trim(),
+          imageUrl,
         });
 
         if (response.success) {
           setContent("");
+          setSelectedImage(null);
+          setImagePreview(null);
           onOpenChange(false);
           window.location.reload();
         } else {
@@ -128,11 +192,24 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
       <DialogContent className="sm:max-w-[600px]">
         <div className="space-y-4">
           <div className="flex gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-12 h-12 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                  }
+                }}
+              />
+            ) : null}
+            <div className={`w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold ${userAvatar ? 'hidden' : ''}`}>
               {initials}
             </div>
             <div>
-              <h3 className="font-semibold mt-3">My Profile</h3>
+              <h3 className="font-semibold mt-3">{userName || "My Profile"}</h3>
             </div>
           </div>
 
@@ -143,16 +220,44 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
             className="min-h-[200px] resize-none px-6 py-4"
           />
 
+          {imagePreview && (
+            <div className="relative">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full max-h-96 object-cover rounded-lg"
+              />
+              <button
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="flex gap-2">
-              <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                disabled={isLoading}
+              >
                 <Image className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
+              <button className="p-2 hover:bg-secondary rounded-lg transition-colors" disabled>
                 <Video className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-            <Button onClick={handlePost} disabled={!content.trim() || isLoading}>
+            <Button onClick={handlePost} disabled={(!content.trim() && !selectedImage) || isLoading}>
               {isLoading ? 'Publishing...' : 'Publish'}
             </Button>
           </div>
@@ -164,14 +269,43 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
 const CreatePostCard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const userName = localStorage.getItem('userName') || '';
+  const [userName, setUserName] = useState<string>('');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const initials = getUserInitials(userName);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const profileResponse = await userAPI.getUserProfile();
+        if (profileResponse.success && profileResponse.data) {
+          setUserName(profileResponse.data.name || '');
+          setUserAvatar(profileResponse.data.avatar_url || null);
+        }
+      } catch (e) {
+        console.error('Error fetching user data:', e);
+      }
+    };
+    fetchUserData();
+  }, []);
 
   return (
     <>
       <Card className="p-4">
         <div className="flex gap-3 mb-3">
-          <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt={userName}
+              className="w-12 h-12 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.classList.remove('hidden');
+                }
+              }}
+            />
+          ) : null}
+          <div className={`w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold ${userAvatar ? 'hidden' : ''}`}>
             {initials}
           </div>
           <button

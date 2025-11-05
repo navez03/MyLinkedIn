@@ -5,7 +5,6 @@ import { Button } from "../components/button";
 import { Users, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
 import { connectionAPI } from "../services/connectionService";
-import { authAPI, UserProfileDto } from "../services/registerService";
 
 interface Connection {
   user: {
@@ -56,21 +55,9 @@ const Network = () => {
       const response = await connectionAPI.getPendingRequests(currentUserId);
       if (response.success) {
         const received = response.data.pendingRequests.received;
-        const invitationsWithNames = await Promise.all(
-          received.map(async (inv) => {
-            try {
-              const userResp = await authAPI.getUserProfile(inv.sender_id);
-              console.log('User profile response for sender:', inv.sender_id, userResp);
-              if (userResp.success && userResp.data) {
-                return { ...inv, senderName: userResp.data.name };
-              }
-              return { ...inv, senderName: inv.sender_id };
-            } catch (error) {
-              console.error('Error fetching user profile for sender:', inv.sender_id, error);
-              return { ...inv, senderName: inv.sender_id };
-            }
-          })
-        );
+        const invitationsWithNames = received.map((inv) => {
+          return { ...inv, senderName: inv.sender_id };
+        });
         console.log('Invitations with names:', invitationsWithNames);
         setInvitations(invitationsWithNames);
       }

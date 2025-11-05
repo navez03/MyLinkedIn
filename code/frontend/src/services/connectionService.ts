@@ -52,26 +52,26 @@ interface GetPendingRequestsResponse {
 
 export const connectionAPI = {
   sendConnectionRequest: async (senderId: string, data: SendConnectionRequestDto): Promise<ApiResponse<ConnectionRequestResponse>> => {
-    return apiHelpers.post('/connection/request', data);
+    return apiHelpers.post('/connection/request', data, true);
   },
 
   acceptConnectionRequest: async (userId: string, data: AcceptConnectionRequestDto): Promise<ApiResponse<ConnectionRequestResponse>> => {
-    return apiHelpers.post('/connection/accept', { ...data, userId });
+    return apiHelpers.post('/connection/accept', { ...data, userId }, true);
   },
 
   rejectConnectionRequest: async (userId: string, requestId: string): Promise<ApiResponse<ConnectionRequestResponse>> => {
-    return apiHelpers.post(`/connection/reject/${requestId}`, { userId });
+    return apiHelpers.post(`/connection/reject/${requestId}`, { userId }, true);
   },
 
   getConnections: async (userId: string): Promise<ApiResponse<GetConnectionsResponse>> => {
-    return apiHelpers.get(`/connection/connections?userId=${userId}`);
+    return apiHelpers.get(`/connection/connections?userId=${userId}`, true);
   },
 
   getPendingRequests: async (userId: string): Promise<ApiResponse<GetPendingRequestsResponse>> => {
-    return apiHelpers.get(`/connection/pending-requests?userId=${userId}`);
+    return apiHelpers.get(`/connection/pending-requests?userId=${userId}`, true);
   },
 
   removeConnection: async (userId: string, connectionId: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {
-    return apiHelpers.delete(`/connection/connections/${connectionId}`, false, { userId });
+    return apiHelpers.delete(`/connection/connections/${connectionId}`, true, { userId });
   },
 };

@@ -4,9 +4,9 @@ import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
 import { socketService } from '../services/socketService';
-import { authAPI } from '../services/registerService';
 import { useLocation } from 'react-router-dom';
 import Loading from '../components/loading';
+import { userAPI } from '../services/registerService';
 
 
 interface User {
@@ -41,37 +41,49 @@ const Messages: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const userIdFromQuery = params.get('userId');
     if (userIdFromQuery && !loading) {
-      setSelectedChat(userIdFromQuery);
-      loadUserForNewConversation(userIdFromQuery);
+      loadUserForNewConversation(userIdFromQuery).then(() => {
+        setSelectedChat(userIdFromQuery);
+      });
     }
   }, [location.search, loading]);
 
   useEffect(() => {
-    if (currentUserId) {
-      socketService.connect(currentUserId);
+    if (!currentUserId) return;
 
-      // Escutar novas mensagens recebidas
-      socketService.onNewMessage((data) => {
-        console.log('New message received:', data);
-        setMessages((prev) => [...prev, data.message]);
-      });
+    // Conectar ao WebSocket
+    socketService.connect(currentUserId);
 
-      // Escutar confirmação de mensagem enviada
-      socketService.onMessageSent((data) => {
-        console.log('Message sent confirmed:', data);
-        if (data.success) {
-          setMessages((prev) => [...prev, data.message]);
-        }
-      });
-    }
+    // Escutar novas mensagens recebidas
+    socketService.onNewMessage((data) => {
+      console.log('New message received:', data);
+      if (data.message) {
+        setMessages((prev) => {
+          // Evitar duplicatas
+          const exists = prev.some(m => m.id === data.message.id);
+          if (exists) return prev;
+          return [...prev, data.message];
+        });
+      }
+    });
 
-    // Cleanup ao desmontar
+    // Escutar confirmação de mensagem enviada
+    socketService.onMessageSent((data) => {
+      console.log('Message sent confirmed:', data);
+      if (data.success && data.message) {
+        setMessages((prev) => {
+          // Evitar duplicatas
+          const exists = prev.some(m => m.id === data.message.id);
+          if (exists) return prev;
+          return [...prev, data.message];
+        });
+      }
+    });
+
+    // Cleanup ao desmontar - apenas remover listeners
     return () => {
       socketService.removeListener('new-message');
       socketService.removeListener('message-sent');
-      socketService.removeListener('user-typing');
-      socketService.removeListener('user-stop-typing');
-      socketService.disconnect();
+      // Não chamar disconnect aqui pois pode ser chamado duas vezes em modo strict
     };
   }, [currentUserId]);
 
@@ -79,43 +91,50 @@ const Messages: React.FC = () => {
     const initializeMessages = async () => {
       setLoading(true);
       try {
-        // 1. Carregar conversas
+        // 1. Carregar a lista de conversas
         const conversationsResponse = await messagesAPI.getUserConversations(currentUserId);
-        if (conversationsResponse.success && conversationsResponse.data.users.length > 0) {
-          setConversations(conversationsResponse.data.users);
+        if (conversationsResponse.success && conversationsResponse.data) {
+          const conversationsList = conversationsResponse.data.users || [];
+          setConversations(conversationsList);
 
           // 2. Carregar todas as mensagens de todas as conversas
-          await Promise.all(
-            conversationsResponse.data.users.map(async (conv) => {
-              const messagesResponse = await messagesAPI.getMessagesBetweenUsers(currentUserId, conv.id);
-              if (messagesResponse.success) {
-                setMessages((prev) => {
-                  // Evita duplicatas
-                  const newMsgs = messagesResponse.data.messages.filter(m => !prev.some(pm => pm.id === m.id));
-                  return [...prev, ...newMsgs];
-                });
+          if (conversationsList.length > 0) {
+            const allMessagesPromises = conversationsList.map(async (conv) => {
+              try {
+                const messagesResponse = await messagesAPI.getMessagesBetweenUsers(currentUserId, conv.id);
+                if (messagesResponse.success && messagesResponse.data) {
+                  return messagesResponse.data.messages || [];
+                }
+                return [];
+              } catch (error) {
+                console.error(`Error loading messages for conversation ${conv.id}:`, error);
+                return [];
               }
-            })
-          );
-        } else if (conversationsResponse.success) {
+            });
+
+            const allMessagesArrays = await Promise.all(allMessagesPromises);
+            const allMessages = allMessagesArrays.flat();
+            setMessages(allMessages);
+          }
+        } else {
           setConversations([]);
         }
       } catch (error) {
         console.error('Error initializing messages:', error);
+        setConversations([]);
       } finally {
-        // Só desliga o loading após tudo estar carregado
         setLoading(false);
       }
     };
 
     initializeMessages();
-  }, []);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (selectedChat && !loading) {
       loadMessages(selectedChat);
     }
-  }, [selectedChat]);
+  }, [selectedChat, loading]);
 
   const loadConversations = async () => {
     try {
@@ -131,7 +150,7 @@ const Messages: React.FC = () => {
   const loadMessages = async (otherUserId: string) => {
     try {
       const response = await messagesAPI.getMessagesBetweenUsers(currentUserId, otherUserId);
-      if (response.success) {
+      if (response.success && response.data) {
         setMessages((prev) => {
           // Remove mensagens antigas desta conversa
           const filtered = prev.filter(
@@ -139,30 +158,66 @@ const Messages: React.FC = () => {
               !(m.sender_id === otherUserId && m.receiver_id === currentUserId) &&
               !(m.sender_id === currentUserId && m.receiver_id === otherUserId)
           );
-          // Adiciona as mensagens atualizadas
-          return [...filtered, ...response.data.messages];
+          // Adiciona as mensagens atualizadas (pode ser array vazio se não houver mensagens)
+          const newMessages = response.data.messages || [];
+          return [...filtered, ...newMessages];
         });
+      } else {
+        // Se não houver sucesso, limpar as mensagens desta conversa
+        setMessages((prev) =>
+          prev.filter(
+            (m) =>
+              !(m.sender_id === otherUserId && m.receiver_id === currentUserId) &&
+              !(m.sender_id === currentUserId && m.receiver_id === otherUserId)
+          )
+        );
       }
     } catch (error) {
       console.error('Error loading messages:', error);
+      // Limpar mensagens em caso de erro
+      setMessages((prev) =>
+        prev.filter(
+          (m) =>
+            !(m.sender_id === otherUserId && m.receiver_id === currentUserId) &&
+            !(m.sender_id === currentUserId && m.receiver_id === otherUserId)
+        )
+      );
     }
   };
 
   const loadUserForNewConversation = async (userId: string) => {
     try {
-      // Buscar informações do usuário
-      const userResponse = await authAPI.getUserProfile(userId);
-      if (userResponse.success && userResponse.data) {
-        // Upsert: garante que não vamos adicionar duplicados mesmo com condições de corrida
-        setConversations(prev => {
-          const exists = prev.some(conv => conv.id === userResponse.data!.id);
-          if (exists) return prev;
-          return [userResponse.data!, ...prev];
-        });
-
-        // carregar mensagens desta nova conversa (caso ainda não existam)
+      const existingConv = conversations.find(conv => conv.id === userId);
+      if (existingConv) {
         await loadMessages(userId);
+        return;
       }
+
+      const response = await userAPI.getAllUsers();
+      if (response.success && response.data) {
+        const targetUser = response.data.users.find(u => u.id === userId);
+
+        if (targetUser) {
+          setConversations(prev => {
+            const exists = prev.some(conv => conv.id === userId);
+            if (exists) return prev;
+            return [targetUser, ...prev];
+          });
+        } else {
+          const placeholderUser = {
+            id: userId,
+            name: 'User ' + userId.substring(0, 8),
+            email: ''
+          };
+          setConversations(prev => {
+            const exists = prev.some(conv => conv.id === userId);
+            if (exists) return prev;
+            return [placeholderUser, ...prev];
+          });
+        }
+      }
+
+      await loadMessages(userId);
     } catch (error) {
       console.error('Error loading user for new conversation:', error);
     }
@@ -210,7 +265,7 @@ const Messages: React.FC = () => {
         // Envia a mensagem via WebSocket em vez de HTTP
         socketService.sendMessage(currentUserId, selectedChat, messageText);
         setMessageText('');
-        
+
         // Parar de digitar
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);

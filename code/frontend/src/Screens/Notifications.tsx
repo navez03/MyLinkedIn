@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navigation from "../components/header";
 import { MessageSquare, Users, Check, Trash2, CheckCheck } from "lucide-react";
-import {
-  notificationAPI,
-  Notification,
-} from "../services/notificationsService";
+import { notificationAPI, Notification } from "../services/notificationsService";
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -18,26 +15,15 @@ function timeAgo(iso: string) {
   return `${day}d ago`;
 }
 
-function mapToUIItem(n: Notification) {
-  const type = n.kind === "connection_request" ? "connection" : "message";
-  const isConnection = type === "connection";
-  const user = isConnection ? "Connection" : "Message";
-  // Usa componente de ícone do lucide-react
-  const IconComponent = isConnection ? Users : MessageSquare;
-  const action = isConnection ? "new connection request" : "sent you a message";
-  const time = timeAgo(n.created_at);
-
-  return {
-    id: n.id,
-    type,
-    user,
-    IconComponent,
-    action,
-    time,
-    unread: !n.is_read,
-  };
-}
-type UIItem = ReturnType<typeof mapToUIItem>;
+type UIItem = {
+  id: string;
+  type: string;
+  user: string;
+  IconComponent: React.ComponentType<any>;
+  action: string;
+  time: string;
+  unread: boolean;
+};
 
 const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
   const [items, setItems] = useState<UIItem[]>([]);
@@ -70,7 +56,29 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
         (response.data as any)?.notifications ??
         (Array.isArray(response.data) ? response.data : []);
 
-      setItems((payload as Notification[]).map(mapToUIItem));
+      const notifications = payload as Notification[];
+
+      // Mapear notificações para items de UI
+      const uiItems = notifications.map((n) => {
+        const type = n.kind === "connection_request" ? "connection" : "message";
+        const isConnection = type === "connection";
+        const IconComponent = isConnection ? Users : MessageSquare;
+        const action = isConnection ? "sent you a connection request" : "sent you a message";
+        const time = timeAgo(n.created_at);
+        const senderName = n.sender_name || "Someone";
+
+        return {
+          id: n.id,
+          type,
+          user: senderName,
+          IconComponent,
+          action,
+          time,
+          unread: !n.is_read,
+        };
+      });
+
+      setItems(uiItems);
     } catch (error: any) {
       console.error("Error loading notifications:", error);
       setError(error?.message ?? "Error loading notifications");

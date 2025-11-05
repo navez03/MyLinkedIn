@@ -1,18 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../config/supabaseClient';
 import { MessageService } from '../Messages/messageService';
 
 @Injectable()
 export class ConnectionService {
+  private readonly logger = new Logger(ConnectionService.name);
+
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly messageService: MessageService
   ) { }
 
-  async sendConnectionRequest(senderId: string, receiverId?: string, receiverEmail?: string) {
+  async sendConnectionRequest(senderId: string, token: string, receiverId?: string, receiverEmail?: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
     let targetUserId = receiverId;
     if (receiverEmail && !receiverId) {
-      const { data: userData, error: userError } = await this.supabaseService.getClient().auth.admin.listUsers();
+      // Admin client needed for listing users by email
+      const { data: userData, error: userError } = await this.supabaseService.getAdminClient().auth.admin.listUsers();
 
       if (userError) {
         throw new Error('Error searching for user by email');
@@ -33,7 +38,8 @@ export class ConnectionService {
       throw new Error('Cannot send connection request to yourself');
     }
 
-    const { data: existingConnection } = await this.supabaseService.getClient()
+    // O RLS garante que apenas o utilizador autenticado pode criar connection requests
+    const { data: existingConnection } = await supabase
       .from('connections')
       .select('*')
       .or(`and(user1_id.eq.${senderId},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${senderId})`);
@@ -42,7 +48,7 @@ export class ConnectionService {
       throw new Error('You are already connected with this user');
     }
 
-    const { data: existingRequest } = await this.supabaseService.getClient()
+    const { data: existingRequest } = await supabase
       .from('connection_requests')
       .select('*')
       .or(`and(sender_id.eq.${senderId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${senderId})`);
@@ -51,7 +57,7 @@ export class ConnectionService {
       throw new Error('Connection request already exists between these users');
     }
 
-    const { data, error } = await this.supabaseService.getClient()
+    const { data, error } = await supabase
       .from('connection_requests')
       .insert({
         sender_id: senderId,
@@ -68,8 +74,10 @@ export class ConnectionService {
     return data;
   }
 
-  async acceptConnectionRequest(requestId: number, userId: string) {
-    const { data: request, error: requestError } = await this.supabaseService.getClient()
+  async acceptConnectionRequest(requestId: number, userId: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
+    const { data: request, error: requestError } = await supabase
       .from('connection_requests')
       .select('*')
       .eq('id', requestId)
@@ -84,7 +92,7 @@ export class ConnectionService {
     const user1_id = request.sender_id < request.receiver_id ? request.sender_id : request.receiver_id;
     const user2_id = request.sender_id < request.receiver_id ? request.receiver_id : request.sender_id;
 
-    const { data: connection, error: connectionError } = await this.supabaseService.getClient()
+    const { data: connection, error: connectionError } = await supabase
       .from('connections')
       .insert({
         user1_id,
@@ -98,7 +106,7 @@ export class ConnectionService {
     }
 
     // Remove the connection request after accepting
-    const { error: deleteError } = await this.supabaseService.getClient()
+    const { error: deleteError } = await supabase
       .from('connection_requests')
       .delete()
       .eq('id', requestId);
@@ -110,8 +118,10 @@ export class ConnectionService {
     return connection;
   }
 
-  async rejectConnectionRequest(requestId: string, userId: string) {
-    const { error } = await this.supabaseService.getClient()
+  async rejectConnectionRequest(requestId: string, userId: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
+    const { error } = await supabase
       .from('connection_requests')
       .delete()
       .eq('id', parseInt(requestId))
@@ -125,8 +135,12 @@ export class ConnectionService {
     return { success: true };
   }
 
-  async getConnections(userId: string) {
-    const { data: connections, error: connectionsError } = await this.supabaseService.getClient()
+  async getConnections(userId: string, token?: string) {
+    const supabase = token
+      ? this.supabaseService.getClientWithToken(token)
+      : this.supabaseService.getClient();
+
+    const { data: connections, error: connectionsError } = await supabase
       .from('connections')
       .select('*')
       .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
@@ -141,7 +155,7 @@ export class ConnectionService {
 
     const connectedUsers = await Promise.all(connections.map(async (conn: any) => {
       const otherUserId = conn.user1_id === userId ? conn.user2_id : conn.user1_id;
-      const { data: userData } = await this.supabaseService.getClient()
+      const { data: userData } = await supabase
         .from('users')
         .select('id, name, email')
         .eq('id', otherUserId)
@@ -157,8 +171,10 @@ export class ConnectionService {
     return connectedUsers;
   }
 
-  async getPendingRequests(userId: string) {
-    const { data: sentRequests, error: sentError } = await this.supabaseService.getClient()
+  async getPendingRequests(userId: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
+    const { data: sentRequests, error: sentError } = await supabase
       .from('connection_requests')
       .select('*')
       .eq('sender_id', userId)
@@ -168,7 +184,7 @@ export class ConnectionService {
       throw new Error(`Error fetching sent requests: ${sentError.message}`);
     }
 
-    const { data: receivedRequests, error: receivedError } = await this.supabaseService.getClient()
+    const { data: receivedRequests, error: receivedError } = await supabase
       .from('connection_requests')
       .select('*')
       .eq('receiver_id', userId)
@@ -184,8 +200,10 @@ export class ConnectionService {
     };
   }
 
-  async removeConnection(userId: string, connectionId: string) {
-    const { data: connection, error: fetchError } = await this.supabaseService.getClient()
+  async removeConnection(userId: string, connectionId: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
+    const { data: connection, error: fetchError } = await supabase
       .from('connections')
       .select('*')
       .eq('id', connectionId)
@@ -196,12 +214,11 @@ export class ConnectionService {
       throw new Error('Connection not found or you are not authorized to remove it');
     }
 
-    // Delete all messages between the two users
     const user1Id = connection.user1_id;
     const user2Id = connection.user2_id;
-    await this.messageService.deleteMessagesBetweenUsers(user1Id, user2Id);
+    await this.messageService.deleteMessagesBetweenUsers(user1Id, user2Id, token);
 
-    const { error } = await this.supabaseService.getClient()
+    const { error } = await supabase
       .from('connections')
       .delete()
       .eq('id', connectionId);

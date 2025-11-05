@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "../components/button";
 import { Input } from "../components/input";
 import { Card } from "../components/card";
-import { authAPI } from "../services/registerService";
+import { userAPI } from "../services/registerService";
 import registerImage from "../images/register.png";
 
 const SetName = () => {
@@ -23,13 +23,9 @@ const SetName = () => {
         return;
       }
 
-      const response = await authAPI.createProfile(userId, fullName, email);
+      const response = await userAPI.createProfile(userId, fullName, email);
 
       if (response.success) {
-        localStorage.setItem('userName', fullName);
-
-
-
         setTimeout(() => {
           window.location.href = '/feed';
         }, 1000);

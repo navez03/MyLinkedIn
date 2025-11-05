@@ -12,6 +12,7 @@ interface Post {
   id: string;
   author: string;
   avatar: string;
+  avatarUrl?: string;
   content: string;
   image?: string;
   time: string;
@@ -68,7 +69,9 @@ export default function Home() {
               id: post.id,
               author: post.authorName || 'Unknown User',
               avatar: initials,
+              avatarUrl: post.authorAvatarUrl,
               content: post.content,
+              image: post.imageUrl,
               time: timeAgo,
               userId: post.userId,
             };
@@ -141,9 +144,23 @@ export default function Home() {
                 {posts.map((post) => (
                   <Card key={post.id} className="p-4 space-y-3">
                     <div className="flex gap-3 mb-1">
+                      {post.avatarUrl ? (
+                        <img
+                          src={post.avatarUrl}
+                          alt={post.author}
+                          onClick={() => handleProfileClick(post.userId)}
+                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.classList.remove('hidden');
+                            }
+                          }}
+                        />
+                      ) : null}
                       <div
                         onClick={() => handleProfileClick(post.userId)}
-                        className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                        className={`w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity ${post.avatarUrl ? 'hidden' : ''}`}
                       >
                         {post.avatar}
                       </div>

@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Card } from "../components/card";
 import registerImage from "../images/register.png";
-import { authAPI } from "../services/registerService";
+import { userAPI } from "../services/registerService";
 
 const VerifyEmail = () => {
   const location = useLocation();
@@ -18,7 +18,7 @@ const VerifyEmail = () => {
       }
 
       try {
-        const response = await authAPI.checkEmailVerified(userId);
+        const response = await userAPI.checkEmailVerified(userId);
 
         if (response.success && response.data?.isVerified) {
           navigate('/set-name', { state: { userId, email: location.state?.email } });

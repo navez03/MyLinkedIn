@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class GetAllUsersDto {
   @IsString()
   @IsNotEmpty()
-  userId: string; // The current user's ID to exclude from the results
+  userId: string;
 }
 
 export interface GetAllUsersResponseDto {
@@ -13,6 +13,7 @@ export interface GetAllUsersResponseDto {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
   }>;
   error?: string;
 }

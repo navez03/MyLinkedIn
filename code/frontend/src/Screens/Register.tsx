@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/button";
 import { Input } from "../components/input";
 import { Card } from "../components/card";
-import { authAPI } from "../services/registerService";
+import { userAPI } from "../services/registerService";
 import registerImage from "../images/register.png";
 
 const RegistrationForm = () => {
@@ -32,7 +32,7 @@ const RegistrationForm = () => {
 
     try {
       if (isLogin) {
-        const response = await authAPI.login(email, password);
+        const response = await userAPI.login(email, password);
 
         if (response.success) {
           console.log('Login response:', response.data);
@@ -52,7 +52,7 @@ const RegistrationForm = () => {
           setErrorMsg("Invalid credentials. Please try again.");
         }
       } else {
-        const response = await authAPI.register(email, password);
+        const response = await userAPI.register(email, password);
 
         if (response.success) {
           if (response.data?.user?.id) {
