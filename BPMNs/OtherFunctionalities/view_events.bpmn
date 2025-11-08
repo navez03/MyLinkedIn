@@ -46,7 +46,7 @@
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_1nggc1b" sourceRef="Event_1lkt5l9" targetRef="Activity_0o7prza" />
-    <bpmn:endEvent id="Event_1vved23">
+    <bpmn:endEvent id="Event_1vved23" name="Finished Successfully">
       <bpmn:incoming>Flow_0u4nmd9</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0u4nmd9" sourceRef="Activity_0o7prza" targetRef="Event_1vved23" />
@@ -109,6 +109,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1vved23_di" bpmnElement="Event_1vved23">
         <dc:Bounds x="1302" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1289" y="275" width="62" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1nl2abv_di" bpmnElement="Activity_1nl2abv">
         <dc:Bounds x="350" y="320" width="100" height="80" />

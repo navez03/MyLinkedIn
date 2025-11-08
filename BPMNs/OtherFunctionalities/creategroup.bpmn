@@ -29,6 +29,7 @@
     </bpmn:exclusiveGateway>
     <bpmn:task id="Activity_150pf82" name="Show error message">
       <bpmn:incoming>Flow_0p1j9i8</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qc0twn</bpmn:outgoing>
     </bpmn:task>
     <bpmn:task id="Activity_0hnfejb" name="Create group record">
       <bpmn:incoming>Flow_1m6cg5n</bpmn:incoming>
@@ -50,7 +51,7 @@
       <bpmn:incoming>Flow_1odkz0m</bpmn:incoming>
       <bpmn:outgoing>Flow_0krodu3</bpmn:outgoing>
     </bpmn:task>
-    <bpmn:endEvent id="Event_1fz06bw">
+    <bpmn:endEvent id="Event_1fz06bw" name="Finish successfully">
       <bpmn:incoming>Flow_0krodu3</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:dataStoreReference id="DataStoreReference_0sr9211" name="Group chats DB" />
@@ -62,6 +63,10 @@
     <bpmn:sequenceFlow id="Flow_1cp01wa" sourceRef="Activity_0hnfejb" targetRef="Activity_17w0f32" />
     <bpmn:sequenceFlow id="Flow_1odkz0m" sourceRef="Activity_17w0f32" targetRef="Activity_18t0nv6" />
     <bpmn:sequenceFlow id="Flow_0krodu3" sourceRef="Activity_18t0nv6" targetRef="Event_1fz06bw" />
+    <bpmn:endEvent id="Event_1sekcub" name="Finish with error">
+      <bpmn:incoming>Flow_0qc0twn</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0qc0twn" sourceRef="Activity_150pf82" targetRef="Event_1sekcub" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_10sw2d9">
@@ -107,6 +112,9 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1fz06bw_di" bpmnElement="Event_1fz06bw">
         <dc:Bounds x="1272" y="312" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1260" y="355" width="60" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="DataStoreReference_0sr9211_di" bpmnElement="DataStoreReference_0sr9211">
         <dc:Bounds x="750" y="195" width="50" height="50" />
@@ -118,6 +126,12 @@
         <dc:Bounds x="405" y="425" width="50" height="50" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="406" y="482" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1sekcub_di" bpmnElement="Event_1sekcub">
+        <dc:Bounds x="412" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="391" y="255" width="79" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0ktw2jr_di" bpmnElement="Flow_0ktw2jr">
@@ -154,6 +168,10 @@
         <di:waypoint x="1180" y="330" />
         <di:waypoint x="1272" y="330" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qc0twn_di" bpmnElement="Flow_0qc0twn">
+        <di:waypoint x="550" y="230" />
+        <di:waypoint x="448" y="230" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="DataInputAssociation_1o0e5pi_di" bpmnElement="DataInputAssociation_1o0e5pi">
         <di:waypoint x="430" y="425" />
         <di:waypoint x="430" y="370" />
@@ -161,6 +179,11 @@
       <bpmndi:BPMNEdge id="DataOutputAssociation_106kj76_di" bpmnElement="DataOutputAssociation_106kj76">
         <di:waypoint x="775" y="290" />
         <di:waypoint x="775" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataInputAssociation_103k954_di" bpmnElement="DataInputAssociation_103k954">
+        <di:waypoint x="455" y="450" />
+        <di:waypoint x="950" y="450" />
+        <di:waypoint x="950" y="370" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ly2560_di" bpmnElement="Flow_0ly2560">
         <di:waypoint x="260" y="140" />
@@ -173,11 +196,6 @@
       <bpmndi:BPMNEdge id="Flow_0c5m17a_di" bpmnElement="Flow_0c5m17a">
         <di:waypoint x="1130" y="290" />
         <di:waypoint x="1130" y="140" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="DataInputAssociation_103k954_di" bpmnElement="DataInputAssociation_103k954">
-        <di:waypoint x="455" y="450" />
-        <di:waypoint x="950" y="450" />
-        <di:waypoint x="950" y="370" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
