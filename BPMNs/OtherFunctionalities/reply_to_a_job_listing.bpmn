@@ -17,12 +17,12 @@
     </task>
     <exclusiveGateway id="Gateway_1suihe1">
       <incoming>Flow_0b8m5a1</incoming>
-      <outgoing>Flow_0gpjbno</outgoing>
       <outgoing>Flow_0c98hjh</outgoing>
+      <outgoing>Flow_1xba3rt</outgoing>
     </exclusiveGateway>
     <exclusiveGateway id="Gateway_1a22jrn">
-      <incoming>Flow_0lqqd66</incoming>
-      <incoming>Flow_095050n</incoming>
+      <incoming>Flow_1ox1so7</incoming>
+      <incoming>Flow_0jc7rn3</incoming>
       <outgoing>Flow_0vbvccn</outgoing>
     </exclusiveGateway>
     <task id="Activity_094ja1s" name="Display only jobs with that filter or related with search">
@@ -33,34 +33,39 @@
       <incoming>Flow_1k2g06n</incoming>
       <outgoing>Flow_1crap8c</outgoing>
     </task>
-    <endEvent id="Event_0b7l0ef">
+    <endEvent id="Event_0b7l0ef" name="Replied job">
       <incoming>Flow_1crap8c</incoming>
     </endEvent>
     <sequenceFlow id="Flow_1ccl3ev" sourceRef="Event_0k9smv9" targetRef="Activity_1urao5e" />
     <sequenceFlow id="Flow_0b8m5a1" sourceRef="Activity_1urao5e" targetRef="Gateway_1suihe1" />
     <sequenceFlow id="Flow_0vbvccn" sourceRef="Gateway_1a22jrn" targetRef="Activity_094ja1s" />
     <sequenceFlow id="Flow_1crap8c" sourceRef="Activity_0jwtpev" targetRef="Event_0b7l0ef" />
-    <userTask id="Activity_1r2i1gs" name="Apply location filter">
-      <incoming>Flow_0gpjbno</incoming>
-      <outgoing>Flow_0lqqd66</outgoing>
-      <outgoing>Flow_0uztcht</outgoing>
-    </userTask>
-    <sequenceFlow id="Flow_0gpjbno" sourceRef="Gateway_1suihe1" targetRef="Activity_1r2i1gs" />
-    <sequenceFlow id="Flow_0lqqd66" sourceRef="Activity_1r2i1gs" targetRef="Gateway_1a22jrn" />
-    <userTask id="Activity_0oo37yu" name="Search something about the job the user want">
+    <sequenceFlow id="Flow_0c98hjh" sourceRef="Gateway_1suihe1" targetRef="Activity_0mfprvg" />
+    <sequenceFlow id="Flow_0whwljy" sourceRef="Activity_094ja1s" targetRef="Gateway_0wtztef" />
+    <sequenceFlow id="Flow_1k2g06n" sourceRef="Event_120mg16" targetRef="Activity_0jwtpev" />
+    <sequenceFlow id="Flow_1xba3rt" sourceRef="Gateway_1suihe1" targetRef="Activity_0t4kv2q" />
+    <task id="Activity_0t4kv2q" name="Apply location filter">
+      <incoming>Flow_1xba3rt</incoming>
+      <outgoing>Flow_0robpn9</outgoing>
+      <outgoing>Flow_1ox1so7</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0robpn9" sourceRef="Activity_0t4kv2q" targetRef="Gateway_0wtztef" />
+    <sequenceFlow id="Flow_1ox1so7" sourceRef="Activity_0t4kv2q" targetRef="Gateway_1a22jrn" />
+    <sequenceFlow id="Flow_0jc7rn3" sourceRef="Activity_0mfprvg" targetRef="Gateway_1a22jrn" />
+    <task id="Activity_0mfprvg" name="Search something about the job the user want">
       <incoming>Flow_0c98hjh</incoming>
-      <outgoing>Flow_095050n</outgoing>
-    </userTask>
-    <sequenceFlow id="Flow_0c98hjh" sourceRef="Gateway_1suihe1" targetRef="Activity_0oo37yu" />
-    <sequenceFlow id="Flow_095050n" sourceRef="Activity_0oo37yu" targetRef="Gateway_1a22jrn" />
-    <intermediateThrowEvent id="Event_120mg16" name="click on a job">
+      <outgoing>Flow_0jc7rn3</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_0wtztef">
+      <incoming>Flow_0robpn9</incoming>
       <incoming>Flow_0whwljy</incoming>
-      <incoming>Flow_0uztcht</incoming>
+      <outgoing>Flow_1i9h0t3</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1i9h0t3" sourceRef="Gateway_0wtztef" targetRef="Event_120mg16" />
+    <intermediateThrowEvent id="Event_120mg16" name="click on a job">
+      <incoming>Flow_1i9h0t3</incoming>
       <outgoing>Flow_1k2g06n</outgoing>
     </intermediateThrowEvent>
-    <sequenceFlow id="Flow_0whwljy" sourceRef="Activity_094ja1s" targetRef="Event_120mg16" />
-    <sequenceFlow id="Flow_0uztcht" sourceRef="Activity_1r2i1gs" targetRef="Event_120mg16" />
-    <sequenceFlow id="Flow_1k2g06n" sourceRef="Event_120mg16" targetRef="Activity_0jwtpev" />
   </process>
   <bpmndi:BPMNDiagram id="BpmnDiagram_1">
     <bpmndi:BPMNPlane id="BpmnPlane_1" bpmnElement="Collaboration_0uyu910">
@@ -98,19 +103,25 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0b7l0ef_di" bpmnElement="Event_0b7l0ef">
         <omgdc:Bounds x="1302" y="402" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds x="1292" y="445" width="56" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1r2i1gs_di" bpmnElement="Activity_1r2i1gs">
+      <bpmndi:BPMNShape id="Activity_0t4kv2q_di" bpmnElement="Activity_0t4kv2q">
         <omgdc:Bounds x="650" y="540" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0oo37yu_di" bpmnElement="Activity_0oo37yu">
-        <omgdc:Bounds x="650" y="680" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_0mfprvg_di" bpmnElement="Activity_0mfprvg">
+        <omgdc:Bounds x="650" y="670" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1b24o6h" bpmnElement="Gateway_0wtztef" isMarkerVisible="true">
+        <omgdc:Bounds x="1015" y="455" width="50" height="50" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_120mg16_di" bpmnElement="Event_120mg16">
-        <omgdc:Bounds x="1022" y="402" width="36" height="36" />
+        <omgdc:Bounds x="1062" y="402" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds x="1008" y="382" width="64" height="14" />
+          <omgdc:Bounds x="1048" y="382" width="64" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1ccl3ev_di" bpmnElement="Flow_1ccl3ev">
@@ -129,37 +140,42 @@
         <omgdi:waypoint x="1260" y="420" />
         <omgdi:waypoint x="1302" y="420" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0gpjbno_di" bpmnElement="Flow_0gpjbno">
+      <bpmndi:BPMNEdge id="Flow_0c98hjh_di" bpmnElement="Flow_0c98hjh">
+        <omgdi:waypoint x="580" y="605" />
+        <omgdi:waypoint x="580" y="710" />
+        <omgdi:waypoint x="650" y="710" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0whwljy_di" bpmnElement="Flow_0whwljy">
+        <omgdi:waypoint x="1040" y="620" />
+        <omgdi:waypoint x="1040" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1k2g06n_di" bpmnElement="Flow_1k2g06n">
+        <omgdi:waypoint x="1098" y="420" />
+        <omgdi:waypoint x="1160" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1xba3rt_di" bpmnElement="Flow_1xba3rt">
         <omgdi:waypoint x="605" y="580" />
         <omgdi:waypoint x="650" y="580" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0lqqd66_di" bpmnElement="Flow_0lqqd66">
+      <bpmndi:BPMNEdge id="Flow_0robpn9_di" bpmnElement="Flow_0robpn9">
+        <omgdi:waypoint x="700" y="540" />
+        <omgdi:waypoint x="700" y="480" />
+        <omgdi:waypoint x="1010" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ox1so7_di" bpmnElement="Flow_1ox1so7">
         <omgdi:waypoint x="750" y="580" />
         <omgdi:waypoint x="870" y="580" />
         <omgdi:waypoint x="870" y="635" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0c98hjh_di" bpmnElement="Flow_0c98hjh">
-        <omgdi:waypoint x="580" y="605" />
-        <omgdi:waypoint x="580" y="720" />
-        <omgdi:waypoint x="650" y="720" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_095050n_di" bpmnElement="Flow_095050n">
-        <omgdi:waypoint x="750" y="720" />
-        <omgdi:waypoint x="870" y="720" />
+      <bpmndi:BPMNEdge id="Flow_0jc7rn3_di" bpmnElement="Flow_0jc7rn3">
+        <omgdi:waypoint x="750" y="710" />
+        <omgdi:waypoint x="870" y="710" />
         <omgdi:waypoint x="870" y="685" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0whwljy_di" bpmnElement="Flow_0whwljy">
-        <omgdi:waypoint x="1040" y="620" />
-        <omgdi:waypoint x="1040" y="438" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0uztcht_di" bpmnElement="Flow_0uztcht">
-        <omgdi:waypoint x="700" y="540" />
-        <omgdi:waypoint x="700" y="420" />
-        <omgdi:waypoint x="1022" y="420" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1k2g06n_di" bpmnElement="Flow_1k2g06n">
-        <omgdi:waypoint x="1058" y="420" />
-        <omgdi:waypoint x="1160" y="420" />
+      <bpmndi:BPMNEdge id="Flow_1i9h0t3_di" bpmnElement="Flow_1i9h0t3">
+        <omgdi:waypoint x="1040" y="455" />
+        <omgdi:waypoint x="1040" y="420" />
+        <omgdi:waypoint x="1062" y="420" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1ohy9n2_di" bpmnElement="Flow_1ohy9n2">
         <omgdi:waypoint x="270" y="250" />
