@@ -4,7 +4,7 @@ import Navigation from '../components/header';
 import { Edit2, Mail, UserPlus, Check, UserMinus } from 'lucide-react';
 import { connectionAPI } from '../services/connectionService';
 import { useNavigate, useParams } from 'react-router-dom';
-import { authAPI } from '../services/registerService';
+import { userAPI } from '../services/registerService';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ const Profile: React.FC = () => {
   const [profileData, setProfileData] = useState({
     name: 'Loading...',
     email: '',
+    avatar_url: null as string | null,
   });
 
   const getInitials = (name: string): string => {
@@ -47,26 +48,31 @@ const Profile: React.FC = () => {
           return;
         }
 
-        const userProfileResponse = await authAPI.getUserProfile(userIdToFetch);
+        // Obter o perfil do utilizador (próprio ou outro)
+        let userProfileResponse;
+
+        if (isOwnProfile) {
+          // Se for o próprio perfil, usar a API autenticada
+          userProfileResponse = await userAPI.getUserProfile();
+        } else {
+          // Se for perfil de outro utilizador, buscar por ID
+          userProfileResponse = await userAPI.getUserProfileById(userIdToFetch);
+        }
 
         if (userProfileResponse.success && userProfileResponse.data) {
-          // Response.data is now UserProfileDto: { id, name, email }
+          // Response.data is now UserProfileDto: { id, name, email, avatar_url }
           const userData = userProfileResponse.data;
 
           setProfileData({
             name: userData.name || 'Unknown User',
             email: userData.email || '',
+            avatar_url: userData.avatar_url || null,
           });
-
-          // Update localStorage if viewing own profile
-          if (isOwnProfile) {
-            localStorage.setItem('userName', userData.name || '');
-            localStorage.setItem('email', userData.email || '');
-          }
         } else {
           setProfileData({
             name: 'Unknown User',
             email: '',
+            avatar_url: null,
           });
         }
 
@@ -180,7 +186,21 @@ const Profile: React.FC = () => {
               <div className="px-6 pb-6">
                 {/* Avatar */}
                 <div className="relative -mt-16 mb-4">
-                  <div className="w-32 h-32 rounded-full bg-primary border-4 border-card flex items-center justify-center">
+                  {profileData.avatar_url ? (
+                    <img
+                      src={profileData.avatar_url}
+                      alt={profileData.name}
+                      className="w-32 h-32 rounded-full border-4 border-card object-cover"
+                      onError={(e) => {
+                        // Fallback para iniciais se a imagem falhar
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-32 h-32 rounded-full bg-primary border-4 border-card flex items-center justify-center ${profileData.avatar_url ? 'hidden' : ''}`}>
                     <span className="text-3xl text-primary-foreground font-bold">
                       {initials}
                     </span>
@@ -192,7 +212,10 @@ const Profile: React.FC = () => {
                   <div className="flex items-start justify-between mb-2">
                     <h1 className="text-2xl font-bold text-foreground">{profileData.name}</h1>
                     {isOwnProfile ? (
-                      <button className="p-2 hover:bg-secondary rounded-full transition-colors">
+                      <button
+                        onClick={() => navigate('/update-profile')}
+                        className="p-2 hover:bg-secondary rounded-full transition-colors"
+                      >
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
                       </button>
                     ) : (

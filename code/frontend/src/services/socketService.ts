@@ -15,12 +15,29 @@ class SocketService {
     }
 
     this.userId = userId;
+    const token = localStorage.getItem('token');
+
     this.socket = io(this.BACKEND_URL, {
       transports: ['websocket', 'polling'],
+      auth: {
+        token: token || '',
+      },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     });
 
     this.socket.on('connect', () => {
+      console.log('Socket connected successfully');
       this.socket?.emit('user-online', { userId });
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error.message);
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
     });
   }
 

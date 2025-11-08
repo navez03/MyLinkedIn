@@ -1,19 +1,25 @@
 
-import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException, Get, Param, Delete, Req } from '@nestjs/common';
+import { Controller, Post, Body, ValidationPipe, HttpStatus, HttpException, Get, Param, Delete, Req, UseGuards, Logger } from '@nestjs/common';
 import { SendConnectionRequestDto } from '../Connects/dto/send-connection-request.dto';
 import { AcceptConnectionRequestDto } from '../Connects/dto/accept-connection-request.dto';
 import { ConnectionRequestResponseDto } from '../Connects/dto/connection-request-response.dto';
 import { GetConnectionsResponseDto, GetPendingRequestsResponseDto } from '../Connects/dto/get-connections-response.dto';
 import { ConnectionService } from './connectService';
+import { AuthGuard } from '../User/userGuard';
+import { GetToken } from '../config/decorators';
 
 @Controller('connection')
 export class ConnectionController {
+  private readonly logger = new Logger(ConnectionController.name);
+
   constructor(private readonly connectionService: ConnectionService) { }
 
 
   @Post('request')
+  @UseGuards(AuthGuard)
   async sendConnectionRequest(
     @Body(ValidationPipe) sendConnectionRequestDto: SendConnectionRequestDto,
+    @GetToken() token: string
   ): Promise<ConnectionRequestResponseDto> {
     try {
       const senderId = sendConnectionRequestDto.senderId;
@@ -31,6 +37,7 @@ export class ConnectionController {
 
       const request = await this.connectionService.sendConnectionRequest(
         senderId,
+        token,
         sendConnectionRequestDto.receiverId,
         sendConnectionRequestDto.receiverEmail
       );
@@ -41,13 +48,16 @@ export class ConnectionController {
         request,
       };
     } catch (error) {
+      this.logger.error('Send connection request error', error.message);
       this.handleException(error, 'Error sending connection request');
     }
   }
 
   @Post('accept')
+  @UseGuards(AuthGuard)
   async acceptConnectionRequest(
     @Body(ValidationPipe) acceptConnectionRequestDto: AcceptConnectionRequestDto,
+    @GetToken() token: string
   ): Promise<ConnectionRequestResponseDto> {
     try {
       const userId = acceptConnectionRequestDto.userId;
@@ -65,7 +75,8 @@ export class ConnectionController {
 
       await this.connectionService.acceptConnectionRequest(
         acceptConnectionRequestDto.requestId,
-        userId
+        userId,
+        token
       );
 
       return {
@@ -78,9 +89,11 @@ export class ConnectionController {
   }
 
   @Post('reject/:requestId')
+  @UseGuards(AuthGuard)
   async rejectConnectionRequest(
     @Param('requestId') requestId: string,
     @Body(ValidationPipe) body: { userId: string },
+    @GetToken() token: string
   ): Promise<ConnectionRequestResponseDto> {
     try {
       const userId = body.userId;
@@ -96,7 +109,7 @@ export class ConnectionController {
         );
       }
 
-      await this.connectionService.rejectConnectionRequest(requestId, userId);
+      await this.connectionService.rejectConnectionRequest(requestId, userId, token);
 
       return {
         success: true,
@@ -108,7 +121,8 @@ export class ConnectionController {
   }
 
   @Get('connections')
-  async getConnections(@Req() req: any): Promise<GetConnectionsResponseDto> {
+  @UseGuards(AuthGuard)
+  async getConnections(@Req() req: any, @GetToken() token: string): Promise<GetConnectionsResponseDto> {
     try {
       const userId = req.query.userId;
 
@@ -123,7 +137,7 @@ export class ConnectionController {
         );
       }
 
-      const connections = await this.connectionService.getConnections(userId);
+      const connections = await this.connectionService.getConnections(userId, token);
 
       return {
         success: true,
@@ -136,7 +150,8 @@ export class ConnectionController {
   }
 
   @Get('pending-requests')
-  async getPendingRequests(@Req() req: any): Promise<GetPendingRequestsResponseDto> {
+  @UseGuards(AuthGuard)
+  async getPendingRequests(@Req() req: any, @GetToken() token: string): Promise<GetPendingRequestsResponseDto> {
     try {
       const userId = req.query.userId;
 
@@ -151,7 +166,7 @@ export class ConnectionController {
         );
       }
 
-      const pendingRequests = await this.connectionService.getPendingRequests(userId);
+      const pendingRequests = await this.connectionService.getPendingRequests(userId, token);
 
       return {
         success: true,
@@ -164,9 +179,11 @@ export class ConnectionController {
   }
 
   @Delete('connections/:connectionId')
+  @UseGuards(AuthGuard)
   async removeConnection(
     @Param('connectionId') connectionId: string,
     @Body(ValidationPipe) body: { userId: string },
+    @GetToken() token: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const userId = body.userId;
@@ -182,7 +199,7 @@ export class ConnectionController {
         );
       }
 
-      await this.connectionService.removeConnection(userId, connectionId);
+      await this.connectionService.removeConnection(userId, connectionId, token);
 
       return {
         success: true,

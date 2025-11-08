@@ -21,7 +21,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   private userSockets = new Map<string, string>();
 
-  constructor(private readonly messageService: MessageService) {}
+  constructor(private readonly messageService: MessageService) { }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -59,7 +59,17 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const message = await this.messageService.sendMessage(data);
+      // Extrai o token do handshake do socket
+      const token = client.handshake?.auth?.token || client.handshake?.headers?.authorization || '';
+      if (!token) {
+        client.emit('message-error', {
+          success: false,
+          error: 'Token de autenticação não fornecido',
+        });
+        return { success: false, error: 'Token de autenticação não fornecido' };
+      }
+
+      const message = await this.messageService.sendMessage(data, token);
 
       client.emit('message-sent', {
         success: true,

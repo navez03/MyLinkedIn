@@ -5,10 +5,11 @@ import { SupabaseService } from '../config/supabaseClient';
 export class MessageService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
-  async sendMessage(data: { senderId: string; receiverId: string; content: string }) {
-    const supabase = this.supabaseService.getClient();
+  async sendMessage(data: { senderId: string; receiverId: string; content: string }, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
     const { senderId, receiverId, content } = data;
 
+    // O RLS garante que apenas utilizadores autenticados e conectados podem enviar mensagens
     const { data: connection, error: connectionError } = await supabase
       .from('connections')
       .select('*')
@@ -36,18 +37,27 @@ export class MessageService {
     return message;
   }
 
-  async getMessagesBetweenUsers(user1Id: string, user2Id: string) {
-    const supabase = this.supabaseService.getClient();
+  async getMessagesBetweenUsers(user1Id: string, user2Id: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
+    // Verificar se os utilizadores estão conectados
     const { data: connection, error: connectionError } = await supabase
       .from('connections')
       .select('*')
       .or(`and(user1_id.eq.${user1Id},user2_id.eq.${user2Id}),and(user1_id.eq.${user2Id},user2_id.eq.${user1Id})`);
 
-    if (connectionError || !connection || connection.length === 0) {
-      throw new Error('The users are not connected');
+    // Se não estiverem conectados ou houver erro na verificação, retornar array vazio
+    if (connectionError) {
+      console.warn('Error checking connection:', connectionError.message);
+      return [];
     }
 
+    if (!connection || connection.length === 0) {
+      console.log('Users are not connected, returning empty messages array');
+      return [];
+    }
+
+    // Se estiverem conectados, buscar mensagens
     const { data: messages, error: messagesError } = await supabase
       .from('messages')
       .select('*')
@@ -55,14 +65,15 @@ export class MessageService {
       .order('created_at', { ascending: true });
 
     if (messagesError) {
-      throw new Error(`Error getting messages: ${messagesError.message}`);
+      console.error('Error getting messages:', messagesError.message);
+      return [];
     }
 
-    return messages;
+    return messages || [];
   }
 
-  async getUserConversations(userId: string) {
-    const supabase = this.supabaseService.getClient();
+  async getUserConversations(userId: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { data: messages, error: messagesError } = await supabase
       .from('messages')
@@ -92,8 +103,8 @@ export class MessageService {
     return users || [];
   }
 
-  async deleteMessagesBetweenUsers(user1Id: string, user2Id: string) {
-    const supabase = this.supabaseService.getClient();
+  async deleteMessagesBetweenUsers(user1Id: string, user2Id: string, token: string) {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { error: deleteError } = await supabase
       .from('messages')

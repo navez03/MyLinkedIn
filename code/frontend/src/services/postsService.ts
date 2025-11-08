@@ -3,6 +3,7 @@ import { apiHelpers, ApiResponse } from './api';
 export interface CreatePostDto {
   userId: string;
   content: string;
+  imageUrl?: string;
 }
 
 export interface PostResponseDto {
@@ -12,6 +13,8 @@ export interface PostResponseDto {
   createdAt: string;
   authorName?: string;
   authorEmail?: string;
+  authorAvatarUrl?: string;
+  imageUrl?: string;
 }
 
 export interface GetPostsResponseDto {
@@ -20,6 +23,34 @@ export interface GetPostsResponseDto {
 }
 
 export const postsAPI = {
+
+  uploadImage: async (file: File): Promise<ApiResponse<{ success: boolean; imageUrl: string }>> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${apiHelpers.getBackendUrl()}/posts/upload-image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to upload image',
+      };
+    }
+
+    return {
+      success: true,
+      data: data,
+    };
+  },
+
   createPost: async (data: CreatePostDto): Promise<ApiResponse<{ success: boolean; post: PostResponseDto }>> => {
     return apiHelpers.post<{ success: boolean; post: PostResponseDto }>('/posts', data, true);
   },

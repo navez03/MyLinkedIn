@@ -2,7 +2,7 @@ import { Home, Users, Briefcase, MessageSquare, Bell, Search, User, LogOut } fro
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
-import { authAPI, UserSearchResult } from "../services/registerService";
+import { userAPI, UserSearchResult } from "../services/registerService";
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -23,12 +23,11 @@ const Navigation = () => {
 
   const handleNavClick = async (path?: string) => {
     if (path === "/") {
-      const userId = localStorage.getItem("userId") || "";
       try {
-        await authAPI.logout(userId);
+        await userAPI.logout();
       } catch (e) {
+        console.error('Logout error:', e);
       }
-      localStorage.clear();
       navigate("/");
     } else if (path) {
       navigate(path);
@@ -53,9 +52,8 @@ const Navigation = () => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.trim().length > 0) {
         setIsSearching(true);
-        const userId = localStorage.getItem('userId') || '';
-        console.log('Searching with userId:', userId);
-        const response = await authAPI.searchUsers(searchQuery, userId);
+        console.log('Searching for:', searchQuery);
+        const response = await userAPI.searchUsers(searchQuery);
         console.log('Search response:', response);
         if (response.success) {
           setSearchResults(response.data?.users || []);

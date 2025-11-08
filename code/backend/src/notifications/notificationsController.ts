@@ -8,12 +8,15 @@ import {
   BadRequestException,
   Delete,
   Param,
+  UseGuards,
 } from "@nestjs/common";
 import {
   NotificationsService,
   Notification as Notif,
 } from "./notificationsService";
 import { MarkAllReadDto, MarkReadDto } from "./dto/mark-read.dto";
+import { AuthGuard } from '../User/userGuard';
+import { GetToken } from '../config/decorators';
 
 type ListResponse =
   | {
@@ -28,7 +31,8 @@ export class NotificationsController {
   constructor(private readonly service: NotificationsService) { }
 
   @Get("list")
-  async list(@Query() q: any): Promise<ListResponse> {
+  @UseGuards(AuthGuard)
+  async list(@Query() q: any, @GetToken() token: string): Promise<ListResponse> {
     const userId = q.userId as string;
     if (!userId) {
       throw new BadRequestException({
@@ -42,7 +46,7 @@ export class NotificationsController {
     const limit = q.limit ? Number(q.limit) : 20;
     const offset = q.offset ? Number(q.offset) : 0;
 
-    const data = await this.service.list(userId, unreadOnly, limit, offset);
+    const data = await this.service.list(userId, token, unreadOnly, limit, offset);
     return {
       success: true,
       message: "Notifications retrieved successfully",
@@ -51,10 +55,11 @@ export class NotificationsController {
   }
 
   @Post("read")
-  async markRead(@Body() body: MarkReadDto) {
+  @UseGuards(AuthGuard)
+  async markRead(@Body() body: MarkReadDto, @GetToken() token: string) {
     console.log('markRead endpoint called with body:', body);
     const { notificationId, read } = body;
-    const notification = await this.service.markRead(notificationId, read ?? true);
+    const notification = await this.service.markRead(notificationId, token, read ?? true);
     console.log('markRead endpoint returning:', { success: true, message: "Notification marked as read/unread", notification });
     return {
       success: true,
@@ -64,16 +69,19 @@ export class NotificationsController {
   }
 
   @Post("read/all")
-  async markAllRead(@Body() body: MarkAllReadDto) {
-    const result = await this.service.markAllRead(body.userId);
+  @UseGuards(AuthGuard)
+  async markAllRead(@Body() body: MarkAllReadDto, @GetToken() token: string) {
+    const result = await this.service.markAllRead(body.userId, token);
     return {
       success: true,
       message: "All notifications marked as read",
       ...result,
     };
   }
+
   @Delete(":id")
-  async delete(@Param("id") id: string) {
+  @UseGuards(AuthGuard)
+  async delete(@Param("id") id: string, @GetToken() token: string) {
     if (!id) {
       throw new BadRequestException({
         success: false,
@@ -81,7 +89,7 @@ export class NotificationsController {
         error: "Bad Request",
       });
     }
-    await this.service.delete(id);
+    await this.service.delete(id, token);
     return { success: true, message: "Notification deleted" };
   }
 }

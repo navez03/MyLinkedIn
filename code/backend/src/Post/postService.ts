@@ -1,65 +1,67 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../config/supabaseClient';
 import { ConnectionService } from '../Connects/connectService';
 import { CreatePostDto, PostResponseDto, GetPostsResponseDto } from './dto/create-post.dto';
 
 @Injectable()
 export class PostService {
+  private readonly logger = new Logger(PostService.name);
+
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly connectionService: ConnectionService,
   ) { }
 
-  async createPost(createPostDto: CreatePostDto): Promise<PostResponseDto> {
-    const supabase = this.supabaseService.getClient();
+  async createPost(createPostDto: CreatePostDto, token: string): Promise<PostResponseDto> {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, name, email')
-      .eq('id', createPostDto.userId)
-      .single();
-
-    if (userError || !user) {
-      throw new Error('User not found');
-    }
-
+    // O RLS garante que apenas o utilizador autenticado pode criar posts
     const { data: post, error: postError } = await supabase
       .from('posts')
       .insert({
         user_id: createPostDto.userId,
         content: createPostDto.content,
+        image_url: createPostDto.imageUrl || null,
       })
-      .select()
+      .select(`
+        *,
+        users:user_id (name, email, avatar_url)
+      `)
       .single();
 
     if (postError) {
-      throw new Error(`Error creating post: ${postError.message}`);
+      this.logger.error('Error creating post', postError.message);
+      throw new BadRequestException(`Error creating post: ${postError.message}`);
     }
+
+    this.logger.log(`Post created by user: ${post.user_id}`);
 
     return {
       id: post.id,
       userId: post.user_id,
       content: post.content,
       createdAt: post.created_at,
-      authorName: user.name,
-      authorEmail: user.email,
+      authorName: post.users?.name,
+      authorEmail: post.users?.email,
+      authorAvatarUrl: post.users?.avatar_url,
+      imageUrl: post.image_url,
     };
   }
 
-  async getPostById(postId: string): Promise<PostResponseDto> {
-    const supabase = this.supabaseService.getClient();
+  async getPostById(postId: string, token: string): Promise<PostResponseDto> {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { data: post, error } = await supabase
       .from('posts')
       .select(`
         *,
-        users:user_id (name, email)
+        users:user_id (name, email, avatar_url)
       `)
       .eq('id', postId)
       .single();
 
     if (error || !post) {
-      throw new Error('Post not found');
+      throw new BadRequestException('Post not found');
     }
 
     return {
@@ -69,17 +71,19 @@ export class PostService {
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
+      authorAvatarUrl: post.users?.avatar_url,
+      imageUrl: post.image_url,
     };
   }
 
-  async getPostsByUserId(userId: string, limit: number = 10, offset: number = 0): Promise<GetPostsResponseDto> {
-    const supabase = this.supabaseService.getClient();
+  async getPostsByUserId(userId: string, token: string, limit: number = 10, offset: number = 0): Promise<GetPostsResponseDto> {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { data: posts, error, count } = await supabase
       .from('posts')
       .select(`
         *,
-        users:user_id (name, email)
+        users:user_id (name, email, avatar_url)
       `, { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -96,6 +100,8 @@ export class PostService {
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
+      authorAvatarUrl: post.users?.avatar_url,
+      imageUrl: post.image_url,
     }));
 
     return {
@@ -104,20 +110,21 @@ export class PostService {
     };
   }
 
-  async getAllPosts(limit: number = 20, offset: number = 0): Promise<GetPostsResponseDto> {
-    const supabase = this.supabaseService.getClient();
+  async getAllPosts(token: string, limit: number = 20, offset: number = 0): Promise<GetPostsResponseDto> {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { data: posts, error, count } = await supabase
       .from('posts')
       .select(`
         *,
-        users:user_id (name, email)
+        users:user_id (name, email, avatar_url)
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
-      throw new Error(`Error fetching posts: ${error.message}`);
+      this.logger.error('Error fetching posts', error.message);
+      throw new BadRequestException(`Error fetching posts: ${error.message}`);
     }
 
     const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
@@ -127,6 +134,8 @@ export class PostService {
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
+      authorAvatarUrl: post.users?.avatar_url,
+      imageUrl: post.image_url,
     }));
 
     return {
@@ -135,8 +144,10 @@ export class PostService {
     };
   }
 
-  async getPostsByUserAndConnections(userId: string, limit: number = 20, offset: number = 0): Promise<GetPostsResponseDto> {
-    const connections = await this.connectionService.getConnections(userId);
+  async getPostsByUserAndConnections(userId: string, token: string, limit: number = 20, offset: number = 0): Promise<GetPostsResponseDto> {
+    const supabase = this.supabaseService.getClientWithToken(token);
+
+    const connections = await this.connectionService.getConnections(userId, token);
 
     const connectedUserIds = [userId];
     if (connections && connections.length > 0) {
@@ -145,19 +156,19 @@ export class PostService {
       });
     }
 
-    const supabase = this.supabaseService.getClient();
     const { data: posts, error, count } = await supabase
       .from('posts')
       .select(`
         *,
-        users:user_id (name, email)
+        users:user_id (name, email, avatar_url)
       `, { count: 'exact' })
       .in('user_id', connectedUserIds)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
-      throw new Error(`Error fetching posts: ${error.message}`);
+      this.logger.error('Error fetching feed posts', error.message);
+      throw new BadRequestException(`Error fetching posts: ${error.message}`);
     }
 
     const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
@@ -167,6 +178,8 @@ export class PostService {
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
+      authorAvatarUrl: post.users?.avatar_url,
+      imageUrl: post.image_url,
     }));
 
     return {
@@ -175,22 +188,8 @@ export class PostService {
     };
   }
 
-  async deletePost(postId: string, userId: string): Promise<{ message: string }> {
-    const supabase = this.supabaseService.getClient();
-
-    const { data: existingPost, error: fetchError } = await supabase
-      .from('posts')
-      .select('user_id')
-      .eq('id', postId)
-      .single();
-
-    if (fetchError || !existingPost) {
-      throw new Error('Post not found');
-    }
-
-    if (existingPost.user_id !== userId) {
-      throw new Error('You do not have permission to delete this post');
-    }
+  async deletePost(postId: string, token: string): Promise<{ message: string }> {
+    const supabase = this.supabaseService.getClientWithToken(token);
 
     const { error: deleteError } = await supabase
       .from('posts')
@@ -198,9 +197,11 @@ export class PostService {
       .eq('id', postId);
 
     if (deleteError) {
-      throw new Error(`Error deleting post: ${deleteError.message}`);
+      this.logger.error('Error deleting post', deleteError.message);
+      throw new BadRequestException(`Error deleting post: ${deleteError.message}`);
     }
 
+    this.logger.log(`Post deleted: ${postId}`);
     return { message: 'Post deleted successfully' };
   }
 }

@@ -11,6 +11,8 @@ export interface Notification {
   source_id: string; // guardado como string (uuid ou int)
   created_at: string; // ISO
   is_read: boolean;
+  sender_name?: string;
+  sender_id?: string;
 }
 
 export interface ListNotificationsParams {
@@ -42,7 +44,8 @@ export const notificationAPI = {
     userId: string
   ): Promise<ApiResponse<ListNotificationsResponse>> => {
     return apiHelpers.get(
-      `/notifications/list?userId=${userId}&unreadOnly=false&limit=20&offset=0`
+      `/notifications/list?userId=${userId}&unreadOnly=false&limit=20&offset=0`,
+      true
     );
   },
 
@@ -60,7 +63,7 @@ export const notificationAPI = {
   > => {
     const body = { ...data, read: data.read ?? true };
     // usar POST para manter consistência com o teu exemplo
-    return apiHelpers.post("/notifications/read", body);
+    return apiHelpers.post("/notifications/read", body, true);
   },
 
   /**
@@ -69,7 +72,7 @@ export const notificationAPI = {
   markAllRead: async (
     data: MarkAllReadDto
   ): Promise<ApiResponse<{ success: boolean; message: string }>> => {
-    return apiHelpers.post("/notifications/read/all", data);
+    return apiHelpers.post("/notifications/read/all", data, true);
   },
   /**
    * Apaga uma notificação pelo id
@@ -77,6 +80,6 @@ export const notificationAPI = {
   delete: async (
     notificationId: string
   ): Promise<ApiResponse<{ success: boolean; message: string }>> => {
-    return apiHelpers.delete(`/notifications/${notificationId}`);
+    return apiHelpers.delete(`/notifications/${notificationId}`, true);
   },
 };

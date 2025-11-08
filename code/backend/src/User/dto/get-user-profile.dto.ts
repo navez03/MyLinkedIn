@@ -12,6 +12,7 @@ export interface UserProfileResponseDto {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
   };
   message?: string;
 }

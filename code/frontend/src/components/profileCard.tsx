@@ -3,19 +3,20 @@ import { Card } from './card';
 import { useNavigate } from 'react-router-dom';
 import { Grid3x3, Calendar } from 'lucide-react';
 import { connectionAPI } from "../services/connectionService";
+import { userAPI } from "../services/registerService";
 import { useEffect, useState } from "react";
 
 
 const ProfileCard: React.FC = () => {
   const navigate = useNavigate();
   const [connectionsCount, setConnectionsCount] = useState<number | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>('Meu Perfil');
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
 
 
   const handleProfileClick = () => {
     navigate('/profile');
   };
-
-  const currentUserName = localStorage.getItem('userName') || 'Meu Perfil';
 
   const getInitials = (name: string): string => {
     const parts = name.trim().split(' ');
@@ -28,19 +29,28 @@ const ProfileCard: React.FC = () => {
   const initials = getInitials(currentUserName);
 
   useEffect(() => {
-    const fetchConnections = async () => {
+    const fetchUserData = async () => {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
+
       try {
-        const res = await connectionAPI.getConnections(userId);
-        if (res.success && res.data && res.data.connections) {
-          setConnectionsCount(res.data.connections.length);
+        // Fetch user profile from API
+        const profileResponse = await userAPI.getUserProfile();
+        if (profileResponse.success && profileResponse.data) {
+          setCurrentUserName(profileResponse.data.name || 'Meu Perfil');
+          setCurrentUserAvatar(profileResponse.data.avatar_url || null);
+        }
+
+        // Fetch connections
+        const connectionsResponse = await connectionAPI.getConnections(userId);
+        if (connectionsResponse.success && connectionsResponse.data && connectionsResponse.data.connections) {
+          setConnectionsCount(connectionsResponse.data.connections.length);
         }
       } catch (e) {
-        setConnectionsCount(null);
+        console.error('Error fetching user data:', e);
       }
     };
-    fetchConnections();
+    fetchUserData();
   }, []);
 
   return (
@@ -50,7 +60,20 @@ const ProfileCard: React.FC = () => {
         <div className="h-[54px] bg-gradient-to-r from-primary/20 to-primary/40" />
         <div className="px-4 pb-4">
           <div className="-mt-8 mb-3 flex justify-start pl-0">
-            <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xl">
+            {currentUserAvatar ? (
+              <img
+                src={currentUserAvatar}
+                alt={currentUserName}
+                className="w-16 h-16 rounded-full border-4 border-white shadow-lg object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                  }
+                }}
+              />
+            ) : null}
+            <div className={`w-16 h-16 rounded-full border-4 border-white shadow-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xl ${currentUserAvatar ? 'hidden' : ''}`}>
               {initials}
             </div>
           </div>
