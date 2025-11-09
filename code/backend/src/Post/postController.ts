@@ -6,6 +6,22 @@ import { CreatePostDto, PostResponseDto, GetPostsResponseDto } from './dto/creat
 export class PostController {
   constructor(private readonly postService: PostService) { }
 
+  @Get('search')
+  async searchPosts(
+    @Query('query') query: string
+  ): Promise<{ success: boolean; posts: PostResponseDto[]; total: number }> {
+    try {
+      const result = await this.postService.searchPosts(query);
+      return {
+        success: true,
+        posts: result.posts,
+        total: result.total,
+      };
+    } catch (error) {
+      this.handleException(error, 'Error searching posts');
+    }
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPost(@Body(ValidationPipe) createPostDto: CreatePostDto): Promise<{ success: boolean; post: PostResponseDto }> {

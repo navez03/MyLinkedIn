@@ -53,6 +53,21 @@ export interface SearchUsersResponse {
   users: UserSearchResult[];
 }
 
+export interface PostSearchResult {
+  id: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  authorName: string;
+  authorEmail: string;
+}
+
+export interface SearchPostsResponse {
+  success: boolean;
+  posts: PostSearchResult[];
+  total: number;
+}
+
 export const authAPI = {
 
   register: async (email: string, password: string): Promise<ApiResponse<RegisterResponse>> => {
@@ -101,6 +116,10 @@ export const authAPI = {
 
   searchUsers: async (query: string, userId: string): Promise<ApiResponse<SearchUsersResponse>> => {
     return apiHelpers.get<SearchUsersResponse>(`/user/search?query=${encodeURIComponent(query)}&userId=${userId}`, true);
+  },
+
+  searchPosts: async (query: string): Promise<ApiResponse<SearchPostsResponse>> => {
+    return apiHelpers.get<SearchPostsResponse>(`/posts/search?query=${encodeURIComponent(query)}`, true);
   },
 
   logout: async (userId: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {

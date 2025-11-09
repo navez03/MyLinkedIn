@@ -203,4 +203,47 @@ export class PostService {
 
     return { message: 'Post deleted successfully' };
   }
+
+  async searchPosts(query: string): Promise<GetPostsResponseDto> {
+    if (!query || query.trim() === '') {
+      return { posts: [], total: 0 };
+    }
+
+    const searchTerm = `%${query.trim()}%`;
+    const supabase = this.supabaseService.getClient();
+
+    console.log('Searching with term:', searchTerm); // Debug log
+
+    const { data: posts, error, count } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        users:user_id (name, email)
+      `, { count: 'exact' })
+      .textSearch('content', query.trim(), {
+        type: 'websearch',
+        config: 'english'
+      });
+
+    if (error) {
+      console.error('Search error:', error); // Debug log
+      throw new Error(`Error searching posts: ${error.message}`);
+    }
+
+    console.log('Found posts:', posts); // Debug log
+
+    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+      id: post.id,
+      userId: post.user_id,
+      content: post.content,
+      createdAt: post.created_at,
+      authorName: post.users?.name,
+      authorEmail: post.users?.email,
+    }));
+
+    return {
+      posts: postResponses,
+      total: count || 0,
+    };
+  }
 }
