@@ -9,6 +9,7 @@ import Notifications from './Screens/Notifications';
 import Messages from './Screens/Messages';
 import Profile from './Screens/Profile';
 import UpdateProfile from './Screens/UpdateProfile';
+import Events from './Screens/Events';
 import Network from './Screens/MyNetwork';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/events" element={<Events />} />
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/set-name" element={<SetName />} />
