@@ -1,115 +1,45 @@
-import { useState } from "react";
-import { Calendar, MapPin, Clock, Users, Search, Filter, Plus, Video, X, Upload, Globe } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, MapPin, Clock, Search, Filter, Plus, Video, X, Upload, Lock, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
 import { Card } from "../components/card";
+import { eventsService, EventType, LocationType, EventResponse } from "../services/eventsService";
+import { connectionAPI } from "../services/connectionService";
 
-// Event interface
-interface Event {
+interface Connection {
   id: string;
-  title: string;
-  organizer: string;
-  organizerAvatar: string;
-  date: string;
-  time: string;
-  location: string;
-  attendees: number;
-  image?: string;
-  isOnline: boolean;
-  category: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  connected_at: string;
 }
 
-// Mock events data
-const mockEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Leadership Summit 2025",
-    organizer: "Tech Leaders Network",
-    organizerAvatar: "TL",
-    date: "2025-11-15",
-    time: "09:00 AM",
-    location: "San Francisco, CA",
-    attendees: 234,
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop",
-    isOnline: false,
-    category: "Technology"
-  },
-  {
-    id: "2",
-    title: "Digital Marketing Masterclass",
-    organizer: "Marketing Pro Academy",
-    organizerAvatar: "MP",
-    date: "2025-11-20",
-    time: "02:00 PM",
-    location: "Online",
-    attendees: 567,
-    isOnline: true,
-    category: "Marketing"
-  },
-  {
-    id: "3",
-    title: "Career Development Workshop",
-    organizer: "Professional Growth Hub",
-    organizerAvatar: "PG",
-    date: "2025-11-25",
-    time: "10:00 AM",
-    location: "New York, NY",
-    attendees: 89,
-    image: "https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800&h=400&fit=crop",
-    isOnline: false,
-    category: "Career"
-  },
-  {
-    id: "4",
-    title: "AI & Machine Learning Conference",
-    organizer: "AI Innovation Group",
-    organizerAvatar: "AI",
-    date: "2025-12-01",
-    time: "09:30 AM",
-    location: "Boston, MA",
-    attendees: 412,
-    image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=400&fit=crop",
-    isOnline: false,
-    category: "Technology"
-  },
-  {
-    id: "5",
-    title: "Networking Mixer: Startup Edition",
-    organizer: "Startup Community",
-    organizerAvatar: "SC",
-    date: "2025-11-18",
-    time: "06:00 PM",
-    location: "Austin, TX",
-    attendees: 156,
-    isOnline: false,
-    category: "Networking"
-  },
-  {
-    id: "6",
-    title: "Remote Work Best Practices",
-    organizer: "Future of Work Institute",
-    organizerAvatar: "FW",
-    date: "2025-11-22",
-    time: "11:00 AM",
-    location: "Online",
-    attendees: 723,
-    isOnline: true,
-    category: "Career"
-  }
-];
-
 export default function Events() {
-  const [events] = useState<Event[]>(mockEvents);
+  const [selectedTab, setSelectedTab] = useState<'my' | 'suggested'>('suggested');
+  const [locationTypeFilter, setLocationTypeFilter] = useState<'all' | 'online' | 'inperson'>('all');
+  const [events, setEvents] = useState<EventResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string>("");
   const [newEvent, setNewEvent] = useState({
-    title: "",
+    name: "",
     date: "",
     time: "",
     location: "",
     description: "",
-    eventType: "in-person",
-    category: "Technology"
+    locationType: LocationType.IN_PERSON,
+    eventType: EventType.PUBLIC,
+    bannerUrl: ""
   });
 
   const style = document.createElement('style');
@@ -140,36 +70,282 @@ export default function Events() {
     });
   };
 
-  const filters = ["All", "Technology", "Marketing", "Career", "Networking"];
+  // Load events on component mount
+  useEffect(() => {
+    loadEvents();
+    loadConnections();
+  }, []);
 
+  const loadEvents = async () => {
+    setLoading(true);
+    const response = await eventsService.getAllEvents(20, 0);
+    if (response.success) {
+      setEvents(response.data.events);
+    } else {
+      console.error("Error loading events:", response.error);
+    }
+    setLoading(false);
+  };
+
+  const loadConnections = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    const response = await connectionAPI.getConnections(userId);
+    if (response.success) {
+      setConnections(response.data.connections);
+    } else {
+      console.error("Error loading connections:", response.error);
+    }
+  };
+
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         event.organizer.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === "All" || event.category === selectedFilter;
-    return matchesSearch && matchesFilter;
+    const matchesSearch = event.name.toLowerCase().startsWith(searchQuery.toLowerCase()) || 
+    (event.organizerName && event.organizerName.toLowerCase().startsWith(searchQuery.toLowerCase()));
+    const matchesFilter = selectedFilter === "All";
+    const matchesTab = selectedTab === 'my'
+      ? event.organizerId === userId
+      : event.organizerId !== userId;
+    const matchesLocationType = locationTypeFilter === 'all'
+      ? true
+      : locationTypeFilter === 'online'
+        ? event.locationType === LocationType.ONLINE
+        : event.locationType === LocationType.IN_PERSON;
+    return matchesSearch && matchesFilter && matchesTab && matchesLocationType;
   });
 
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Creating event:", newEvent);
-    // Here you would typically send the data to your backend
-    setShowCreateModal(false);
-    // Reset form
-    setNewEvent({
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-      description: "",
-      eventType: "in-person",
-      category: "Technology"
-    });
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size must be less than 5MB");
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("File must be an image");
+      return;
+    }
+
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
   };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let bannerUrl = "";
+
+      // Upload banner if one was selected
+      if (bannerFile) {
+        setUploadingBanner(true);
+        const uploadResponse = await eventsService.uploadBanner(bannerFile);
+        setUploadingBanner(false);
+
+        if (uploadResponse.success) {
+          bannerUrl = uploadResponse.data.bannerUrl;
+        } else {
+          alert("Error uploading banner: " + uploadResponse.error);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Create event
+      const eventData = {
+        name: newEvent.name,
+        date: newEvent.date,
+        time: newEvent.time,
+        locationType: newEvent.locationType,
+        location: newEvent.location,
+        description: newEvent.description,
+        eventType: newEvent.eventType,
+        bannerUrl: bannerUrl || undefined,
+      };
+
+      const response = await eventsService.createEvent(eventData);
+
+      if (response.success) {
+        setShowCreateModal(false);
+        // Reset form
+        setNewEvent({
+          name: "",
+          date: "",
+          time: "",
+          location: "",
+          description: "",
+          locationType: LocationType.IN_PERSON,
+          eventType: EventType.PUBLIC,
+          bannerUrl: ""
+        });
+        setBannerFile(null);
+        setBannerPreview("");
+        // Reload events
+        loadEvents();
+        // Aqui pode adicionar um toast ou snackbar se quiser feedback visual
+      } else {
+        alert("Error creating event: " + response.error);
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      alert("Error creating event");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenInviteModal = (event: EventResponse) => {
+    const userId = localStorage.getItem('userId');
+    if (event.organizerId !== userId) {
+      alert("Only the event organizer can invite people");
+      return;
+    }
+    setSelectedEvent(event);
+    setSelectedConnections([]);
+    setInviteSearchQuery("");
+    setShowInviteModal(true);
+  };
+
+  const handleToggleConnection = (connectionId: string) => {
+    setSelectedConnections(prev => 
+      prev.includes(connectionId)
+        ? prev.filter(id => id !== connectionId)
+        : [...prev, connectionId]
+    );
+  };
+
+  const handleSendInvites = async () => {
+    if (!selectedEvent || selectedConnections.length === 0) {
+      alert("Please select at least one person to invite");
+      return;
+    }
+
+    setLoading(true);
+    const response = await eventsService.inviteUsers({
+      eventId: selectedEvent.id,
+      userIds: selectedConnections,
+    });
+
+    if (response.success) {
+      alert(`Successfully invited ${selectedConnections.length} people!`);
+      setShowInviteModal(false);
+      setSelectedEvent(null);
+      setSelectedConnections([]);
+    } else {
+      alert("Error sending invites: " + response.error);
+    }
+    setLoading(false);
+  };
+
+  const filteredConnections = connections.filter(conn =>
+    conn.user.name.toLowerCase().includes(inviteSearchQuery.toLowerCase()) ||
+    conn.user.email.toLowerCase().includes(inviteSearchQuery.toLowerCase())
+  );
 
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-background">
+        {/* Invite Modal */}
+        {showInviteModal && selectedEvent && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Invite people</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{selectedEvent.name}</p>
+                </div>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 flex-1 overflow-y-auto">
+                {/* Search */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search connections..."
+                      value={inviteSearchQuery}
+                      onChange={(e) => setInviteSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-secondary border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                </div>
+
+                {/* Selected count */}
+                {selectedConnections.length > 0 && (
+                  <div className="mb-4 text-sm text-muted-foreground">
+                    {selectedConnections.length} {selectedConnections.length === 1 ? 'person' : 'people'} selected
+                  </div>
+                )}
+
+                {/* Connections List */}
+                <div className="space-y-2">
+                  {filteredConnections.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {inviteSearchQuery ? "No connections found" : "No connections yet"}
+                    </div>
+                  ) : (
+                    filteredConnections.map((connection) => (
+                      <label
+                        key={connection.id}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedConnections.includes(connection.user.id)}
+                          onChange={() => handleToggleConnection(connection.user.id)}
+                          className="w-4 h-4 rounded"
+                        />
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                            {connection.user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{connection.user.name}</p>
+                            <p className="text-sm text-muted-foreground">{connection.user.email}</p>
+                          </div>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="border-t border-border px-6 py-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendInvites}
+                  disabled={loading || selectedConnections.length === 0}
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Sending...' : `Send ${selectedConnections.length > 0 ? `(${selectedConnections.length})` : ''}`}
+                </button>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Create Event Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -193,24 +369,24 @@ export default function Events() {
                   <input
                     type="text"
                     required
-                    value={newEvent.title}
-                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                    value={newEvent.name}
+                    onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
                     placeholder="Enter event name"
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
 
-                {/* Event Type */}
+                {/* Location Type */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Event type *
+                    Location type *
                   </label>
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      onClick={() => setNewEvent({ ...newEvent, eventType: "in-person" })}
+                      onClick={() => setNewEvent({ ...newEvent, locationType: LocationType.IN_PERSON })}
                       className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                        newEvent.eventType === "in-person"
+                        newEvent.locationType === LocationType.IN_PERSON
                           ? "border-primary bg-primary/5 text-primary"
                           : "border-border hover:border-primary/50"
                       }`}
@@ -220,9 +396,9 @@ export default function Events() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewEvent({ ...newEvent, eventType: "online" })}
+                      onClick={() => setNewEvent({ ...newEvent, locationType: LocationType.ONLINE })}
                       className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                        newEvent.eventType === "online"
+                        newEvent.locationType === LocationType.ONLINE
                           ? "border-primary bg-primary/5 text-primary"
                           : "border-border hover:border-primary/50"
                       }`}
@@ -236,14 +412,14 @@ export default function Events() {
                 {/* Location */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    {newEvent.eventType === "online" ? "Event link (optional)" : "Location *"}
+                    {newEvent.locationType === LocationType.ONLINE ? "Event link" : "Location"} *
                   </label>
                   <input
                     type="text"
-                    required={newEvent.eventType === "in-person"}
+                    required
                     value={newEvent.location}
                     onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                    placeholder={newEvent.eventType === "online" ? "Add meeting link" : "Add location"}
+                    placeholder={newEvent.locationType === LocationType.ONLINE ? "Add meeting link" : "Add location"}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -276,22 +452,37 @@ export default function Events() {
                   </div>
                 </div>
 
-                {/* Category */}
+                {/* Event Type (Public/Private) */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Category *
+                    Visibility *
                   </label>
-                  <select
-                    required
-                    value={newEvent.category}
-                    onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="Technology">Technology</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Career">Career</option>
-                    <option value="Networking">Networking</option>
-                  </select>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent({ ...newEvent, eventType: EventType.PUBLIC })}
+                      className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center gap-2 ${
+                        newEvent.eventType === EventType.PUBLIC
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Plus className="w-4 h-4 inline mr-2" />
+                      Public
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEvent({ ...newEvent, eventType: EventType.PRIVATE })}
+                      className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center gap-2 ${
+                        newEvent.eventType === EventType.PRIVATE
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Lock className="w-4 h-4 inline mr-2" />
+                      Private
+                    </button>
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -311,13 +502,31 @@ export default function Events() {
                 {/* Event Image Upload (Optional) */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Event image (optional)
+                    Event banner (optional)
                   </label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
-                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    className="hidden"
+                    id="banner-upload"
+                  />
+                  <label
+                    htmlFor="banner-upload"
+                    className="block border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                  >
+                    {bannerPreview ? (
+                      <div className="relative">
+                        <img src={bannerPreview} alt="Banner preview" className="w-full h-32 object-cover rounded" />
+                        <p className="text-xs text-muted-foreground mt-2">Click to change banner</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                      </>
+                    )}
+                  </label>
                 </div>
 
                 {/* Action Buttons */}
@@ -331,9 +540,10 @@ export default function Events() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+                    disabled={loading || uploadingBanner}
+                    className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create Event
+                    {uploadingBanner ? 'Uploading banner...' : loading ? 'Creating...' : 'Create Event'}
                   </button>
                 </div>
               </form>
@@ -341,51 +551,54 @@ export default function Events() {
           </div>
         )}
 
-        <div className="max-w-[1128px] mx-auto px-6 py-6 flex gap-6">
-          {/* Left Sidebar */}
-          <div className="hidden md:block w-[225px] flex-shrink-0 space-y-4 sticky top-20">
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground">Filters</h3>
-              </div>
-              <div className="space-y-2">
-                {filters.map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setSelectedFilter(filter)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedFilter === filter
-                        ? 'bg-primary text-primary-foreground font-medium'
-                        : 'hover:bg-secondary text-foreground'
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <h3 className="font-semibold text-foreground mb-3 text-sm">Event Type</h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" className="rounded" defaultChecked />
-                  <span className="text-foreground">In-person</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" className="rounded" defaultChecked />
-                  <span className="text-foreground">Online</span>
-                </label>
-              </div>
-            </Card>
-          </div>
-
+        <div className="w-full flex flex-col items-center justify-center px-6 py-6">
           {/* Main Content */}
           <div
-            className="max-w-[540px] w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
+            className="max-w-6xl w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide mx-auto"
             style={{ minHeight: 0 }}
           >
+            {/* Tabs & Location Type Filter */}
+            <div className="flex flex-wrap mb-6 justify-between items-center w-full mx-auto">
+              <div className="flex gap-0 bg-secondary rounded-lg p-1 shadow-sm">
+                <button
+                  className={`px-6 py-2 font-semibold text-sm rounded-l-lg transition-all focus:outline-none border-none ${selectedTab === 'suggested' ? 'bg-primary text-primary-foreground shadow' : 'bg-secondary text-muted-foreground hover:bg-background'}`}
+                  style={{ boxShadow: selectedTab === 'suggested' ? '0 2px 8px rgba(0,0,0,0.06)' : undefined }}
+                  onClick={() => setSelectedTab('suggested')}
+                >
+                  Suggested Events
+                </button>
+                <button
+                  className={`px-6 py-2 font-semibold text-sm rounded-r-lg transition-all focus:outline-none border-none ${selectedTab === 'my' ? 'bg-primary text-primary-foreground shadow' : 'bg-secondary text-muted-foreground hover:bg-background'}`}
+                  style={{ boxShadow: selectedTab === 'my' ? '0 2px 8px rgba(0,0,0,0.06)' : undefined }}
+                  onClick={() => setSelectedTab('my')}
+                >
+                  My Events
+                </button>
+              </div>
+              <div className="flex gap-0 bg-secondary rounded-lg p-1 shadow-sm">
+                <button
+                  className={`px-4 py-2 font-medium text-sm rounded-l-lg transition-all focus:outline-none border-none ${locationTypeFilter === 'all' ? 'bg-primary text-primary-foreground shadow' : 'bg-secondary text-muted-foreground hover:bg-background'}`}
+                  style={{ boxShadow: locationTypeFilter === 'all' ? '0 2px 8px rgba(0,0,0,0.06)' : undefined }}
+                  onClick={() => setLocationTypeFilter('all')}
+                >
+                  All
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm transition-all focus:outline-none border-none ${locationTypeFilter === 'online' ? 'bg-primary text-primary-foreground shadow' : 'bg-secondary text-muted-foreground hover:bg-background'}`}
+                  style={{ boxShadow: locationTypeFilter === 'online' ? '0 2px 8px rgba(0,0,0,0.06)' : undefined }}
+                  onClick={() => setLocationTypeFilter('online')}
+                >
+                  Online
+                </button>
+                <button
+                  className={`px-4 py-2 font-medium text-sm rounded-r-lg transition-all focus:outline-none border-none ${locationTypeFilter === 'inperson' ? 'bg-primary text-primary-foreground shadow' : 'bg-secondary text-muted-foreground hover:bg-background'}`}
+                  style={{ boxShadow: locationTypeFilter === 'inperson' ? '0 2px 8px rgba(0,0,0,0.06)' : undefined }}
+                  onClick={() => setLocationTypeFilter('inperson')}
+                >
+                  In Person
+                </button>
+              </div>
+            </div>
             {/* Search and Create Event */}
             <Card className="p-4">
               <div className="flex gap-3">
@@ -415,27 +628,32 @@ export default function Events() {
             </Card>
 
             {/* Events List */}
-            {filteredEvents.length === 0 ? (
+            {loading && events.length === 0 ? (
+              <Card className="p-8 text-center">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+                <p className="text-muted-foreground">Loading events...</p>
+              </Card>
+            ) : filteredEvents.length === 0 ? (
               <Card className="p-8 text-center">
                 <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-muted-foreground">No events found matching your criteria.</p>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {filteredEvents.map((event) => (
                   <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                    {event.image && (
+                    {event.bannerUrl && (
                       <div className="relative">
                         <img
-                          src={event.image}
-                          alt={event.title}
+                          src={event.bannerUrl}
+                          alt={event.name}
                           className="w-full h-48 object-cover"
                         />
                         <div className="absolute top-3 left-3 flex gap-2">
                           <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm">
-                            {event.category}
+                            {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
                           </span>
-                          {event.isOnline && (
+                          {event.locationType === LocationType.ONLINE && (
                             <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm flex items-center gap-1">
                               <Video className="w-3 h-3" />
                               Online
@@ -445,12 +663,12 @@ export default function Events() {
                       </div>
                     )}
                     <div className="p-4 space-y-3">
-                      {!event.image && (
+                      {!event.bannerUrl && (
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded">
-                            {event.category}
+                            {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
                           </span>
-                          {event.isOnline && (
+                          {event.locationType === LocationType.ONLINE && (
                             <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded flex items-center gap-1">
                               <Video className="w-3 h-3" />
                               Online
@@ -460,7 +678,7 @@ export default function Events() {
                       )}
 
                       <h3 className="font-semibold text-lg text-foreground">
-                        {event.title}
+                        {event.name}
                       </h3>
 
                       <div className="space-y-2 text-sm text-muted-foreground">
@@ -478,69 +696,44 @@ export default function Events() {
                           <MapPin className="w-4 h-4" />
                           <span>{event.location}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Users className="w-4 h-4" />
-                          <span>{event.attendees} attendees</span>
-                        </div>
                       </div>
 
                       <div className="flex items-center justify-between pt-3 border-t border-border">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
-                            {event.organizerAvatar}
-                          </div>
+                          {event.organizerAvatar ? (
+                            <img src={event.organizerAvatar} alt={event.organizerName || 'Organizer'} className="w-8 h-8 rounded-full" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                              {event.organizerName?.charAt(0) || 'U'}
+                            </div>
+                          )}
                           <span className="text-sm text-foreground font-medium">
-                            {event.organizer}
+                            {event.organizerName || 'Unknown'}
                           </span>
                         </div>
-                        <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                          Attend
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {event.organizerId === localStorage.getItem('userId') && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenInviteModal(event);
+                              }}
+                              className="px-3 py-1.5 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              Invite
+                            </button>
+                          )}
+                          <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                            View Event
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </Card>
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20">
-            <Card className="p-4">
-              <h3 className="font-semibold text-foreground mb-4">Upcoming Events</h3>
-              <div className="space-y-3">
-                {events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="flex gap-3 cursor-pointer hover:bg-secondary/50 p-2 rounded-lg transition-colors">
-                    <div className="w-12 h-12 rounded bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-primary font-semibold">
-                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
-                      </span>
-                      <span className="text-lg font-bold text-primary">
-                        {new Date(event.date).getDate()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-foreground line-clamp-2 mb-1">
-                        {event.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {event.attendees} attendees
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <h3 className="font-semibold text-foreground mb-3">Your Events</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Keep track of events you're attending
-              </p>
-              <button className="w-full px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors">
-                View My Events
-              </button>
-            </Card>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { ConnectionModule } from "./Connects/connect.module";
 import { MessageModule } from "./Messages/message.module";
 import { PostModule } from "./Post/post.module";
 import { NotificationsModule } from "./notifications/notifications.module";
+import { EventModule } from "./Events/event.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
     MessageModule,
     PostModule,
     NotificationsModule,
+    EventModule,
   ],
 })
 export class AppModule { }
