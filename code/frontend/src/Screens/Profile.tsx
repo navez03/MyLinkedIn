@@ -5,6 +5,7 @@ import { Edit2, Mail, UserPlus, Check, UserMinus } from 'lucide-react';
 import { connectionAPI } from '../services/connectionService';
 import { useNavigate, useParams } from 'react-router-dom';
 import { userAPI } from '../services/registerService';
+import AIChatWidget from "../components/AIChatWidget";
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -169,6 +170,7 @@ const Profile: React.FC = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
 
@@ -354,6 +356,8 @@ const Profile: React.FC = () => {
         </div>
       </div>
     </div >
+    <AIChatWidget />
+    </>
   );
 };
 
