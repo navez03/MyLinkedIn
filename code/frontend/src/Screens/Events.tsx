@@ -101,8 +101,8 @@ export default function Events() {
 
   const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
   const filteredEvents = events.filter(event => {
-    const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (event.organizerName && event.organizerName.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = event.name.toLowerCase().startsWith(searchQuery.toLowerCase()) || 
+    (event.organizerName && event.organizerName.toLowerCase().startsWith(searchQuery.toLowerCase()));
     const matchesFilter = selectedFilter === "All";
     const matchesTab = selectedTab === 'my'
       ? event.organizerId === userId
