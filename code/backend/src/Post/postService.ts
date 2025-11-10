@@ -90,14 +90,16 @@ export class PostService {
       throw new Error(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
       id: post.id,
       userId: post.user_id,
       content: post.content,
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
-    }));
+      likes: await this.countLikes(post.id),
+      commentsCount: await this.getCommentsCount(post.id),
+    })));
 
     return {
       posts: postResponses,
@@ -121,14 +123,16 @@ export class PostService {
       throw new Error(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
       id: post.id,
       userId: post.user_id,
       content: post.content,
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
-    }));
+      likes: await this.countLikes(post.id),
+      commentsCount: await this.getCommentsCount(post.id),
+    })));
 
     return {
       posts: postResponses,
@@ -161,14 +165,16 @@ export class PostService {
       throw new Error(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
       id: post.id,
       userId: post.user_id,
       content: post.content,
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
-    }));
+      likes: await this.countLikes(post.id),
+      commentsCount: await this.getCommentsCount(post.id),
+    })));
 
     return {
       posts: postResponses,
@@ -233,14 +239,16 @@ export class PostService {
 
     console.log('Found posts:', posts); // Debug log
 
-    const postResponses: PostResponseDto[] = (posts || []).map((post) => ({
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
       id: post.id,
       userId: post.user_id,
       content: post.content,
       createdAt: post.created_at,
       authorName: post.users?.name,
       authorEmail: post.users?.email,
-    }));
+      likes: await this.countLikes(post.id),
+      commentsCount: await this.getCommentsCount(post.id),
+    })));
 
     return {
       posts: postResponses,
@@ -320,7 +328,19 @@ export class PostService {
       .single();
 
     if (error) throw error;
-    return data;
+
+    // Buscar o nome do utilizador
+    const { data: user } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', createCommentDto.user_id)
+      .single();
+
+    return {
+      ...data,
+      authorName: user?.name,
+      authorEmail: user?.email,
+    };
   }
 
   async getComments(postId: string, limit = 10, offset = 0) {
@@ -371,6 +391,15 @@ export class PostService {
     if (error) throw new Error(`Error deleting comment: ${error.message}`);
 
     return { success: true };
+  }
+
+  async getCommentsCount(postId: string) {
+    const supabase = this.supabaseService.getClient();
+    const { count } = await supabase
+      .from('post_comments')
+      .select('*', { count: 'exact' })
+      .eq('post_id', postId);
+    return count || 0;
   }
 
 }
