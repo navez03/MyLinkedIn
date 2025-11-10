@@ -165,16 +165,21 @@ export class PostService {
       throw new Error(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
-      id: post.id,
-      userId: post.user_id,
-      content: post.content,
-      createdAt: post.created_at,
-      authorName: post.users?.name,
-      authorEmail: post.users?.email,
-      likes: await this.countLikes(post.id),
-      commentsCount: await this.getCommentsCount(post.id),
-    })));
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => {
+      // Verifica se o utilizador atual já deu like neste post
+      const likedByCurrentUser = await this.isPostLikedByUser(post.id, userId);
+      return {
+        id: post.id,
+        userId: post.user_id,
+        content: post.content,
+        createdAt: post.created_at,
+        authorName: post.users?.name,
+        authorEmail: post.users?.email,
+        likes: await this.countLikes(post.id),
+        commentsCount: await this.getCommentsCount(post.id),
+        likedByCurrentUser,
+      };
+    }));
 
     return {
       posts: postResponses,

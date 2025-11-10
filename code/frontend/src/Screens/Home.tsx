@@ -67,6 +67,8 @@ export default function Home() {
 
             const timeAgo = getTimeAgo(post.createdAt);
 
+            // Usa o campo devolvido pelo backend para saber se o user já deu like
+            // Ajusta o nome do campo conforme o backend (ex: likedByCurrentUser, isLiked, etc)
             return {
               id: post.id,
               author: post.authorName || 'Unknown User',
@@ -75,7 +77,7 @@ export default function Home() {
               time: timeAgo,
               userId: post.userId,
               likes: (post as any).likes ?? 0,
-              liked: false,
+              liked: (post as any).likedByCurrentUser ?? false,
               commentsCount: (post as any).commentsCount ?? 0,
             };
           });
