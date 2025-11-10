@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
 import Loading from "../components/loading";
+import AIChatWidget from "../components/AIChatWidget";
 
 interface Post {
   id: string;
@@ -104,8 +105,6 @@ export default function Home() {
     return postDate.toLocaleDateString();
   };
 
-
-
   const handleProfileClick = (userId: string) => {
     const currentUserId = localStorage.getItem('userId');
     if (userId === currentUserId) {
@@ -132,7 +131,6 @@ export default function Home() {
             className="max-w-[540px] w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
             style={{ minHeight: 0 }}
           >
-
             <CreatePostCard />
 
             {posts.length === 0 ? (
@@ -187,7 +185,6 @@ export default function Home() {
                       />
                     )}
 
-                    {/* Interactions visual only, no logic */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
                       <div className="flex items-center gap-1">
                         <ThumbsUp className="w-4 h-4 text-primary fill-primary" />
@@ -226,6 +223,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* AI Chat Widget - This floats on bottom right corner */}
+      <AIChatWidget />
     </>
   );
 }

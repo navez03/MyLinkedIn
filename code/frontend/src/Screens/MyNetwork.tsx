@@ -5,6 +5,7 @@ import { Button } from "../components/button";
 import { Users, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
 import { connectionAPI } from "../services/connectionService";
+import AIChatWidget from "../components/AIChatWidget";
 
 interface Connection {
   user: {
@@ -106,6 +107,7 @@ const Network = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-[1128px] mx-auto px-4 py-6">
@@ -218,6 +220,8 @@ const Network = () => {
         </div>
       </div>
     </div>
+    <AIChatWidget />
+    </>
   );
 };
 

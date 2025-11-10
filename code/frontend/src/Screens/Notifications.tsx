@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Navigation from "../components/header";
 import { MessageSquare, Users, Check, Trash2, CheckCheck } from "lucide-react";
 import { notificationAPI, Notification } from "../services/notificationsService";
+import AIChatWidget from "../components/AIChatWidget";
+
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -131,6 +133,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <Navigation />
 
@@ -230,6 +233,8 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
         </div>
       </div>
     </div>
+    <AIChatWidget />
+    </>
   );
 };
 

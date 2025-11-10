@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Calendar, MapPin, Clock, Search, Filter, Plus, Video, X, Upload, Lock, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
+import AIChatWidget from "../components/AIChatWidget";
 import { Card } from "../components/card";
 import { eventsService, EventType, LocationType, EventResponse } from "../services/eventsService";
 import { connectionAPI } from "../services/connectionService";
@@ -737,6 +738,7 @@ export default function Events() {
           </div>
         </div>
       </div>
+      <AIChatWidget />
     </>
   );
 }
