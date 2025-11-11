@@ -31,6 +31,7 @@ export class MessageController {
         senderId,
         receiverId: dto.receiverId,
         content: dto.content,
+        postId: (dto as any).postId,
       });
 
       return {

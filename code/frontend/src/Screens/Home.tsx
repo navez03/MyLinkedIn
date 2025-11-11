@@ -6,6 +6,8 @@ import { ThumbsUp, MessageCircle, SendIcon, Share2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
+import { connectionAPI } from "../services/connectionService";
+import { messagesAPI } from "../services/messagesService";
 import Loading from "../components/loading";
 
 interface Post {
@@ -67,8 +69,6 @@ export default function Home() {
 
             const timeAgo = getTimeAgo(post.createdAt);
 
-            // Usa o campo devolvido pelo backend para saber se o user já deu like
-            // Ajusta o nome do campo conforme o backend (ex: likedByCurrentUser, isLiked, etc)
             return {
               id: post.id,
               author: post.authorName || 'Unknown User',
@@ -98,6 +98,12 @@ export default function Home() {
   const [commentsMap, setCommentsMap] = useState<Record<string, any[]>>({});
   const [commentsOpen, setCommentsOpen] = useState<Record<string, boolean>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+
+  // Send post modal state
+  const [sendModalOpenFor, setSendModalOpenFor] = useState<string | null>(null);
+  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<Record<string, boolean>>({});
+  const [sending, setSending] = useState(false);
 
   const handleLike = async (postId: string) => {
     const userId = localStorage.getItem('userId');
@@ -176,6 +182,27 @@ export default function Home() {
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return postDate.toLocaleDateString();
+  };
+
+  const toggleRecipient = (id: string) => {
+    setSelectedRecipients(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleSendToRecipients = async (postId: string) => {
+    const senderId = localStorage.getItem('userId') || '';
+    const recipientIds = Object.keys(selectedRecipients).filter(id => selectedRecipients[id]);
+    if (!senderId || recipientIds.length === 0) return;
+    setSending(true);
+    try {
+      await Promise.all(recipientIds.map(rid => messagesAPI.sendMessage(senderId, rid, '', postId)));
+      alert('Post sent to selected recipients');
+      setSendModalOpenFor(null);
+    } catch (e) {
+      console.error('Error sending post to recipients', e);
+      alert('There was an error sending the post to one or more recipients');
+    } finally {
+      setSending(false);
+    }
   };
 
 
@@ -277,6 +304,23 @@ export default function Home() {
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
                         tabIndex={0}
+                        onClick={async () => {
+                          setSendModalOpenFor(post.id);
+                          // fetch connections
+                          const userId = localStorage.getItem('userId') || '';
+                          try {
+                            const res = await connectionAPI.getConnections(userId);
+                            if (res.success) {
+                              setConnectionsList(res.data.connections || []);
+                            } else {
+                              setConnectionsList([]);
+                            }
+                            setSelectedRecipients({});
+                          } catch (e) {
+                            console.error('Error fetching connections', e);
+                            setConnectionsList([]);
+                          }
+                        }}
                       >
                         <SendIcon className="w-4 h-4" /> Send
                       </button>
@@ -318,6 +362,69 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {/* Send post modal */}
+      <SendPostModal
+        postId={sendModalOpenFor}
+        open={!!sendModalOpenFor}
+        onClose={() => setSendModalOpenFor(null)}
+        connections={connectionsList}
+        onToggleRecipient={toggleRecipient}
+        selectedRecipients={selectedRecipients}
+        onSend={handleSendToRecipients}
+        sending={sending}
+      />
     </>
+  );
+}
+// Note: SendPostModal will be rendered by the Home component when needed
+
+// Modal for sending post (rendered by Home above via state)
+export function SendPostModal({ postId, open, onClose, connections, onToggleRecipient, selectedRecipients, onSend, sending }: any) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md bg-card rounded-lg border border-border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">Send post</h3>
+          <button onClick={onClose} className="text-muted-foreground">Close</button>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-3">Select connections to send this post to:</p>
+
+        <div className="max-h-60 overflow-y-auto space-y-2 mb-4">
+          {connections.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No connections available</div>
+          ) : (
+            connections.map((c: any) => (
+              <label key={c.user.id} className="flex items-center gap-3 p-2 rounded hover:bg-secondary/40 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!selectedRecipients[c.user.id]}
+                  onChange={() => onToggleRecipient(c.user.id)}
+                />
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">{(c.user.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</div>
+                <div>
+                  <div className="text-sm font-medium">{c.user.name}</div>
+                  <div className="text-xs text-muted-foreground">{c.user.email}</div>
+                </div>
+              </label>
+            ))
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-2 rounded bg-secondary">Cancel</button>
+          <button
+            onClick={() => onSend(postId)}
+            disabled={sending || Object.values(selectedRecipients).every(v => !v)}
+            className="px-3 py-2 rounded bg-primary text-primary-foreground disabled:opacity-50"
+          >
+            {sending ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

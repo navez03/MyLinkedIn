@@ -7,6 +7,7 @@ import BackToRegister from './Screens/BackToRegister';
 import Landing from './Screens/Landing';
 import Notifications from './Screens/Notifications';
 import Messages from './Screens/Messages';
+import PostView from './Screens/PostView';
 import Profile from './Screens/Profile';
 import Network from './Screens/MyNetwork';
 
@@ -23,6 +24,7 @@ function App() {
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/network" element={<Network />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/post/:postId" element={<PostView />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
