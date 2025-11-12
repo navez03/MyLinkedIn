@@ -6,6 +6,7 @@ import { messagesAPI } from '../services/messagesService';
 import { socketService } from '../services/socketService';
 import { useLocation } from 'react-router-dom';
 import Loading from '../components/loading';
+import AIChatWidget from "../components/AIChatWidget";
 import { userAPI } from '../services/registerService';
 
 
@@ -315,6 +316,7 @@ const Messages: React.FC = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <Navigation />
 
@@ -483,6 +485,8 @@ const Messages: React.FC = () => {
         </div>
       </div>
     </div>
+      <AIChatWidget />
+    </>
   );
 };
 

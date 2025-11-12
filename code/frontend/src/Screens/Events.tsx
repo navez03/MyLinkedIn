@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Calendar, MapPin, Clock, Search, Filter, Plus, Video, X, Upload, Lock, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
+import { useNavigate } from 'react-router-dom';
+import AIChatWidget from "../components/AIChatWidget";
 import { Card } from "../components/card";
 import { eventsService, EventType, LocationType, EventResponse } from "../services/eventsService";
 import { connectionAPI } from "../services/connectionService";
@@ -16,6 +18,7 @@ interface Connection {
 }
 
 export default function Events() {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<'my' | 'suggested'>('suggested');
   const [locationTypeFilter, setLocationTypeFilter] = useState<'all' | 'online' | 'inperson'>('all');
   const [events, setEvents] = useState<EventResponse[]>([]);
@@ -41,25 +44,6 @@ export default function Events() {
     eventType: EventType.PUBLIC,
     bannerUrl: ""
   });
-
-  const style = document.createElement('style');
-  style.innerHTML = `
-    html, body {
-      overflow: hidden !important;
-      height: 100%;
-    }
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  `;
-  if (typeof window !== 'undefined' && !document.head.querySelector('style[data-scrollbar-hide]')) {
-    style.setAttribute('data-scrollbar-hide', 'true');
-    document.head.appendChild(style);
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -198,6 +182,10 @@ export default function Events() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewEvent = (eventId: string) => {
+    navigate(`/event-detail/${eventId}`); // This assumes your detail route is set up as /event-detail/:eventId
   };
 
   const handleOpenInviteModal = (event: EventResponse) => {
@@ -554,7 +542,7 @@ export default function Events() {
         <div className="w-full flex flex-col items-center justify-center px-6 py-6">
           {/* Main Content */}
           <div
-            className="max-w-6xl w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide mx-auto"
+            className="max-w-6xl w-full space-y-4 mx-auto" // REMOVIDO h-[...] e overflow-y-auto
             style={{ minHeight: 0 }}
           >
             {/* Tabs & Location Type Filter */}
@@ -724,8 +712,15 @@ export default function Events() {
                               Invite
                             </button>
                           )}
-                          <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                            View Event
+                        <button
+                            className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              navigate(`/events/${event.id}`);
+                            }}
+                        >
+                            <span>View Event</span>
                           </button>
                         </div>
                       </div>
@@ -737,6 +732,7 @@ export default function Events() {
           </div>
         </div>
       </div>
+      <AIChatWidget />
     </>
   );
 }
