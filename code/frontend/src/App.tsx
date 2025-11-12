@@ -10,6 +10,7 @@ import Messages from './Screens/Messages';
 import Profile from './Screens/Profile';
 import UpdateProfile from './Screens/UpdateProfile';
 import Events from './Screens/Events';
+import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/events/:eventId" element={<EventDetail />} />
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/set-name" element={<SetName />} />

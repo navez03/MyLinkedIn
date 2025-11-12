@@ -134,6 +134,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
 
   return (
     <>
+    <div style={{ overflowY: 'auto', height: '100vh' }}>
     <div className="min-h-screen bg-background">
       <Navigation />
 
@@ -231,6 +232,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
     <AIChatWidget />
