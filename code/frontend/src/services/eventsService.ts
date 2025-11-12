@@ -10,6 +10,13 @@ export enum LocationType {
   IN_PERSON = 'in-person',
 }
 
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export interface CreateEventDto {
   name: string;
   date: string;
@@ -34,6 +41,7 @@ export interface EventResponse {
   organizerId: string;
   organizerName?: string;
   organizerAvatar?: string;
+  participants?: Participant[];
   createdAt: string;
   updatedAt: string;
 }

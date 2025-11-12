@@ -1,3 +1,4 @@
+import { userAPI } from "../services/registerService";
 import React from 'react';
 import { Card } from './card';
 import { useNavigate } from 'react-router-dom';
@@ -13,23 +14,41 @@ const ProfileCard: React.FC = () => {
     navigate('/profile');
   };
 
-  const currentUserName = localStorage.getItem('userName') || 'Meu Perfil';
+  // Obter nome do utilizador do localStorage
+  const [currentUserName, setCurrentUserName] = useState<string>('Meu Perfil');
 
+  // Função para obter as iniciais
   const getInitials = (name: string): string => {
+    if (!name || name.trim() === '') return 'MP';
+    if (name === 'Meu Perfil') return 'MP';
     const parts = name.trim().split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return parts[0][0]?.toUpperCase() || '';
+    return parts[0][0]?.toUpperCase() || 'MP';
   };
 
   const initials = getInitials(currentUserName);
 
   useEffect(() => {
+    // Buscar nome do utilizador
+    const fetchUserName = async () => {
+      try {
+        const res = await userAPI.getUserProfile();
+        if (res.success && res.data && res.data.name) {
+          setCurrentUserName(res.data.name);
+        } else {
+          setCurrentUserName('Meu Perfil');
+        }
+      } catch {
+        setCurrentUserName('Meu Perfil');
+      }
+    };
+
+    // Buscar conexões
     const fetchConnections = async () => {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
-
       try {
         const res = await connectionAPI.getConnections(userId);
         if (res.success && res.data && res.data.connections) {
@@ -40,6 +59,7 @@ const ProfileCard: React.FC = () => {
       }
     };
 
+    fetchUserName();
     fetchConnections();
   }, []);
 

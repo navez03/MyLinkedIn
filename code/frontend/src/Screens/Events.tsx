@@ -615,120 +615,124 @@ export default function Events() {
               </div>
             </Card>
 
-            {/* Events List */}
-            {loading && events.length === 0 ? (
-              <Card className="p-8 text-center">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
-                <p className="text-muted-foreground">Loading events...</p>
-              </Card>
-            ) : filteredEvents.length === 0 ? (
-              <Card className="p-8 text-center">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-muted-foreground">No events found matching your criteria.</p>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filteredEvents.map((event) => (
-                  <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
-                    {event.bannerUrl && (
-                      <div className="relative">
-                        <img
-                          src={event.bannerUrl}
-                          alt={event.name}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="absolute top-3 left-3 flex gap-2">
-                          <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm">
-                            {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
-                          </span>
-                          {event.locationType === LocationType.ONLINE && (
-                            <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm flex items-center gap-1">
-                              <Video className="w-3 h-3" />
-                              Online
+            <div
+              style={{ maxHeight: '70vh', overflowY: 'auto' }}
+              className="scrollbar-hide"
+            >
+              {loading && events.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+                  <p className="text-muted-foreground">Loading events...</p>
+                </Card>
+              ) : filteredEvents.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-muted-foreground">No events found matching your criteria.</p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {filteredEvents.map((event) => (
+                    <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+                      {event.bannerUrl && (
+                        <div className="relative">
+                          <img
+                            src={event.bannerUrl}
+                            alt={event.name}
+                            className="w-full h-48 object-cover"
+                          />
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm">
+                              {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
                             </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-4 space-y-3">
-                      {!event.bannerUrl && (
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded">
-                            {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
-                          </span>
-                          {event.locationType === LocationType.ONLINE && (
-                            <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded flex items-center gap-1">
-                              <Video className="w-3 h-3" />
-                              Online
-                            </span>
-                          )}
+                            {event.locationType === LocationType.ONLINE && (
+                              <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm flex items-center gap-1">
+                                <Video className="w-3 h-3" />
+                                Online
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
-
-                      <h3 className="font-semibold text-lg text-foreground">
-                        {event.name}
-                      </h3>
-
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4" />
-                            <span>{formatDate(event.date)}</span>
+                      <div className="p-4 space-y-3">
+                        {!event.bannerUrl && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded">
+                              {event.eventType === EventType.PUBLIC ? 'Public' : 'Private'}
+                            </span>
+                            {event.locationType === LocationType.ONLINE && (
+                              <span className="text-xs font-medium px-2.5 py-1 bg-secondary text-foreground rounded flex items-center gap-1">
+                                <Video className="w-3 h-3" />
+                                Online
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4" />
-                            <span>{event.time}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                      </div>
+                        )}
 
-                      <div className="flex items-center justify-between pt-3 border-t border-border">
-                        <div className="flex items-center gap-2">
-                          {event.organizerAvatar ? (
-                            <img src={event.organizerAvatar} alt={event.organizerName || 'Organizer'} className="w-8 h-8 rounded-full" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
-                              {event.organizerName?.charAt(0) || 'U'}
+                        <h3 className="font-semibold text-lg text-foreground">
+                          {event.name}
+                        </h3>
+
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4" />
+                              <span>{formatDate(event.date)}</span>
                             </div>
-                          )}
-                          <span className="text-sm text-foreground font-medium">
-                            {event.organizerName || 'Unknown'}
-                          </span>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="w-4 h-4" />
+                              <span>{event.time}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4" />
+                            <span>{event.location}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {event.organizerId === localStorage.getItem('userId') && (
-                            <button 
+
+                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                          <div className="flex items-center gap-2">
+                            {event.organizerAvatar ? (
+                              <img src={event.organizerAvatar} alt={event.organizerName || 'Organizer'} className="w-8 h-8 rounded-full" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                                {event.organizerName?.charAt(0) || 'U'}
+                              </div>
+                            )}
+                            <span className="text-sm text-foreground font-medium">
+                              {event.organizerName || 'Unknown'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {event.organizerId === localStorage.getItem('userId') && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenInviteModal(event);
+                                }}
+                                className="px-3 py-1.5 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                Invite
+                              </button>
+                            )}
+                          <button
+                              className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
-                                handleOpenInviteModal(event);
+                                navigate(`/events/${event.id}`);
                               }}
-                              className="px-3 py-1.5 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors flex items-center gap-1.5"
-                            >
-                              <UserPlus className="w-4 h-4" />
-                              Invite
+                          >
+                              <span>View Event</span>
                             </button>
-                          )}
-                        <button
-                            className="px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              navigate(`/events/${event.id}`);
-                            }}
-                        >
-                            <span>View Event</span>
-                          </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

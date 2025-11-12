@@ -97,7 +97,25 @@ export class EventService {
         .eq('id', data.organizer_id)
         .single();
 
-      return this.mapEventToDto(data, user);
+      // Fetch participants (invitations with status 'going')
+      const { data: invitations } = await supabase
+        .from('event_invitations')
+        .select('user_id')
+        .eq('event_id', eventId)
+        .eq('status', 'going');
+
+      // Fetch participant users
+      let participants = [];
+      if (invitations && invitations.length > 0) {
+        const userIds = invitations.map(inv => inv.user_id);
+        const { data: participantUsers } = await supabase
+          .from('users')
+          .select('id, name, email, avatar_url')
+          .in('id', userIds);
+        participants = participantUsers || [];
+      }
+
+      return this.mapEventToDto(data, user, participants);
     } catch (error) {
       this.logger.error('Get event error', error.message);
       throw error;
@@ -276,7 +294,7 @@ export class EventService {
     }
   }
 
-  private mapEventToDto(event: any, user?: any): EventResponseDto {
+  private mapEventToDto(event: any, user?: any, participants?: any[]): EventResponseDto {
     return {
       id: event.id,
       name: event.name,
@@ -290,6 +308,12 @@ export class EventService {
       organizerId: event.organizer_id,
       organizerName: user?.name || null,
       organizerAvatar: user?.avatar_url || null,
+      participants: participants?.map(p => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        avatarUrl: p.avatar_url,
+      })) || [],
       createdAt: event.created_at,
       updatedAt: event.created_at,
     };
