@@ -277,7 +277,7 @@ export default function Home() {
                         >
                           {post.author}
                         </h3>
-                        <span className="text-xs text-muted-foreground">{post.time}</span>
+                        <span className="text-[10px] text-muted-foreground">{post.time}</span>
                       </div>
                     </div>
 
@@ -296,7 +296,7 @@ export default function Home() {
                     {/* Interactions visual only, no logic */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
                       <div className="flex items-center gap-1">
-                        <ThumbsUp className="w-4 h-4 text-primary fill-primary" />
+                        <ThumbsUp className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium text-foreground">{post.likes ?? 0}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{post.commentsCount ?? 0} comentários</span>
@@ -305,11 +305,11 @@ export default function Home() {
                     <div className="flex justify-around pt-2 border-t border-border">
                       <button
                         onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-1 rounded-lg px-2 py-1 transition-colors ${post.liked ? 'bg-primary/10' : 'hover:bg-secondary'}`}
+                        className="flex items-center gap-1 rounded-lg px-2 py-1 transition-colors hover:bg-secondary"
                         type="button"
                         tabIndex={0}
                       >
-                        <ThumbsUp className="w-4 h-4" /> {post.liked ? 'Liked' : 'Like'}
+                        <ThumbsUp className={`w-4 h-4 ${post.liked ? 'text-primary fill-primary' : ''}`} /> Like
                       </button>
                       <button
                         onClick={() => toggleComments(post.id)}
@@ -350,10 +350,27 @@ export default function Home() {
                       <div className="mt-3">
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                           {(commentsMap[post.id] || []).map((c: any) => (
-                            <div key={c.id || Math.random()} className="p-2 bg-background border border-border rounded">
-                              <div className="text-sm font-medium">{c.authorName || 'User'}</div>
-                              <div className="text-sm text-foreground">{c.content}</div>
-                              <div className="text-xs text-muted-foreground">{new Date(c.created_at || c.createdAt || Date.now()).toLocaleString()}</div>
+                            <div key={c.id || Math.random()} className="p-2 rounded">
+                              <div className="w-full mb-1 flex justify-end">
+                                <span className="text-[10px] text-muted-foreground">{new Date(c.created_at || c.createdAt || Date.now()).toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {/* Avatar do usuário se existir */}
+                                {c.authorAvatarUrl ? (
+                                  <img
+                                    src={c.authorAvatarUrl}
+                                    alt={c.authorName || 'Avatar'}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                    onError={e => { e.currentTarget.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                                    {(c.authorName || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                {/* Conteúdo do comentário */}
+                                <span className="text-sm text-foreground whitespace-pre-line">{c.content}</span>
+                              </div>
                             </div>
                           ))}
                         </div>
