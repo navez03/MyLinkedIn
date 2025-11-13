@@ -10,6 +10,7 @@ import { connectionAPI } from "../services/connectionService";
 import { messagesAPI } from "../services/messagesService";
 import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
+import { useUser } from "../components/UserContext";
 
 interface Post {
   id: string;
@@ -27,8 +28,9 @@ interface Post {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { isLoading: isUserLoading } = useUser();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isPostsLoading, setIsPostsLoading] = useState(true);
 
   const style = document.createElement('style');
   style.innerHTML = `
@@ -52,7 +54,7 @@ export default function Home() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        setIsLoading(true);
+        setIsPostsLoading(true);
         const userId = localStorage.getItem('userId');
 
         if (!userId) {
@@ -91,7 +93,7 @@ export default function Home() {
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
-        setIsLoading(false);
+        setIsPostsLoading(false);
       }
     };
 
@@ -220,7 +222,7 @@ export default function Home() {
     }
   };
 
-  if (isLoading) {
+  if (isUserLoading || isPostsLoading) {
     return <Loading />;
   }
 

@@ -14,6 +14,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  avatar_url?: string | null;
 }
 
 interface Message {
@@ -364,15 +365,28 @@ const Messages: React.FC = () => {
                       <div
                         key={conversation.id}
                         onClick={() => setSelectedChat(conversation.id)}
-                        className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-b border-border ${selectedChat === conversation.id ? 'bg-secondary/50' : ''
-                          }`}
+                        className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-b border-border ${selectedChat === conversation.id ? 'mb-secondary/50' : ''}`}
                       >
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                            <span className="text-sm text-primary-foreground font-semibold">
-                              {getInitials(conversation.name)}
-                            </span>
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden ${!conversation.avatar_url ? 'bg-primary' : ''}`}>
+                            {conversation.avatar_url ? (
+                              <img
+                                src={conversation.avatar_url}
+                                alt={conversation.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-white font-semibold">
+                                {getInitials(conversation.name) || '?'}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -401,10 +415,24 @@ const Messages: React.FC = () => {
                     <div className="flex items-center justify-between p-4 border-b border-border">
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                            <span className="text-sm text-primary-foreground font-semibold">
-                              {getInitials(selectedConversation.name)}
-                            </span>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${!selectedConversation.avatar_url ? 'bg-primary' : ''}`}>
+                            {selectedConversation.avatar_url ? (
+                              <img
+                                src={selectedConversation.avatar_url}
+                                alt={selectedConversation.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-white font-semibold">
+                                {getInitials(selectedConversation.name) || '?'}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div>

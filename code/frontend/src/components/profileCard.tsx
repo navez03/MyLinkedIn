@@ -5,18 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { Grid3x3, Calendar } from 'lucide-react';
 import { connectionAPI } from "../services/connectionService";
 import { useEffect, useState } from "react";
+import { useUser } from "./UserContext";
 
 const ProfileCard: React.FC = () => {
   const navigate = useNavigate();
+  const { userData } = useUser();
   const [connectionsCount, setConnectionsCount] = useState<number | null>(null);
 
   const handleProfileClick = () => {
     navigate('/profile');
   };
 
-  // Obter nome e avatar do utilizador do localStorage
-  const [currentUserName, setCurrentUserName] = useState<string>('Meu Perfil');
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
+  const currentUserName = userData?.name || 'Meu Perfil';
+  const userAvatarUrl = userData?.avatar_url || null;
 
   // Função para obter as iniciais
   const getInitials = (name: string): string => {
@@ -32,23 +33,6 @@ const ProfileCard: React.FC = () => {
   const initials = getInitials(currentUserName);
 
   useEffect(() => {
-    // Buscar nome e avatar do utilizador
-    const fetchUserName = async () => {
-      try {
-        const res = await userAPI.getUserProfile();
-        if (res.success && res.data) {
-          setCurrentUserName(res.data.name || 'Meu Perfil');
-          setUserAvatarUrl(res.data.avatar_url || null);
-        } else {
-          setCurrentUserName('Meu Perfil');
-          setUserAvatarUrl(null);
-        }
-      } catch {
-        setCurrentUserName('Meu Perfil');
-        setUserAvatarUrl(null);
-      }
-    };
-
     // Buscar conexões
     const fetchConnections = async () => {
       const userId = localStorage.getItem('userId');
@@ -63,7 +47,6 @@ const ProfileCard: React.FC = () => {
       }
     };
 
-    fetchUserName();
     fetchConnections();
   }, []);
 

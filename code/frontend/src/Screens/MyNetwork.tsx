@@ -12,6 +12,7 @@ interface Connection {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
   };
   connected_at: string;
 }
@@ -108,119 +109,138 @@ const Network = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="max-w-[1128px] mx-auto px-4 py-6">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-3">
-            <Card className="p-4">
-              <h3 className="font-semibold mb-4">Manage my network</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setActiveSection('connections')}
-                  className={`w-full flex items-center justify-between py-2 hover:bg-secondary rounded px-2 transition-colors ${activeSection === 'connections' ? 'bg-secondary' : ''}`}
-                >
-                  <span className="text-sm">Connections</span>
-                  <span className="text-sm font-semibold text-muted-foreground">{connections.length}</span>
-                </button>
-                <button
-                  onClick={() => setActiveSection('invites')}
-                  className={`w-full flex items-center justify-between py-2 hover:bg-secondary rounded px-2 transition-colors ${activeSection === 'invites' ? 'bg-secondary' : ''}`}
-                >
-                  <span className="text-sm">Invitations</span>
-                  <span className="text-sm font-semibold text-muted-foreground">{invitations.length}</span>
-                </button>
-              </div>
-            </Card>
-          </div>
-          <div className="col-span-12 lg:col-span-9 space-y-4">
-            {activeSection === 'invites' && (
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <UserPlus className="w-5 h-5" />
-                  <h2 className="text-xl font-semibold">Invitations to connect</h2>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-[1128px] mx-auto px-4 py-6">
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 lg:col-span-3">
+              <Card className="p-4">
+                <h3 className="font-semibold mb-4">Manage my network</h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setActiveSection('connections')}
+                    className={`w-full flex items-center justify-between py-2 hover:bg-secondary rounded px-2 transition-colors ${activeSection === 'connections' ? 'bg-secondary' : ''}`}
+                  >
+                    <span className="text-sm">Connections</span>
+                    <span className="text-sm font-semibold text-muted-foreground">{connections.length}</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveSection('invites')}
+                    className={`w-full flex items-center justify-between py-2 hover:bg-secondary rounded px-2 transition-colors ${activeSection === 'invites' ? 'bg-secondary' : ''}`}
+                  >
+                    <span className="text-sm">Invitations</span>
+                    <span className="text-sm font-semibold text-muted-foreground">{invitations.length}</span>
+                  </button>
                 </div>
-                {invitations.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No pending invitations</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {invitations.map((invitation) => (
-                      <div key={invitation.id} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
-                        <div className="flex items-center w-full mb-2">
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary">
-                            {getInitials(invitation.senderName || invitation.sender_id)}
-                          </div>
-                          <div className="ml-4 flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{invitation.senderName}</h3>
-                            <p className="text-sm text-muted-foreground mb-2 truncate">
-                              Sent on {new Date(invitation.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 w-full mt-2">
-                          <Button
-                            size="sm"
-                            className="flex-1"
-                            onClick={() => handleAcceptInvitation(invitation.id)}
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => handleRejectInvitation(invitation.id)}
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </Card>
-            )}
-            {activeSection === 'connections' && (
-              <Card className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Users className="w-5 h-5" />
-                  <h2 className="text-xl font-semibold">My connections</h2>
-                </div>
-                {connections.length === 0 ? (
-                  <p className="text-center text-muted-foreground">No connections yet</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {connections.map((connection, index) => {
-                      return (
-                        <div key={index} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
+            </div>
+            <div className="col-span-12 lg:col-span-9 space-y-4">
+              {activeSection === 'invites' && (
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <UserPlus className="w-5 h-5" />
+                    <h2 className="text-xl font-semibold">Invitations to connect</h2>
+                  </div>
+                  {invitations.length === 0 ? (
+                    <p className="text-center text-muted-foreground">No pending invitations</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {invitations.map((invitation) => (
+                        <div key={invitation.id} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
                           <div className="flex items-center w-full mb-2">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary">
-                              {getInitials(connection.user.name)}
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary overflow-hidden">
+                              <span className="text-sm text-primary-foreground font-semibold">
+                                {getInitials(invitation.senderName || invitation.sender_id)}
+                              </span>
                             </div>
                             <div className="ml-4 flex-1 min-w-0">
-                              <h3 className="font-semibold truncate">{connection.user.name}</h3>
+                              <h3 className="font-semibold truncate">{invitation.senderName}</h3>
                               <p className="text-sm text-muted-foreground mb-2 truncate">
-                                {connection.user.email}
+                                Sent on {new Date(invitation.created_at).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
-                          <Button
-                            size="sm" variant="outline" className="w-full mt-2" onClick={() => { window.location.href = `/messages?userId=${connection.user.id}`; }}
-                          >
-                            Send message
-                          </Button>
+                          <div className="flex gap-2 w-full mt-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleAcceptInvitation(invitation.id)}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleRejectInvitation(invitation.id)}
+                            >
+                              Reject
+                            </Button>
+                          </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
+              {activeSection === 'connections' && (
+                <Card className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5" />
+                    <h2 className="text-xl font-semibold">My connections</h2>
                   </div>
-                )}
-              </Card>
-            )}
+                  {connections.length === 0 ? (
+                    <p className="text-center text-muted-foreground">No connections yet</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {connections.map((connection, index) => {
+                        return (
+                          <div key={index} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
+                            <div className="flex items-center w-full mb-2">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg flex-shrink-0 overflow-hidden ${connection.user.avatar_url ? '' : 'bg-primary'}`}>
+                                {connection.user.avatar_url ? (
+                                  <img
+                                    src={connection.user.avatar_url}
+                                    alt={connection.user.name}
+                                    className="w-full h-full object-cover"
+                                    style={{ background: 'none', border: 'none' }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <span className="text-sm text-white font-semibold">
+                                    {getInitials(connection.user.name) || '?'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="ml-4 flex-1 min-w-0">
+                                <h3 className="font-semibold truncate">{connection.user.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-2 truncate">
+                                  {connection.user.email}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm" variant="outline" className="w-full mt-2" onClick={() => { window.location.href = `/messages?userId=${connection.user.id}`; }}
+                            >
+                              Send message
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <AIChatWidget />
+      <AIChatWidget />
     </>
   );
 };

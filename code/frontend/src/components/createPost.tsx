@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { cn } from "../utils";
 import { postsAPI } from "../services/postsService";
 import { userAPI } from "../services/registerService";
+import { useUser } from "./UserContext";
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
@@ -92,28 +93,11 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>('');
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const { userData } = useUser();
+  const userName = userData?.name || '';
+  const userAvatar = userData?.avatar_url || null;
   const initials = getUserInitials(userName);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  // Fetch user data when modal opens
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (open) {
-        try {
-          const profileResponse = await userAPI.getUserProfile();
-          if (profileResponse.success && profileResponse.data) {
-            setUserName(profileResponse.data.name || '');
-            setUserAvatar(profileResponse.data.avatar_url || null);
-          }
-        } catch (e) {
-          console.error('Error fetching user data:', e);
-        }
-      }
-    };
-    fetchUserData();
-  }, [open]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -269,24 +253,10 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
 const CreatePostCard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userName, setUserName] = useState<string>('');
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const { userData } = useUser();
+  const userName = userData?.name || '';
+  const userAvatar = userData?.avatar_url || null;
   const initials = getUserInitials(userName);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const profileResponse = await userAPI.getUserProfile();
-        if (profileResponse.success && profileResponse.data) {
-          setUserName(profileResponse.data.name || '');
-          setUserAvatar(profileResponse.data.avatar_url || null);
-        }
-      } catch (e) {
-        console.error('Error fetching user data:', e);
-      }
-    };
-    fetchUserData();
-  }, []);
 
   return (
     <>

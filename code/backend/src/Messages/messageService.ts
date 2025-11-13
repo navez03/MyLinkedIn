@@ -129,7 +129,7 @@ export class MessageService {
 
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, name')
+      .select('id, email, name, avatar_url')
       .in('id', Array.from(userIds));
 
     if (usersError) {

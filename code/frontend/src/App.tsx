@@ -13,6 +13,7 @@ import UpdateProfile from './Screens/UpdateProfile';
 import Events from './Screens/Events';
 import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
+import { UserProvider } from './components/UserContext';
 
 function App() {
   return (
