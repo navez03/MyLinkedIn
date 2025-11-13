@@ -223,8 +223,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* AI Chat Widget - This floats on bottom right corner */}
       <AIChatWidget />
     </>
   );

@@ -1,4 +1,4 @@
-import { Home, Users, Briefcase, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
+import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";

@@ -10,6 +10,13 @@ export enum LocationType {
   IN_PERSON = 'in-person',
 }
 
+export class ParticipantDto {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
@@ -57,6 +64,7 @@ export class EventResponseDto {
   organizerId: string;
   organizerName?: string;
   organizerAvatar?: string;
+  participants?: ParticipantDto[];
   createdAt: string;
   updatedAt: string;
 }
