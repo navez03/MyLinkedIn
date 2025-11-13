@@ -5,7 +5,7 @@ import { SupabaseService } from '../config/supabaseClient';
 export class MessageService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
-  async sendMessage(data: { senderId: string; receiverId: string; content: string }, token: string) {
+  async sendMessage(data: { senderId: string; receiverId: string; content?: string; postId?: string }, token: string) {
     const supabase = this.supabaseService.getClientWithToken(token);
     const { senderId, receiverId, content } = data;
 
@@ -19,14 +19,21 @@ export class MessageService {
       throw new Error('The users are not connected');
     }
 
+    // support optional post_id and allow empty content when sharing a post
+    const insertObj: any = {
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content: content || '',
+      created_at: new Date().toISOString(),
+    };
+
+    if ((data as any).postId) {
+      insertObj.post_id = (data as any).postId;
+    }
+
     const { data: message, error: messageError } = await supabase
       .from('messages')
-      .insert({
-        sender_id: senderId,
-        receiver_id: receiverId,
-        content,
-        created_at: new Date().toISOString()
-      })
+      .insert(insertObj)
       .select('*')
       .single();
 
@@ -65,11 +72,40 @@ export class MessageService {
       .order('created_at', { ascending: true });
 
     if (messagesError) {
-      console.error('Error getting messages:', messagesError.message);
-      return [];
+      throw new Error(`Error getting messages: ${messagesError.message}`);
     }
 
-    return messages || [];
+    // If some messages reference posts, fetch those posts and attach a small preview
+    const postIds = Array.from(new Set((messages || []).filter((m: any) => m.post_id).map((m: any) => m.post_id)));
+
+    let postsMap: Record<string, any> = {};
+    if (postIds.length > 0) {
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select(`id, content, user_id, created_at, users:user_id (name, email)`)
+        .in('id', postIds as any[]);
+
+      if (!postsError && posts) {
+        postsMap = (posts as any[]).reduce((acc, p) => {
+          acc[p.id] = {
+            id: p.id,
+            content: p.content,
+            user_id: p.user_id,
+            created_at: p.created_at,
+            authorName: p.users?.name,
+          };
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // attach post preview when available
+    const messagesWithPost = (messages || []).map((m: any) => ({
+      ...m,
+      post: m.post_id ? postsMap[m.post_id] || null : null,
+    }));
+
+    return messagesWithPost || [];
   }
 
   async getUserConversations(userId: string, token: string) {

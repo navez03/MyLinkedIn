@@ -2,8 +2,8 @@ import { apiHelpers, ApiResponse } from './api';
 
 export const messagesAPI = {
 
-  sendMessage: async (senderId: string, receiverId: string, content: string): Promise<ApiResponse<{ message: string }>> => {
-    return apiHelpers.post<{ message: string }>('/messages', { senderId, receiverId, content }, true);
+  sendMessage: async (senderId: string, receiverId: string, content?: string, postId?: string): Promise<ApiResponse<{ message: string }>> => {
+    return apiHelpers.post<{ message: string }>('/messages', { senderId, receiverId, content, postId }, true);
   },
 
   getMessagesBetweenUsers: async (user1Id: string, user2Id: string): Promise<ApiResponse<{ messages: any[] }>> => {

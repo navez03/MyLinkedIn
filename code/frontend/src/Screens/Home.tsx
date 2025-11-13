@@ -6,6 +6,8 @@ import { ThumbsUp, MessageCircle, SendIcon, Share2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
+import { connectionAPI } from "../services/connectionService";
+import { messagesAPI } from "../services/messagesService";
 import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
 
@@ -18,6 +20,9 @@ interface Post {
   image?: string;
   time: string;
   userId: string;
+  likes?: number;
+  liked?: boolean;
+  commentsCount?: number;
 }
 
 export default function Home() {
@@ -75,6 +80,9 @@ export default function Home() {
               image: post.imageUrl,
               time: timeAgo,
               userId: post.userId,
+              likes: (post as any).likes ?? 0,
+              liked: (post as any).likedByCurrentUser ?? false,
+              commentsCount: (post as any).commentsCount ?? 0,
             };
           });
 
@@ -90,6 +98,81 @@ export default function Home() {
     fetchPosts();
   }, [navigate]);
 
+  // Comments and per-post UI state
+  const [commentsMap, setCommentsMap] = useState<Record<string, any[]>>({});
+  const [commentsOpen, setCommentsOpen] = useState<Record<string, boolean>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+
+  // Send post modal state
+  const [sendModalOpenFor, setSendModalOpenFor] = useState<string | null>(null);
+  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [selectedRecipients, setSelectedRecipients] = useState<Record<string, boolean>>({});
+  const [sending, setSending] = useState(false);
+
+  const handleLike = async (postId: string) => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    const idx = posts.findIndex(p => p.id === postId);
+    if (idx === -1) return;
+
+    const post = posts[idx];
+
+    try {
+      if (!post.liked) {
+        const res = await postsAPI.likePost(postId, userId);
+        if (res.success) {
+          const total = (res.data as any)?.totalLikes ?? (post.likes || 0) + 1;
+          const updated = [...posts];
+          updated[idx] = { ...post, liked: true, likes: total };
+          setPosts(updated);
+        }
+      } else {
+        const res = await postsAPI.unlikePost(postId, userId);
+        if (res.success) {
+          const total = (res.data as any)?.totalLikes ?? Math.max((post.likes || 1) - 1, 0);
+          const updated = [...posts];
+          updated[idx] = { ...post, liked: false, likes: total };
+          setPosts(updated);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling like', error);
+    }
+  };
+
+  const toggleComments = async (postId: string) => {
+    setCommentsOpen(prev => ({ ...prev, [postId]: !prev[postId] }));
+    // If opening and not loaded, fetch
+    if (!commentsMap[postId]) {
+      const res = await postsAPI.getComments(postId);
+      if (res.success && (res.data as any)) {
+        setCommentsMap(prev => ({ ...prev, [postId]: (res.data as any).comments }));
+        // Update commentsCount in post
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: (res.data as any).total ?? p.commentsCount ?? 0 } : p));
+      }
+    }
+  };
+
+  const submitComment = async (postId: string) => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    const content = commentInputs[postId]?.trim();
+    if (!content) return;
+
+    try {
+      const res = await postsAPI.addComment(postId, content, userId);
+      if (res.success && (res.data as any).comment) {
+        // append comment locally
+        setCommentsMap(prev => ({ ...prev, [postId]: [...(prev[postId] || []), (res.data as any).comment] }));
+        setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p));
+      }
+    } catch (error) {
+      console.error('Error adding comment', error);
+    }
+  };
+
   const getTimeAgo = (createdAt: string): string => {
     const now = new Date();
     const postDate = new Date(createdAt);
@@ -104,6 +187,29 @@ export default function Home() {
     if (diffDays < 7) return `${diffDays}d ago`;
     return postDate.toLocaleDateString();
   };
+
+  const toggleRecipient = (id: string) => {
+    setSelectedRecipients(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleSendToRecipients = async (postId: string) => {
+    const senderId = localStorage.getItem('userId') || '';
+    const recipientIds = Object.keys(selectedRecipients).filter(id => selectedRecipients[id]);
+    if (!senderId || recipientIds.length === 0) return;
+    setSending(true);
+    try {
+      await Promise.all(recipientIds.map(rid => messagesAPI.sendMessage(senderId, rid, '', postId)));
+      alert('Post sent to selected recipients');
+      setSendModalOpenFor(null);
+    } catch (e) {
+      console.error('Error sending post to recipients', e);
+      alert('There was an error sending the post to one or more recipients');
+    } finally {
+      setSending(false);
+    }
+  };
+
+
 
   const handleProfileClick = (userId: string) => {
     const currentUserId = localStorage.getItem('userId');
@@ -185,23 +291,26 @@ export default function Home() {
                       />
                     )}
 
+                    {/* Interactions visual only, no logic */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
                       <div className="flex items-center gap-1">
                         <ThumbsUp className="w-4 h-4 text-primary fill-primary" />
-                        <span className="font-medium text-foreground">0</span>
+                        <span className="font-medium text-foreground">{post.likes ?? 0}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">0 comentários</span>
+                      <span className="text-xs text-muted-foreground">{post.commentsCount ?? 0} comentários</span>
                     </div>
 
                     <div className="flex justify-around pt-2 border-t border-border">
                       <button
-                        className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                        onClick={() => handleLike(post.id)}
+                        className={`flex items-center gap-1 rounded-lg px-2 py-1 transition-colors ${post.liked ? 'bg-primary/10' : 'hover:bg-secondary'}`}
                         type="button"
                         tabIndex={0}
                       >
-                        <ThumbsUp className="w-4 h-4" /> Like
+                        <ThumbsUp className="w-4 h-4" /> {post.liked ? 'Liked' : 'Like'}
                       </button>
                       <button
+                        onClick={() => toggleComments(post.id)}
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
                         tabIndex={0}
@@ -212,10 +321,57 @@ export default function Home() {
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
                         tabIndex={0}
+                        onClick={async () => {
+                          setSendModalOpenFor(post.id);
+                          // fetch connections
+                          const userId = localStorage.getItem('userId') || '';
+                          try {
+                            const res = await connectionAPI.getConnections(userId);
+                            if (res.success) {
+                              setConnectionsList(res.data.connections || []);
+                            } else {
+                              setConnectionsList([]);
+                            }
+                            setSelectedRecipients({});
+                          } catch (e) {
+                            console.error('Error fetching connections', e);
+                            setConnectionsList([]);
+                          }
+                        }}
                       >
                         <SendIcon className="w-4 h-4" /> Send
                       </button>
                     </div>
+
+                    {/* Comments section (toggle) */}
+                    {commentsOpen[post.id] && (
+                      <div className="mt-3">
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {(commentsMap[post.id] || []).map((c: any) => (
+                            <div key={c.id || Math.random()} className="p-2 bg-background border border-border rounded">
+                              <div className="text-sm font-medium">{c.authorName || 'User'}</div>
+                              <div className="text-sm text-foreground">{c.content}</div>
+                              <div className="text-xs text-muted-foreground">{new Date(c.created_at || c.createdAt || Date.now()).toLocaleString()}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex gap-2 mt-2">
+                          <input
+                            value={commentInputs[post.id] ?? ''}
+                            onChange={(e) => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))}
+                            placeholder="Write a comment..."
+                            className="flex-1 rounded-md border border-border px-3 py-2"
+                          />
+                          <button
+                            onClick={() => submitComment(post.id)}
+                            className="bg-primary text-primary-foreground px-3 rounded-md"
+                          >
+                            Post
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -224,6 +380,69 @@ export default function Home() {
         </div>
       </div>
       <AIChatWidget />
+      {/* Send post modal */}
+      <SendPostModal
+        postId={sendModalOpenFor}
+        open={!!sendModalOpenFor}
+        onClose={() => setSendModalOpenFor(null)}
+        connections={connectionsList}
+        onToggleRecipient={toggleRecipient}
+        selectedRecipients={selectedRecipients}
+        onSend={handleSendToRecipients}
+        sending={sending}
+      />
     </>
+  );
+}
+// Note: SendPostModal will be rendered by the Home component when needed
+
+// Modal for sending post (rendered by Home above via state)
+export function SendPostModal({ postId, open, onClose, connections, onToggleRecipient, selectedRecipients, onSend, sending }: any) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md bg-card rounded-lg border border-border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold">Send post</h3>
+          <button onClick={onClose} className="text-muted-foreground">Close</button>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-3">Select connections to send this post to:</p>
+
+        <div className="max-h-60 overflow-y-auto space-y-2 mb-4">
+          {connections.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No connections available</div>
+          ) : (
+            connections.map((c: any) => (
+              <label key={c.user.id} className="flex items-center gap-3 p-2 rounded hover:bg-secondary/40 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!selectedRecipients[c.user.id]}
+                  onChange={() => onToggleRecipient(c.user.id)}
+                />
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">{(c.user.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</div>
+                <div>
+                  <div className="text-sm font-medium">{c.user.name}</div>
+                  <div className="text-xs text-muted-foreground">{c.user.email}</div>
+                </div>
+              </label>
+            ))
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-3 py-2 rounded bg-secondary">Cancel</button>
+          <button
+            onClick={() => onSend(postId)}
+            disabled={sending || Object.values(selectedRecipients).every(v => !v)}
+            className="px-3 py-2 rounded bg-primary text-primary-foreground disabled:opacity-50"
+          >
+            {sending ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
