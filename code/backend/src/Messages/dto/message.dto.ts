@@ -15,3 +15,14 @@ export interface Message {
     email: string;
   };
 }
+
+export interface MessageWithPost extends Message {
+  post_id?: string | null;
+  post?: {
+    id: string;
+    content: string;
+    user_id: string;
+    created_at: string;
+    authorName?: string;
+  } | null;
+}

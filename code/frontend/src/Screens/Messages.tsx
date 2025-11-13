@@ -4,7 +4,7 @@ import { Search, MoreHorizontal, Send } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
 import { socketService } from '../services/socketService';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Loading from '../components/loading';
 import AIChatWidget from "../components/AIChatWidget";
 import { userAPI } from '../services/registerService';
@@ -23,6 +23,13 @@ interface Message {
   receiver_id: string;
   content: string;
   created_at: string;
+  post?: {
+    id: string;
+    content: string;
+    user_id: string;
+    created_at: string;
+    authorName?: string;
+  } | null;
 }
 
 const Messages: React.FC = () => {
@@ -38,6 +45,7 @@ const Messages: React.FC = () => {
 
   const currentUserId = localStorage.getItem('userId') || '';
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -233,7 +241,11 @@ const Messages: React.FC = () => {
     );
     if (relevantMessages.length === 0) return '';
     const sorted = [...relevantMessages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    return sorted[0].content;
+    const lastMessage = sorted[0];
+    if (lastMessage.post != null)
+      return "Sent you a post";
+    else
+      return lastMessage.content;
   };
 
   const selectedConversation = conversations.find(c => c.id === selectedChat);
@@ -455,7 +467,14 @@ const Messages: React.FC = () => {
                                     : 'bg-secondary text-foreground'
                                     }`}
                                 >
-                                  <p className="text-sm">{message.content}</p>
+                                  {message.post ? (
+                                    <div className="cursor-pointer" onClick={() => navigate(`/post/${message.post!.id}`)}>
+                                      <div className="text-xs font-semibold">{message.post.authorName || 'Post'}</div>
+                                      <div className="text-sm truncate">{message.post.content}</div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm">{message.content}</p>
+                                  )}
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1 px-2">
                                   {formatTime(message.created_at)}
