@@ -338,7 +338,7 @@ export class PostService {
     // Buscar o nome do utilizador
     const { data: user } = await supabase
       .from('users')
-      .select('name, email')
+      .select('name, email, avatar_url')
       .eq('id', createCommentDto.user_id)
       .single();
 
@@ -346,6 +346,7 @@ export class PostService {
       ...data,
       authorName: user?.name,
       authorEmail: user?.email,
+      authorAvatarUrl: user?.avatar_url,
     };
   }
 
@@ -356,7 +357,7 @@ export class PostService {
       .from('post_comments')
       .select(`
       *,
-      users:user_id (name, email)
+      users:user_id (name, email, avatar_url)
     `, { count: 'exact' })
       .eq('post_id', postId)
       .order('created_at', { ascending: false })
@@ -372,6 +373,7 @@ export class PostService {
       createdAt: c.created_at,
       authorName: c.users?.name,
       authorEmail: c.users?.email,
+      authorAvatarUrl: c.users?.avatar_url,
     }));
 
     return { comments: mapped, total: count || 0 };
