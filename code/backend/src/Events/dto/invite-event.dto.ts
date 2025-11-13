@@ -16,7 +16,7 @@ export class EventInvitationResponseDto {
   eventId: string;
   userId: string;
   invitedBy: string;
-  status: 'pending' | 'interested' | 'going' | 'declined';
+  status: 'pending' | 'going' | 'declined';
   createdAt: string;
 }
 

@@ -362,15 +362,22 @@ export class UserService {
           updateData.avatar_url = updateProfileDto.avatar_url;
         }
 
-        const result = await userClient
-          .from('users')
-          .update(updateData)
-          .eq('id', userId)
-          .select()
-          .maybeSingle();
+        // Check if there's anything to update
+        if (Object.keys(updateData).length === 0) {
+          // Nothing to update, return existing user
+          data = existingUser;
+          error = null;
+        } else {
+          const result = await userClient
+            .from('users')
+            .update(updateData)
+            .eq('id', userId)
+            .select()
+            .maybeSingle();
 
-        data = result.data;
-        error = result.error;
+          data = result.data;
+          error = result.error;
+        }
       } else {
         // User doesn't exist - insert new record
         const insertData: any = {

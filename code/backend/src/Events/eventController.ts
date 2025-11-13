@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, ValidationPipe, HttpCode, HttpStatus, HttpException, UseGuards, Logger, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, Query, ValidationPipe, HttpCode, HttpStatus, HttpException, UseGuards, Logger, UseInterceptors, UploadedFile, BadRequestException, Put } from '@nestjs/common';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventService } from './eventService';
@@ -174,6 +174,92 @@ export class EventController {
       this.handleException(error, 'Error deleting event');
     }
   }
+
+  @Put(':id/invite-status')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateInviteStatus(
+    @Param('id') eventId: string,
+    @Body('status') status: 'going' | 'declined',
+    @GetToken() token: string,
+    @GetUserId() userId: string
+  ): Promise<{ success: boolean; invitation: any }> {
+    try {
+      const invitation = await this.eventService.updateInviteStatus(eventId, userId, status, token);
+      return {
+        success: true,
+        invitation,
+      };
+    }
+    catch (error) {
+      this.logger.error('Update invite status error', error.message);
+      this.handleException(error, 'Error updating invite status');
+    }
+  }
+
+  @Get('invitations/pending')
+  @UseGuards(AuthGuard)
+  async getPendingInvitations(
+    @GetToken() token: string,
+    @GetUserId() userId: string
+  ): Promise<{ success: boolean; invitations: any[] }> {
+    try {
+      const invitations = await this.eventService.getPendingInvitations(userId, token);
+      return {
+        success: true,
+        invitations,
+      };
+    }
+    catch (error) {
+      this.logger.error('Get pending invitations error', error.message);
+      this.handleException(error, 'Error fetching pending invitations');
+    }
+  }
+
+  @Delete(':eventId/participants/:participantId')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async removeParticipant(
+    @Param('eventId') eventId: string,
+    @Param('participantId') participantId: string,
+    @GetToken() token: string,
+    @GetUserId() userId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await this.eventService.removeParticipant(eventId, participantId, userId, token);
+      return {
+        success: true,
+        message: result.message,
+      };
+    }
+    catch (error) {
+      this.logger.error('Remove participant error', error.message);
+      this.handleException(error, 'Error removing participant');
+    }
+  }
+
+  @Post(':eventId/participate')
+  @UseGuards(AuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async participateInEvent(
+    @Param('eventId') eventId: string,
+    @GetToken() token: string,
+    @GetUserId() userId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await this.eventService.participateInEvent(eventId, userId, token);
+      return {
+        success: true,
+        message: result.message,
+      };
+    }
+    catch (error) {
+      this.logger.error('Participate in event error', error.message);
+      this.handleException(error, 'Error participating in event');
+    }
+  }
+
+
 
   private handleException(error: any, defaultMessage: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
     if (error instanceof HttpException) {

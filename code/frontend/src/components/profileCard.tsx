@@ -14,8 +14,9 @@ const ProfileCard: React.FC = () => {
     navigate('/profile');
   };
 
-  // Obter nome do utilizador do localStorage
+  // Obter nome e avatar do utilizador do localStorage
   const [currentUserName, setCurrentUserName] = useState<string>('Meu Perfil');
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null);
 
   // Função para obter as iniciais
   const getInitials = (name: string): string => {
@@ -31,17 +32,20 @@ const ProfileCard: React.FC = () => {
   const initials = getInitials(currentUserName);
 
   useEffect(() => {
-    // Buscar nome do utilizador
+    // Buscar nome e avatar do utilizador
     const fetchUserName = async () => {
       try {
         const res = await userAPI.getUserProfile();
-        if (res.success && res.data && res.data.name) {
-          setCurrentUserName(res.data.name);
+        if (res.success && res.data) {
+          setCurrentUserName(res.data.name || 'Meu Perfil');
+          setUserAvatarUrl(res.data.avatar_url || null);
         } else {
           setCurrentUserName('Meu Perfil');
+          setUserAvatarUrl(null);
         }
       } catch {
         setCurrentUserName('Meu Perfil');
+        setUserAvatarUrl(null);
       }
     };
 
@@ -70,8 +74,21 @@ const ProfileCard: React.FC = () => {
         <div className="h-[54px] bg-gradient-to-r from-primary/20 to-primary/40" />
         <div className="px-4 pb-4">
           <div className="-mt-8 mb-3 flex justify-start pl-0">
-            <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xl">
-              {initials}
+            <div className="w-16 h-16 rounded-full border-4 border-white shadow-lg bg-primary text-primary-foreground flex items-center justify-center font-semibold text-xl overflow-hidden">
+              {userAvatarUrl ? (
+                <img
+                  src={userAvatarUrl}
+                  alt={currentUserName}
+                  className="w-full h-full rounded-full object-cover"
+                  onError={e => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextElementSibling) {
+                      e.currentTarget.nextElementSibling.classList.remove('hidden');
+                    }
+                  }}
+                />
+              ) : null}
+              <span className={userAvatarUrl ? 'hidden' : ''}>{initials}</span>
             </div>
           </div>
           <h3 className="font-semibold text-sm mb-3">{currentUserName}</h3>

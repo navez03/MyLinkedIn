@@ -97,21 +97,13 @@ export class EventService {
         .eq('id', data.organizer_id)
         .single();
 
-      // Fetch participants (invitations with status 'going')
-      const { data: invitations } = await supabase
-        .from('event_invitations')
-        .select('user_id')
-        .eq('event_id', eventId)
-        .eq('status', 'going');
-
-      // Fetch participant users
+      // Fetch participant users from the participants array
       let participants = [];
-      if (invitations && invitations.length > 0) {
-        const userIds = invitations.map(inv => inv.user_id);
+      if (data.participants && data.participants.length > 0) {
         const { data: participantUsers } = await supabase
           .from('users')
           .select('id, name, email, avatar_url')
-          .in('id', userIds);
+          .in('id', data.participants);
         participants = participantUsers || [];
       }
 
@@ -254,6 +246,192 @@ export class EventService {
       }));
     } catch (error) {
       this.logger.error('Invite users error', error.message);
+      throw error;
+    }
+  }
+
+  async updateInviteStatus(eventId: string, userId: string, status: 'going' | 'declined', token: string): Promise<EventInvitationResponseDto> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      // Verify invitation exists
+      const { data: invitation, error: invitationError } = await supabase
+        .from('event_invitations')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('user_id', userId)
+        .single();
+
+      if (invitationError || !invitation) {
+        throw new NotFoundException('Convite não encontrado');
+      }
+
+      // If accepting, add user to participants array
+      if (status === 'going') {
+        // Get current event
+        const { data: event, error: eventError } = await supabase
+          .from('events')
+          .select('participants')
+          .eq('id', eventId)
+          .single();
+
+        if (eventError) {
+          this.logger.error('Error fetching event', eventError.message);
+          throw new BadRequestException(`Error fetching event: ${eventError.message}`);
+        }
+
+        // Add user to participants array if not already there
+        const currentParticipants = event.participants || [];
+        if (!currentParticipants.includes(userId)) {
+          const { error: updateError } = await supabase
+            .from('events')
+            .update({ participants: [...currentParticipants, userId] })
+            .eq('id', eventId);
+
+          if (updateError) {
+            this.logger.error('Error updating participants', updateError.message);
+            throw new BadRequestException(`Error updating participants: ${updateError.message}`);
+          }
+        }
+      }
+
+      // Delete the invitation (whether accepted or declined)
+      const { error: deleteError } = await supabase
+        .from('event_invitations')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', userId);
+
+      if (deleteError) {
+        this.logger.error('Error deleting invitation', deleteError.message);
+        throw new BadRequestException(`Error deleting invitation: ${deleteError.message}`);
+      }
+
+      // Return the invitation data before deletion
+      return {
+        id: invitation.id,
+        eventId: invitation.event_id,
+        userId: invitation.user_id,
+        invitedBy: invitation.invited_by,
+        status: status,
+        createdAt: invitation.created_at,
+      };
+    } catch (error) {
+      this.logger.error('Erro updateInviteStatus', error.message);
+      throw error;
+    }
+  }
+
+  async getPendingInvitations(userId: string, token: string): Promise<EventInvitationResponseDto[]> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { data, error } = await supabase
+        .from('event_invitations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'pending');
+
+      if (error) {
+        this.logger.error('Error fetching pending invitations', error.message);
+        throw new BadRequestException(`Error fetching pending invitations: ${error.message}`);
+      }
+
+      return data.map(invitation => ({
+        id: invitation.id,
+        eventId: invitation.event_id,
+        userId: invitation.user_id,
+        invitedBy: invitation.invited_by,
+        status: invitation.status,
+        createdAt: invitation.created_at,
+      }));
+    } catch (error) {
+      this.logger.error('Get pending invitations error', error.message);
+      throw error;
+    }
+  }
+
+  async removeParticipant(eventId: string, participantId: string, requesterId: string, token: string): Promise<{ message: string }> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      // Get event and verify permissions
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('organizer_id, participants')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      // Allow if user is organizer or removing themselves
+      if (event.organizer_id !== requesterId && participantId !== requesterId) {
+        throw new BadRequestException('You do not have permission to remove this participant');
+      }
+
+      // Remove participant from array
+      const currentParticipants = event.participants || [];
+      const updatedParticipants = currentParticipants.filter(id => id !== participantId);
+
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({ participants: updatedParticipants })
+        .eq('id', eventId);
+
+      if (updateError) {
+        this.logger.error('Error removing participant', updateError.message);
+        throw new BadRequestException(`Error removing participant: ${updateError.message}`);
+      }
+
+      return { message: 'Participant removed successfully' };
+    } catch (error) {
+      this.logger.error('Remove participant error', error.message);
+      throw error;
+    }
+  }
+
+  async participateInEvent(eventId: string, userId: string, token: string): Promise<{ message: string }> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      // Get event
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('organizer_id, participants, event_type')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      // Don't allow organizer to participate in their own event
+      if (event.organizer_id === userId) {
+        throw new BadRequestException('Organizer cannot participate in their own event');
+      }
+
+      // Check if already participating
+      const currentParticipants = event.participants || [];
+      if (currentParticipants.includes(userId)) {
+        throw new BadRequestException('You are already participating in this event');
+      }
+
+      // Add user to participants array
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({ participants: [...currentParticipants, userId] })
+        .eq('id', eventId);
+
+      if (updateError) {
+        this.logger.error('Error adding participant', updateError.message);
+        throw new BadRequestException(`Error adding participant: ${updateError.message}`);
+      }
+
+      return { message: 'Successfully joined the event' };
+    } catch (error) {
+      this.logger.error('Participate in event error', error.message);
       throw error;
     }
   }
