@@ -134,10 +134,24 @@ const Navigation = () => {
                           onClick={() => handleUserClick(user.id)}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm text-primary-foreground font-bold">
-                              {getInitials(user.name)}
-                            </span>
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!user.avatar_url ? 'bg-primary' : ''}`}>
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-primary-foreground font-bold">
+                                {getInitials(user.name)}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground truncate">{user.name}</p>

@@ -13,6 +13,7 @@ export interface Notification {
   is_read: boolean;
   sender_name?: string;
   sender_id?: string;
+  sender_avatar_url?: string | null;
 }
 
 export interface ListNotificationsParams {

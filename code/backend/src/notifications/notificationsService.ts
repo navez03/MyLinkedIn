@@ -11,6 +11,7 @@ export type Notification = {
   is_read: boolean;
   sender_name?: string;
   sender_id?: string;
+  sender_avatar_url?: string | null;
 };
 
 @Injectable()
@@ -62,13 +63,14 @@ export class NotificationsService {
             // Get user details from users table
             const { data: user } = await client
               .from("users")
-              .select("id, name")
+              .select("id, name, avatar_url")
               .eq("id", senderId)
               .single();
 
             if (user) {
               notification.sender_name = user.name;
               notification.sender_id = user.id;
+              notification.sender_avatar_url = user.avatar_url || null;
             }
           }
         } catch (err) {

@@ -14,6 +14,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  avatar_url?: string | null;
 }
 
 interface Message {
@@ -317,174 +318,201 @@ const Messages: React.FC = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-background">
-      <Navigation />
+      <div className="min-h-screen bg-background">
+        <Navigation />
 
-      <div className="max-w-[1128px] mx-auto px-4 py-6">
-        <div className="bg-card rounded-lg border border-border overflow-hidden" style={{ height: 'calc(100vh - 140px)' }}>
-          <div className="flex h-full">
-            {/* Conversations List */}
-            <div className="w-[320px] border-r border-border flex flex-col">
-              {/* Search Header */}
-              <div className="p-4 border-b border-border">
-                <h2 className="text-xl font-semibold text-foreground mb-3">Messages</h2>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search messages"
-                    className="pl-9 bg-secondary border-0"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+        <div className="max-w-[1128px] mx-auto px-4 py-6">
+          <div className="bg-card rounded-lg border border-border overflow-hidden" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="flex h-full">
+              {/* Conversations List */}
+              <div className="w-[320px] border-r border-border flex flex-col">
+                {/* Search Header */}
+                <div className="p-4 border-b border-border">
+                  <h2 className="text-xl font-semibold text-foreground mb-3">Messages</h2>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search messages"
+                      className="pl-9 bg-secondary border-0"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Conversations */}
+                <div className="flex-1 overflow-y-auto">
+                  {filteredConversations.length === 0 ? (
+                    <div className="flex items-center justify-center p-8">
+                      <p className="text-muted-foreground">
+                        {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredConversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        onClick={() => setSelectedChat(conversation.id)}
+                        className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-b border-border ${selectedChat === conversation.id ? 'mb-secondary/50' : ''}`}
+                      >
+                        {/* Avatar */}
+                        <div className="relative flex-shrink-0">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden ${!conversation.avatar_url ? 'bg-primary' : ''}`}>
+                            {conversation.avatar_url ? (
+                              <img
+                                src={conversation.avatar_url}
+                                alt={conversation.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-white font-semibold">
+                                {getInitials(conversation.name) || '?'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-sm font-semibold text-foreground truncate">
+                              {conversation.name}
+                            </h3>
+                          </div>
+                          <p className="text-sm truncate text-muted-foreground">
+                            {getLastMessage(conversation.id) || 'No messages yet'}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
-              {/* Conversations */}
-              <div className="flex-1 overflow-y-auto">
-                {filteredConversations.length === 0 ? (
-                  <div className="flex items-center justify-center p-8">
-                    <p className="text-muted-foreground">
-                      {searchQuery ? 'No conversations found' : 'No conversations yet'}
-                    </p>
-                  </div>
-                ) : (
-                  filteredConversations.map((conversation) => (
-                    <div
-                      key={conversation.id}
-                      onClick={() => setSelectedChat(conversation.id)}
-                      className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors cursor-pointer border-b border-border ${selectedChat === conversation.id ? 'bg-secondary/50' : ''
-                        }`}
-                    >
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0">
-                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-sm text-primary-foreground font-semibold">
-                            {getInitials(conversation.name)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="text-sm font-semibold text-foreground truncate">
-                            {conversation.name}
-                          </h3>
-                        </div>
-                        <p className="text-sm truncate text-muted-foreground">
-                          {getLastMessage(conversation.id) || 'No messages yet'}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
-              {selectedConversation ? (
-                <>
-                  {/* Chat Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-border">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-sm text-primary-foreground font-semibold">
-                            {getInitials(selectedConversation.name)}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {selectedConversation.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">{selectedConversation.email}</p>
-                      </div>
-                    </div>
-                    <button className="p-2 hover:bg-secondary rounded-full transition-colors">
-                      <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
-                    </button>
-                  </div>
-
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {currentMessages.length === 0 ? (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      <>
-                        {currentMessages.map((message) => (
-                          <div
-                            key={message.id}
-                            className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
-                          >
-                            <div className={`max-w-[70%] ${message.sender_id === currentUserId ? 'order-2' : ''}`}>
-                              <div
-                                className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-secondary text-foreground'
-                                  }`}
-                              >
-                                <p className="text-sm">{message.content}</p>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1 px-2">
-                                {formatTime(message.created_at)}
-                              </p>
-                            </div>
+              {/* Chat Area */}
+              <div className="flex-1 flex flex-col">
+                {selectedConversation ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-border">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${!selectedConversation.avatar_url ? 'bg-primary' : ''}`}>
+                            {selectedConversation.avatar_url ? (
+                              <img
+                                src={selectedConversation.avatar_url}
+                                alt={selectedConversation.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-white font-semibold">
+                                {getInitials(selectedConversation.name) || '?'}
+                              </span>
+                            )}
                           </div>
-                        ))}
-                        {/* Elemento invisível para scroll automático */}
-                        <div ref={messagesEndRef} />
-                      </>
-                    )}
-                  </div>
-
-                  {/* Message Input */}
-                  <div className="p-4 border-t border-border">
-                    {isTyping && (
-                      <div className="mb-2 text-sm text-muted-foreground italic">
-                        {selectedConversation?.name} está digitando...
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {selectedConversation.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">{selectedConversation.email}</p>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex items-end gap-2">
-                      <Input
-                        placeholder="Write a message..."
-                        value={messageText}
-                        onChange={(e) => {
-                          setMessageText(e.target.value);
-                        }}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        className="flex-1 bg-secondary border-0 resize-none"
-                      />
-                      <button
-                        onClick={handleSendMessage}
-                        className="p-3 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
-                        disabled={!messageText.trim()}
-                      >
-                        <Send className="w-4 h-4" />
+                      <button className="p-2 hover:bg-secondary rounded-full transition-colors">
+                        <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
                       </button>
                     </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {currentMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                          <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
+                        </div>
+                      ) : (
+                        <>
+                          {currentMessages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
+                            >
+                              <div className={`max-w-[70%] ${message.sender_id === currentUserId ? 'order-2' : ''}`}>
+                                <div
+                                  className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-secondary text-foreground'
+                                    }`}
+                                >
+                                  <p className="text-sm">{message.content}</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 px-2">
+                                  {formatTime(message.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {/* Elemento invisível para scroll automático */}
+                          <div ref={messagesEndRef} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Message Input */}
+                    <div className="p-4 border-t border-border">
+                      {isTyping && (
+                        <div className="mb-2 text-sm text-muted-foreground italic">
+                          {selectedConversation?.name} está digitando...
+                        </div>
+                      )}
+                      <div className="flex items-end gap-2">
+                        <Input
+                          placeholder="Write a message..."
+                          value={messageText}
+                          onChange={(e) => {
+                            setMessageText(e.target.value);
+                          }}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                          className="flex-1 bg-secondary border-0 resize-none"
+                        />
+                        <button
+                          onClick={handleSendMessage}
+                          className="p-3 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
+                          disabled={!messageText.trim()}
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        Select a conversation
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Choose a conversation from the list to start messaging
+                      </p>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      Select a conversation
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Choose a conversation from the list to start messaging
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
       <AIChatWidget />
     </>
   );

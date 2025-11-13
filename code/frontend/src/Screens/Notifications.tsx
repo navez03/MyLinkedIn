@@ -22,6 +22,7 @@ type UIItem = {
   id: string;
   type: string;
   user: string;
+  avatarUrl?: string | null;
   IconComponent: React.ComponentType<any>;
   action: string;
   time: string;
@@ -74,6 +75,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
           id: n.id,
           type,
           user: senderName,
+          avatarUrl: n.sender_avatar_url,
           IconComponent,
           action,
           time,
@@ -183,8 +185,23 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
                           ${notification.unread ? "bg-secondary/30" : ""}`}
                     >
                       {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                        <notification.IconComponent className="w-6 h-6 text-primary-foreground" />
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!notification.avatarUrl ? 'bg-primary' : ''}`}>
+                        {notification.avatarUrl ? (
+                          <img
+                            src={notification.avatarUrl}
+                            alt={notification.user}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                e.currentTarget.nextElementSibling.classList.remove('hidden');
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div className={notification.avatarUrl ? 'hidden' : ''}>
+                          <notification.IconComponent className="w-6 h-6 text-primary-foreground" />
+                        </div>
                       </div>
                       {/* Content */}
                       <div className="flex-1 min-w-0">

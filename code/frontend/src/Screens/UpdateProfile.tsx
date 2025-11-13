@@ -4,9 +4,11 @@ import Navigation from '../components/header';
 import { Save, X, Plus, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { userAPI } from '../services/registerService';
+import { useUser } from '../components/UserContext';
 
 const UpdateProfile: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshUserData } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -180,6 +182,9 @@ const UpdateProfile: React.FC = () => {
 
       if (response.success) {
         setSuccessMessage('Profile updated successfully!');
+
+        // Refresh user data in context
+        await refreshUserData();
 
         // Redirecionar após 1.5 segundos
         setTimeout(() => {

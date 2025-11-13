@@ -14,6 +14,7 @@ interface Connection {
     id: string;
     name: string;
     email: string;
+    avatar_url?: string | null;
   };
   connected_at: string;
 }

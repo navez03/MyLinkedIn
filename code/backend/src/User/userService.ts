@@ -328,8 +328,12 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
+      this.logger.log(`updateProfileDto received: ${JSON.stringify(updateProfileDto)}`);
+      this.logger.log(`updateProfileDto.name: ${updateProfileDto.name}`);
+      this.logger.log(`updateProfileDto.avatar_url: ${updateProfileDto.avatar_url}`);
+
       // Validate that at least one field is being updated
-      if (!updateProfileDto.name && !updateProfileDto.avatar_url) {
+      if (!updateProfileDto.name && updateProfileDto.avatar_url === undefined) {
         throw new BadRequestException('At least one field (name or avatar_url) must be provided for update');
       }
 
