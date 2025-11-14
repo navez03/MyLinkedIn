@@ -417,47 +417,119 @@ export default function Home() {
 export function SendPostModal({ postId, open, onClose, connections, onToggleRecipient, selectedRecipients, onSend, sending }: any) {
   if (!open) return null;
 
+  const selectedCount = Object.values(selectedRecipients).filter(v => v).length;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-card rounded-lg border border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold">Send post</h3>
-          <button onClick={onClose} className="text-muted-foreground">Close</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg bg-card rounded-xl border border-border shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-foreground">Share Post</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {selectedCount > 0 ? `${selectedCount} connection${selectedCount > 1 ? 's' : ''} selected` : 'Select connections to share with'}
+              </p>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-secondary rounded-full"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-3">Select connections to send this post to:</p>
-
-        <div className="max-h-60 overflow-y-auto space-y-2 mb-4">
-          {connections.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No connections available</div>
-          ) : (
-            connections.map((c: any) => (
-              <label key={c.user.id} className="flex items-center gap-3 p-2 rounded hover:bg-secondary/40 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!selectedRecipients[c.user.id]}
-                  onChange={() => onToggleRecipient(c.user.id)}
-                />
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">{(c.user.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}</div>
-                <div>
-                  <div className="text-sm font-medium">{c.user.name}</div>
-                  <div className="text-xs text-muted-foreground">{c.user.email}</div>
+        {/* Content */}
+        <div className="p-6">
+          <div className="max-h-96 overflow-y-auto space-y-2 mb-6">
+            {connections.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-3">
+                  <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
-              </label>
-            ))
-          )}
-        </div>
+                <p className="text-sm font-medium text-foreground">No connections available</p>
+                <p className="text-xs text-muted-foreground mt-1">Connect with people to share posts</p>
+              </div>
+            ) : (
+              connections.map((c: any) => (
+                <label 
+                  key={c.user.id} 
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
+                    selectedRecipients[c.user.id] 
+                      ? 'bg-primary/10 border-primary hover:bg-primary/15' 
+                      : 'bg-transparent border-transparent hover:bg-secondary'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!selectedRecipients[c.user.id]}
+                    onChange={() => onToggleRecipient(c.user.id)}
+                    className="w-5 h-5 rounded border-2 border-border text-primary focus:ring-2 focus:ring-primary cursor-pointer"
+                  />
+                  {c.user.avatar_url ? (
+                    <img 
+                      src={c.user.avatar_url} 
+                      alt={c.user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.classList.remove('hidden');
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm ${c.user.avatar_url ? 'hidden' : ''}`}>
+                    {(c.user.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">{c.user.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{c.user.email}</div>
+                  </div>
+                  {selectedRecipients[c.user.id] && (
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </label>
+              ))
+            )}
+          </div>
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-2 rounded bg-secondary">Cancel</button>
-          <button
-            onClick={() => onSend(postId)}
-            disabled={sending || Object.values(selectedRecipients).every(v => !v)}
-            className="px-3 py-2 rounded bg-primary text-primary-foreground disabled:opacity-50"
-          >
-            {sending ? 'Sending...' : 'Send'}
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button 
+              onClick={onClose} 
+              className="flex-1 px-4 py-2.5 rounded-lg font-medium border-2 border-border text-foreground hover:bg-secondary transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSend(postId)}
+              disabled={sending || selectedCount === 0}
+              className="flex-1 px-4 py-2.5 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 disabled:shadow-none"
+            >
+              {sending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sending...
+                </span>
+              ) : (
+                `Share with ${selectedCount || ''} ${selectedCount === 1 ? 'connection' : 'connections'}`
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

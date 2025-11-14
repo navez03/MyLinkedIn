@@ -14,11 +14,14 @@ import Events from './Screens/Events';
 import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
 import { UserProvider } from './components/UserContext';
+import { NotificationProvider } from './components/NotificationContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <UserProvider>
+        <NotificationProvider>
+          <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventId" element={<EventDetail />} />
@@ -36,6 +39,8 @@ function App() {
         <Route path="/update-profile" element={<UpdateProfile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+        </NotificationProvider>
+      </UserProvider>
     </BrowserRouter>
   );
 }

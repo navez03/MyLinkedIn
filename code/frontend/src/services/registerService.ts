@@ -92,7 +92,7 @@ export const userAPI = {
     return apiHelpers.post<RegisterResponse>('/user/register', { email, password });
   },
 
-  login: async (email: string, password: string): Promise<ApiResponse<LoginResponse>> => {
+  login: async (email: string, password: string, refreshUserData?: () => Promise<void>): Promise<ApiResponse<LoginResponse>> => {
     const response = await apiHelpers.post<LoginResponse>('/user/login', { email, password });
 
     // Guardar tokens no localStorage após login bem-sucedido
@@ -102,6 +102,10 @@ export const userAPI = {
         localStorage.setItem('refreshToken', response.data.refreshToken);
       }
       localStorage.setItem('userId', response.data.userId);
+      // Atualiza contexto do usuário imediatamente após login
+      if (refreshUserData) {
+        await refreshUserData();
+      }
     }
 
     return response;
