@@ -1,10 +1,27 @@
 import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
+import { notificationAPI } from "../services/notificationsService";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
 import { userAPI, UserSearchResult } from "../services/registerService";
 
 const Navigation = () => {
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+
+    const fetchNotifications = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) return;
+      const response = await notificationAPI.list(userId);
+      if (response.success && response.data?.notifications) {
+        const unread = response.data.notifications.filter(n => !n.is_read);
+        setUnreadCount(unread.length);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
@@ -176,7 +193,21 @@ const Navigation = () => {
                 onClick={() => handleNavClick(item.path)}
                 className={`flex flex-col items-center gap-1 px-3 py-1 hover:text-foreground transition-colors cursor-pointer`}
               >
-                <item.icon className="w-5 h-5" />
+                {item.label === "Notifications" ? (
+                  <div className="relative flex items-center justify-center">
+                    <item.icon className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute -top-2 left-full -translate-x-1/2 bg-red-500 text-white font-bold text-[9px] rounded-full w-3 h-3 flex items-center justify-center border-2 border-white shadow"
+                        style={{ minWidth: 18, minHeight: 18 }}
+                      >
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <item.icon className="w-5 h-5" />
+                )}
                 <span className="text-xs font-normal">{item.label}</span>
               </div>
             ))}

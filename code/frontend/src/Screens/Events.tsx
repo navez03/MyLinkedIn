@@ -222,7 +222,6 @@ export default function Events() {
     });
 
     if (response.success) {
-      alert(`Successfully invited ${selectedConnections.length} people!`);
       setShowInviteModal(false);
       setSelectedEvent(null);
       setSelectedConnections([]);

@@ -4,6 +4,8 @@ import Navigation from "../components/header";
 import { Card } from "../components/card";
 import { useState, useEffect } from "react";
 import { eventsService, EventResponse, LocationType } from "../services/eventsService";
+import { messagesAPI } from "../services/messagesService";
+import { connectionAPI } from "../services/connectionService";
 import Loading from "../components/loading";
 
 
@@ -29,11 +31,21 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [shareSearchQuery, setShareSearchQuery] = useState("");
+  const [selectedShareConnection, setSelectedShareConnection] = useState<string>("");
+  const [shareLoading, setShareLoading] = useState(false);
 
   useEffect(() => {
     // Get current user ID from localStorage
     const userId = localStorage.getItem('userId');
     setCurrentUserId(userId);
+    if (userId) {
+      connectionAPI.getConnections(userId).then((res) => {
+        if (res.success) setConnections(res.data.connections);
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -117,8 +129,6 @@ export default function EventDetail() {
               participants: event.participants?.filter(p => p.id !== currentUserId) || []
             });
           }
-        } else {
-          alert(response.error || "Failed to leave event");
         }
       } else {
         // Join event
@@ -130,13 +140,10 @@ export default function EventDetail() {
           if (eventResponse.success) {
             setEvent(eventResponse.data.event);
           }
-        } else {
-          alert(response.error || "Failed to join event");
         }
       }
     } catch (error) {
       console.error("Error handling participation:", error);
-      alert("An error occurred. Please try again.");
     }
   };
 
@@ -229,11 +236,116 @@ export default function EventDetail() {
 
                   <button
                     type="button"
+                    onClick={() => {
+                      if (!currentUserId) {
+                        alert('You must be logged in to share this event');
+                        return;
+                      }
+                      setShowShareModal(true);
+                    }}
                     className="w-full px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-2 mb-2"
                   >
                     <Share2 className="w-4 h-4" />
                     Share
                   </button>
+                  {/* Share Modal */}
+                  {showShareModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+                          <div>
+                            <h2 className="text-xl font-semibold text-foreground">Share event</h2>
+                            <p className="text-sm text-muted-foreground mt-1">{event?.name}</p>
+                          </div>
+                          <button
+                            onClick={() => setShowShareModal(false)}
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <span style={{ fontSize: 24 }}>&times;</span>
+                          </button>
+                        </div>
+                        <div className="p-6 flex-1 overflow-y-auto">
+                          {/* Search */}
+                          <div className="mb-4">
+                            <div className="relative">
+                              <Share2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <input
+                                type="text"
+                                placeholder="Search connections..."
+                                value={shareSearchQuery}
+                                onChange={(e) => setShareSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-secondary border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              />
+                            </div>
+                          </div>
+                          {/* Connections List */}
+                          <div className="space-y-2">
+                            {connections.length === 0 ? (
+                              <div className="text-center py-8 text-muted-foreground">
+                                No connections yet
+                              </div>
+                            ) : (
+                              connections.filter(conn =>
+                                conn.user.name.toLowerCase().includes(shareSearchQuery.toLowerCase()) ||
+                                conn.user.email.toLowerCase().includes(shareSearchQuery.toLowerCase())
+                              ).map((connection) => (
+                                <label
+                                  key={connection.id}
+                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
+                                >
+                                  <input
+                                    type="radio"
+                                    checked={selectedShareConnection === connection.user.id}
+                                    onChange={() => setSelectedShareConnection(connection.user.id)}
+                                    className="w-4 h-4 rounded"
+                                  />
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                                      {connection.user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-medium text-foreground">{connection.user.name}</p>
+                                      <p className="text-sm text-muted-foreground">{connection.user.email}</p>
+                                    </div>
+                                  </div>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        {/* Action Buttons */}
+                        <div className="border-t border-border px-6 py-4 flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setShowShareModal(false)}
+                            className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={shareLoading || !selectedShareConnection}
+                            onClick={async () => {
+                              if (!selectedShareConnection || !currentUserId || !event?.id) return;
+                              setShareLoading(true);
+                              const res = await messagesAPI.sendMessage(currentUserId, selectedShareConnection, '', undefined, event.id);
+                              setShareLoading(false);
+                              if (res.success) {
+                                alert('Event shared via message');
+                                setShowShareModal(false);
+                                setSelectedShareConnection("");
+                              } else {
+                                alert('Error sharing event: ' + (res.error || 'Unknown error'));
+                              }
+                            }}
+                            className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {shareLoading ? 'Sharing...' : 'Share'}
+                          </button>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
                 </Card>
 
                 {/* Organizer Card */}

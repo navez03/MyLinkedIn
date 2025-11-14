@@ -5,7 +5,7 @@ import { SupabaseService } from '../config/supabaseClient';
 export class MessageService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
-  async sendMessage(data: { senderId: string; receiverId: string; content?: string; postId?: string }, token: string) {
+  async sendMessage(data: { senderId: string; receiverId: string; content?: string; postId?: string; eventId?: string }, token: string) {
     const supabase = this.supabaseService.getClientWithToken(token);
     const { senderId, receiverId, content } = data;
 
@@ -29,6 +29,10 @@ export class MessageService {
 
     if ((data as any).postId) {
       insertObj.post_id = (data as any).postId;
+    }
+
+    if ((data as any).eventId) {
+      insertObj.event_id = (data as any).eventId;
     }
 
     const { data: message, error: messageError } = await supabase
@@ -105,7 +109,40 @@ export class MessageService {
       post: m.post_id ? postsMap[m.post_id] || null : null,
     }));
 
-    return messagesWithPost || [];
+    // If some messages reference events, fetch those events and attach a small preview
+    const eventIds = Array.from(new Set((messages || []).filter((m: any) => m.event_id).map((m: any) => m.event_id)));
+
+    let eventsMap: Record<string, any> = {};
+    if (eventIds.length > 0) {
+      const { data: events, error: eventsError } = await supabase
+        .from('events')
+        .select(`id, name, date, time, location_type, organizer_id, users:user_id (name)`)
+        .in('id', eventIds as any[]);
+
+      if (!eventsError && events) {
+        eventsMap = (events as any[]).reduce((acc, e) => {
+          acc[e.id] = {
+            id: e.id,
+            name: e.name,
+            date: e.date,
+            time: e.time,
+            locationType: e.location_type,
+            organizerId: e.organizer_id,
+            organizerName: e.users?.name,
+          };
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // attach both post and event previews when available
+    const messagesWithExtras = (messages || []).map((m: any) => ({
+      ...m,
+      post: m.post_id ? postsMap[m.post_id] || null : null,
+      event: m.event_id ? eventsMap[m.event_id] || null : null,
+    }));
+
+    return messagesWithExtras || [];
   }
 
   async getUserConversations(userId: string, token: string) {
