@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Navigation from "../components/header";
 import { MessageSquare, Users, Check, Trash2, CheckCheck } from "lucide-react";
-import { notificationAPI, Notification } from "../services/notificationsService";
+import {
+  notificationAPI,
+  Notification,
+} from "../services/notificationsService";
 import AIChatWidget from "../components/AIChatWidget";
 import Loading from "../components/loading";
-
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -64,12 +66,23 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
 
       // Mapear notificações para items de UI
       const uiItems = notifications.map((n) => {
-        const type = n.kind === "connection_request" ? "connection" : "message";
+        const type =
+          n.kind === "connection_request"
+            ? "connection"
+            : n.kind === "event_invitation"
+            ? "event_invitation"
+            : "message";
         const isConnection = type === "connection";
+        const isEventInvitation = type === "event_invitation";
         const IconComponent = isConnection ? Users : MessageSquare;
-        const action = isConnection ? "sent you a connection request" : "sent you a message";
+        const action = isConnection
+          ? "sent you a connection request"
+          : isEventInvitation
+          ? "invited you to an event"
+          : "sent you a message";
         const time = timeAgo(n.created_at);
         const senderName = n.sender_name || "Someone";
+        const senderID = n.source_id || "Unknown User";
 
         return {
           id: n.id,
@@ -99,7 +112,10 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
 
   const handleMarkRead = async (notificationId: string) => {
     try {
-      const response = await notificationAPI.markRead({ notificationId, read: true });
+      const response = await notificationAPI.markRead({
+        notificationId,
+        read: true,
+      });
       if (response.success && response.data && response.data.notification) {
         setItems((prev) =>
           prev.map((item) =>
@@ -140,7 +156,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
       {loading ? (
         <Loading />
       ) : (
-        <div style={{ overflowY: 'auto', height: '100vh' }}>
+        <div style={{ overflowY: "auto", height: "100vh" }}>
           <div className="min-h-screen bg-background">
             <Navigation />
             <div className="max-w-[1128px] mx-auto px-4 py-6">
@@ -168,7 +184,9 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
                   {!error && items.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 px-4">
                       <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                        <span className="text-muted-foreground text-2xl">🔔</span>
+                        <span className="text-muted-foreground text-2xl">
+                          🔔
+                        </span>
                       </div>
                       <h2 className="text-lg font-semibold text-foreground mb-2">
                         No notifications yet
@@ -181,32 +199,44 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
                   {items.map((notification, index) => (
                     <div
                       key={notification.id}
-                      className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors ${index !== items.length - 1 ? "border-b border-border" : ""}
+                      className={`flex items-start gap-3 p-4 hover:bg-secondary/50 transition-colors ${
+                        index !== items.length - 1
+                          ? "border-b border-border"
+                          : ""
+                      }
                           ${notification.unread ? "bg-secondary/30" : ""}`}
                     >
                       {/* Avatar */}
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!notification.avatarUrl ? 'bg-primary' : ''}`}>
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                          !notification.avatarUrl ? "bg-primary" : ""
+                        }`}
+                      >
                         {notification.avatarUrl ? (
                           <img
                             src={notification.avatarUrl}
                             alt={notification.user}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.style.display = "none";
                               if (e.currentTarget.nextElementSibling) {
-                                e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                e.currentTarget.nextElementSibling.classList.remove(
+                                  "hidden"
+                                );
                               }
                             }}
                           />
                         ) : null}
-                        <div className={notification.avatarUrl ? 'hidden' : ''}>
+                        <div className={notification.avatarUrl ? "hidden" : ""}>
                           <notification.IconComponent className="w-6 h-6 text-primary-foreground" />
                         </div>
                       </div>
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-foreground">
-                          <span className="font-semibold">{notification.user}</span>{" "}
+                          <span className="font-semibold">
+                            {notification.user}
+                          </span>{" "}
                           <span className="text-muted-foreground">
                             {notification.action}
                           </span>

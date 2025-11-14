@@ -4,7 +4,7 @@ import { SupabaseService } from "../config/supabaseClient";
 export type Notification = {
   id: string;
   user_id: string;
-  kind: "message" | "connection_request";
+  kind: "message" | "connection_request" | "event_invitation";
   source_table: string;
   source_id: string;
   created_at: string;
@@ -16,9 +16,15 @@ export type Notification = {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly supabase: SupabaseService) { }
+  constructor(private readonly supabase: SupabaseService) {}
 
-  async list(userId: string, token: string, unreadOnly = false, limit = 20, offset = 0) {
+  async list(
+    userId: string,
+    token: string,
+    unreadOnly = false,
+    limit = 20,
+    offset = 0
+  ) {
     const client = this.supabase.getClientWithToken(token);
 
     let query = client
@@ -41,7 +47,10 @@ export class NotificationsService {
         try {
           let senderId: string | null = null;
 
-          if (notification.kind === "message" && notification.source_table === "messages") {
+          if (
+            notification.kind === "message" &&
+            notification.source_table === "messages"
+          ) {
             // Get sender from messages table using source_id
             const { data: message } = await client
               .from("messages")
@@ -49,7 +58,11 @@ export class NotificationsService {
               .eq("id", notification.source_id)
               .single();
             senderId = message?.sender_id;
-          } else if (notification.kind === "connection_request" && notification.source_table === "connection_requests") {
+          }
+          if (
+            notification.kind === "connection_request" &&
+            notification.source_table === "connection_requests"
+          ) {
             // Get sender from connection_requests table using source_id
             const { data: request } = await client
               .from("connection_requests")
@@ -57,6 +70,18 @@ export class NotificationsService {
               .eq("id", notification.source_id)
               .single();
             senderId = request?.sender_id;
+          } else if (
+            notification.kind === "event_invitation" &&
+            notification.source_table === "event_invitations"
+          ) {
+            // Get sender from event_invitations table using source_id
+            const { data: invitation } = await client
+              .from("event_invitations")
+              .select("invited_by")
+              .eq("id", notification.source_id)
+              .single();
+            senderId = invitation?.invited_by;
+            console.error("Event invitation senderId:", senderId);
           }
 
           if (senderId) {
@@ -68,6 +93,7 @@ export class NotificationsService {
               .single();
 
             if (user) {
+              console.error("Enriching notification with user:", user.name);
               notification.sender_name = user.name;
               notification.sender_id = user.id;
               notification.sender_avatar_url = user.avatar_url || null;
@@ -85,7 +111,7 @@ export class NotificationsService {
   }
 
   async markRead(notificationId: string, token: string, read = true) {
-    console.log('markRead called with:', { notificationId, read });
+    console.log("markRead called with:", { notificationId, read });
 
     const client = this.supabase.getClientWithToken(token);
 
@@ -97,11 +123,11 @@ export class NotificationsService {
       .single();
 
     if (error) {
-      console.error('Error in markRead:', error);
+      console.error("Error in markRead:", error);
       throw error;
     }
 
-    console.log('markRead result:', data);
+    console.log("markRead result:", data);
     return data as Notification;
   }
 
