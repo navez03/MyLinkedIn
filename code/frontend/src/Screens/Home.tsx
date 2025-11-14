@@ -201,11 +201,9 @@ export default function Home() {
     setSending(true);
     try {
       await Promise.all(recipientIds.map(rid => messagesAPI.sendMessage(senderId, rid, '', postId)));
-      alert('Post sent to selected recipients');
       setSendModalOpenFor(null);
     } catch (e) {
       console.error('Error sending post to recipients', e);
-      alert('There was an error sending the post to one or more recipients');
     } finally {
       setSending(false);
     }
@@ -345,31 +343,31 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Comments section (toggle) */}
                     {commentsOpen[post.id] && (
                       <div className="mt-3">
                         <div className="space-y-2 max-h-40 overflow-y-auto">
                           {(commentsMap[post.id] || []).map((c: any) => (
                             <div key={c.id || Math.random()} className="p-2 rounded">
-                              <div className="w-full mb-1 flex justify-end">
-                                <span className="text-[10px] text-muted-foreground">{new Date(c.created_at || c.createdAt || Date.now()).toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                {/* Avatar do usuário se existir */}
+                              <div className="flex items-start gap-3">
                                 {c.authorAvatarUrl ? (
                                   <img
                                     src={c.authorAvatarUrl}
                                     alt={c.authorName || 'Avatar'}
-                                    className="w-8 h-8 rounded-full object-cover"
+                                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                                     onError={e => { e.currentTarget.style.display = 'none'; }}
                                   />
                                 ) : (
-                                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold flex-shrink-0">
                                     {(c.authorName || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                                   </div>
                                 )}
-                                {/* Conteúdo do comentário */}
-                                <span className="text-sm text-foreground whitespace-pre-line">{c.content}</span>
+                                <div className="flex flex-col flex-1">
+                                  <div className="flex justify-between items-center w-full">
+                                    <span className="text-[14px] font-medium text-black">{c.authorName}</span>
+                                    <span className="text-[10px] text-muted-foreground">{new Date(c.created_at || c.createdAt || Date.now()).toLocaleString()}</span>
+                                  </div>
+                                  <span className="text-sm text-foreground whitespace-pre-line mt-1">{c.content}</span>
+                                </div>
                               </div>
                             </div>
                           ))}

@@ -377,7 +377,7 @@ export class UserService {
             .update(updateData)
             .eq('id', userId)
             .select()
-            .maybeSingle();
+            .single();
 
           data = result.data;
           error = result.error;
@@ -395,7 +395,7 @@ export class UserService {
           .from('users')
           .insert(insertData)
           .select()
-          .maybeSingle();
+          .single();
 
         data = result.data;
         error = result.error;
