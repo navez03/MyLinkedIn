@@ -1,19 +1,22 @@
 import { apiHelpers, ApiResponse } from "./api";
 
-
-export type NotificationKind = "message" | "connection_request";
+export type NotificationKind =
+  | "message"
+  | "connection_request"
+  | "event_invitation";
 
 export interface Notification {
   id: string;
   user_id: string;
   kind: NotificationKind;
-  source_table: "messages" | "connection_requests";
+  source_table: "messages" | "connection_requests" | "event_invitations";
   source_id: string; // guardado como string (uuid ou int)
   created_at: string; // ISO
   is_read: boolean;
   sender_name?: string;
   sender_id?: string;
   sender_avatar_url?: string | null;
+  event_name?: string; // Nome do evento associado (se aplicável)
 }
 
 export interface ListNotificationsParams {
