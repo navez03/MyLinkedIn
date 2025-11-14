@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Share2, ChevronLeft, Video } from "lucide-react";
+import { Calendar, MapPin, Share2, ChevronLeft, Video, Search } from "lucide-react";
 import Navigation from "../components/header";
 import { Card } from "../components/card";
 import { useState, useEffect } from "react";
@@ -167,11 +167,12 @@ export default function EventDetail() {
               <div className="flex-1 space-y-4">
                 {/* Event Image */}
                 {event.bannerUrl && (
-                  <Card className="overflow-hidden">
+                  <Card className="overflow-hidden bg-white flex items-center justify-center" style={{height: 400}}>
                     <img
                       src={event.bannerUrl}
                       alt={event.name}
-                      className="w-full h-[400px] object-cover"
+                      className="max-h-full max-w-full object-contain mx-auto"
+                      style={{background: 'white', width: '100%', height: '100%', display: 'block'}}
                     />
                   </Card>
                 )}
@@ -250,39 +251,47 @@ export default function EventDetail() {
                   </button>
                   {/* Share Modal */}
                   {showShareModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                      <Card className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
-                          <div>
-                            <h2 className="text-xl font-semibold text-foreground">Share event</h2>
-                            <p className="text-sm text-muted-foreground mt-1">{event?.name}</p>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                      <Card className="w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                        <div className="sticky top-0 bg-gradient-to-r from-orange-500/10 to-transparent border-b border-border px-6 py-4 flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-xl font-semibold text-foreground">Share Event</h2>
+                            <p className="text-sm text-muted-foreground mt-0.5 truncate">{event?.name}</p>
                           </div>
                           <button
                             onClick={() => setShowShareModal(false)}
-                            className="text-muted-foreground hover:text-foreground transition-colors"
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-secondary rounded-full ml-3"
                           >
-                            <span style={{ fontSize: 24 }}>&times;</span>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </div>
                         <div className="p-6 flex-1 overflow-y-auto">
                           {/* Search */}
                           <div className="mb-4">
                             <div className="relative">
-                              <Share2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                               <input
                                 type="text"
                                 placeholder="Search connections..."
                                 value={shareSearchQuery}
                                 onChange={(e) => setShareSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-secondary border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                className="w-full pl-10 pr-4 py-2.5 bg-secondary border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                               />
                             </div>
                           </div>
                           {/* Connections List */}
                           <div className="space-y-2">
                             {connections.length === 0 ? (
-                              <div className="text-center py-8 text-muted-foreground">
-                                No connections yet
+                              <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-3">
+                                  <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                </div>
+                                <p className="text-sm font-medium text-foreground">No connections yet</p>
+                                <p className="text-xs text-muted-foreground mt-1">Connect with people to share events</p>
                               </div>
                             ) : (
                               connections.filter(conn =>
@@ -291,34 +300,58 @@ export default function EventDetail() {
                               ).map((connection) => (
                                 <label
                                   key={connection.id}
-                                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
+                                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
+                                    selectedShareConnection === connection.user.id 
+                                      ? 'bg-primary/10 border-primary' 
+                                      : 'bg-transparent border-transparent hover:bg-secondary'
+                                  }`}
                                 >
                                   <input
                                     type="radio"
                                     checked={selectedShareConnection === connection.user.id}
                                     onChange={() => setSelectedShareConnection(connection.user.id)}
-                                    className="w-4 h-4 rounded"
+                                    className="w-5 h-5 text-primary focus:ring-2 focus:ring-primary cursor-pointer"
                                   />
-                                  <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {connection.user.avatar_url ? (
+                                      <img
+                                        src={connection.user.avatar_url}
+                                        alt={connection.user.name}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                          }
+                                        }}
+                                      />
+                                    ) : null}
+                                    <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold ${connection.user.avatar_url ? 'hidden' : ''}`}>
                                       {connection.user.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <div className="flex-1">
-                                      <p className="font-medium text-foreground">{connection.user.name}</p>
-                                      <p className="text-sm text-muted-foreground">{connection.user.email}</p>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold text-foreground truncate">{connection.user.name}</p>
+                                      <p className="text-sm text-muted-foreground truncate">{connection.user.email}</p>
                                     </div>
                                   </div>
+                                  {selectedShareConnection === connection.user.id && (
+                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                                      <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
+                                  )}
                                 </label>
                               ))
                             )}
                           </div>
                         </div>
                         {/* Action Buttons */}
-                        <div className="border-t border-border px-6 py-4 flex gap-3">
+                        <div className="border-t border-border px-6 py-4 flex gap-3 bg-secondary/20">
                           <button
                             type="button"
                             onClick={() => setShowShareModal(false)}
-                            className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors"
+                            className="flex-1 px-4 py-2.5 border-2 border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-all"
                           >
                             Cancel
                           </button>
@@ -328,19 +361,32 @@ export default function EventDetail() {
                             onClick={async () => {
                               if (!selectedShareConnection || !currentUserId || !event?.id) return;
                               setShareLoading(true);
-                              const res = await messagesAPI.sendMessage(currentUserId, selectedShareConnection, '', undefined, event.id);
-                              setShareLoading(false);
-                              if (res.success) {
-                                alert('Event shared via message');
-                                setShowShareModal(false);
-                                setSelectedShareConnection("");
-                              } else {
-                                alert('Error sharing event: ' + (res.error || 'Unknown error'));
+                              try {
+                                const res = await messagesAPI.sendMessage(currentUserId, selectedShareConnection, '', undefined, event.id);
+                                setShareLoading(false);
+                                if (res.success) {
+                                  const userName = connections.find(c => c.user.id === selectedShareConnection)?.user.name || 'user';
+                                  setShowShareModal(false);
+                                  setSelectedShareConnection("");
+                                } else {
+                                  alert('❌ Error sharing event: ' + (res.error || 'Unknown error'));
+                                }
+                              } catch (error) {
+                                setShareLoading(false);
+                                alert('❌ Failed to share event. Please try again.');
                               }
                             }}
-                            className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 disabled:shadow-none"
                           >
-                            {shareLoading ? 'Sharing...' : 'Share'}
+                            {shareLoading ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Sharing...
+                              </span>
+                            ) : 'Share Event'}
                           </button>
                         </div>
                       </Card>

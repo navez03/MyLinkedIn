@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Navigation from '../components/header';
-import { Search, MoreHorizontal, Send } from 'lucide-react';
+import { Search, MoreHorizontal, Send, Calendar, Clock, MapPin } from 'lucide-react';
 import { Input } from '../components/input';
 import { messagesAPI } from '../services/messagesService';
 import { socketService } from '../services/socketService';
@@ -29,6 +29,17 @@ interface Message {
     user_id: string;
     created_at: string;
     authorName?: string;
+    authorAvatar?: string | null;
+  } | null;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    time: string;
+    locationType: string;
+    organizerId: string;
+    organizerName?: string;
+    bannerUrl?: string | null;
   } | null;
 }
 
@@ -160,7 +171,11 @@ const Messages: React.FC = () => {
   const loadMessages = async (otherUserId: string) => {
     try {
       const response = await messagesAPI.getMessagesBetweenUsers(currentUserId, otherUserId);
+      console.log('[Messages] Response from API:', response);
       if (response.success && response.data) {
+        const newMessages = response.data.messages || [];
+        console.log('[Messages] New messages:', newMessages);
+        console.log('[Messages] Messages with events:', newMessages.filter((m: any) => m.event_id));
         setMessages((prev) => {
           // Remove mensagens antigas desta conversa
           const filtered = prev.filter(
@@ -169,7 +184,6 @@ const Messages: React.FC = () => {
               !(m.sender_id === currentUserId && m.receiver_id === otherUserId)
           );
           // Adiciona as mensagens atualizadas (pode ser array vazio se não houver mensagens)
-          const newMessages = response.data.messages || [];
           return [...filtered, ...newMessages];
         });
       } else {
@@ -244,6 +258,8 @@ const Messages: React.FC = () => {
     const lastMessage = sorted[0];
     if (lastMessage.post != null)
       return "Sent you a post";
+    else if (lastMessage.event != null)
+      return "Sent you an event";
     else
       return lastMessage.content;
   };
@@ -461,21 +477,109 @@ const Messages: React.FC = () => {
                               className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                             >
                               <div className={`max-w-[70%] ${message.sender_id === currentUserId ? 'order-2' : ''}`}>
-                                <div
-                                  className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary text-foreground'
-                                    }`}
-                                >
-                                  {message.post ? (
-                                    <div className="cursor-pointer" onClick={() => navigate(`/post/${message.post!.id}`)}>
-                                      <div className="text-xs font-semibold">{message.post.authorName || 'Post'}</div>
-                                      <div className="text-sm truncate">{message.post.content}</div>
+                                {message.post ? (
+                                  <div
+                                    className={`rounded-xl overflow-hidden border cursor-pointer transition-all hover:shadow-lg ${message.sender_id === currentUserId
+                                      ? 'border-primary/30 bg-primary/5'
+                                      : 'border-border bg-card'
+                                      }`}
+                                    onClick={() => navigate(`/post/${message.post!.id}`)}
+                                  >
+                                    <div className="p-3 flex gap-3">
+                                      {/* Avatar do autor do post */}
+                                      {message.post.authorAvatar ? (
+                                        <img
+                                          src={message.post.authorAvatar}
+                                          alt={message.post.authorName || 'User'}
+                                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            if (e.currentTarget.nextElementSibling) {
+                                              e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                            }
+                                          }}
+                                        />
+                                      ) : null}
+                                      <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0 ${message.post.authorAvatar ? 'hidden' : ''}`}>
+                                        {message.post.authorName ? message.post.authorName.charAt(0).toUpperCase() : 'P'}
+                                      </div>
+                                      
+                                      {/* Conteúdo do post */}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold text-foreground mb-1">{message.post.authorName || 'Post'}</p>
+                                        <p className="text-sm text-foreground line-clamp-3 mb-2">{message.post.content}</p>
+                                        <div className="text-xs text-primary font-medium flex items-center gap-1">
+                                          <span>View post</span>
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                        </div>
+                                      </div>
                                     </div>
-                                  ) : (
+                                  </div>
+                                ) : message.event ? (
+                                  <div
+                                    className={`rounded-xl overflow-hidden border cursor-pointer transition-all hover:shadow-lg ${message.sender_id === currentUserId
+                                      ? 'border-primary/30'
+                                      : 'border-border'
+                                      }`}
+                                    onClick={() => navigate(`/events/${message.event!.id}`)}
+                                  >
+                                    {/* Banner Image */}
+                                    {message.event.bannerUrl ? (
+                                      <div className="relative w-full h-32 bg-gradient-to-br from-orange-400 to-orange-600">
+                                        <img
+                                          src={message.event.bannerUrl}
+                                          alt={message.event.name}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="relative w-full h-32 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                                        <div className="text-6xl opacity-20">📅</div>
+                                        <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-md flex items-center gap-1.5">
+                                          <div className="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-xs">
+                                            📅
+                                          </div>
+                                          <span className="text-xs font-semibold text-gray-800">Event Invitation</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Event Details */}
+                                    <div className={`px-3 py-3 ${message.sender_id === currentUserId ? 'bg-primary/5' : 'bg-card'}`}>
+                                      <h4 className="text-sm font-semibold text-foreground mb-2 line-clamp-2">{message.event.name}</h4>
+                                      <div className="space-y-1.5">
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                                          <span>{new Date(message.event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                                          <span className="capitalize">{message.event.locationType.replace('_', ' ')}</span>
+                                        </div>
+                                      </div>
+                                      <div className="mt-3 text-xs text-primary font-medium flex items-center gap-1">
+                                        <span>View event details</span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className={`rounded-2xl px-4 py-2 ${message.sender_id === currentUserId
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-secondary text-foreground'
+                                      }`}
+                                  >
                                     <p className="text-sm">{message.content}</p>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                                 <p className="text-xs text-muted-foreground mt-1 px-2">
                                   {formatTime(message.created_at)}
                                 </p>

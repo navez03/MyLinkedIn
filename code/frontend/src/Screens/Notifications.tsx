@@ -7,6 +7,7 @@ import {
 } from "../services/notificationsService";
 import AIChatWidget from "../components/AIChatWidget";
 import Loading from "../components/loading";
+import { useNotifications } from "../components/NotificationContext";
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -35,6 +36,7 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
   const [items, setItems] = useState<UIItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { refreshNotifications } = useNotifications();
 
   // userId efetivo (prop > localStorage)
   const currentUserId = useMemo(() => {
@@ -124,6 +126,8 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
               : item
           )
         );
+        // Refresh the notification count in the header
+        await refreshNotifications();
       }
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -135,6 +139,8 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
       await notificationAPI.delete(notificationId);
       // Remove da lista localmente
       setItems((prev) => prev.filter((item) => item.id !== notificationId));
+      // Refresh the notification count in the header
+      await refreshNotifications();
     } catch (error) {
       console.error("Error deleting notification:", error);
     }
@@ -146,6 +152,8 @@ const Notifications: React.FC<{ userId?: string }> = ({ userId }) => {
       await notificationAPI.markAllRead({ userId: currentUserId });
       // Marca todas como lidas localmente
       setItems((prev) => prev.map((item) => ({ ...item, unread: false })));
+      // Refresh the notification count in the header
+      await refreshNotifications();
     } catch (error) {
       console.error("Error marking all as read:", error);
     }

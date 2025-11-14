@@ -14,4 +14,7 @@ export class SendMessageDto {
 
   @IsOptional()
   postId?: string;
+
+  @IsOptional()
+  eventId?: string;
 }

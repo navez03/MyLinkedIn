@@ -86,7 +86,7 @@ export class MessageService {
     if (postIds.length > 0) {
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select(`id, content, user_id, created_at, users:user_id (name, email)`)
+        .select(`id, content, user_id, created_at, users:user_id (name, email, avatar_url)`)
         .in('id', postIds as any[]);
 
       if (!postsError && posts) {
@@ -97,6 +97,7 @@ export class MessageService {
             user_id: p.user_id,
             created_at: p.created_at,
             authorName: p.users?.name,
+            authorAvatar: p.users?.avatar_url,
           };
           return acc;
         }, {} as Record<string, any>);
@@ -114,10 +115,17 @@ export class MessageService {
 
     let eventsMap: Record<string, any> = {};
     if (eventIds.length > 0) {
+      console.log('[Messages] Fetching events for IDs:', eventIds);
       const { data: events, error: eventsError } = await supabase
         .from('events')
-        .select(`id, name, date, time, location_type, organizer_id, users:user_id (name)`)
+        .select('id, name, date, time, location_type, organizer_id, banner_url')
         .in('id', eventIds as any[]);
+
+      if (eventsError) {
+        console.error('[Messages] Error fetching events:', eventsError);
+      } else {
+        console.log('[Messages] Events fetched:', events);
+      }
 
       if (!eventsError && events) {
         eventsMap = (events as any[]).reduce((acc, e) => {
@@ -128,10 +136,11 @@ export class MessageService {
             time: e.time,
             locationType: e.location_type,
             organizerId: e.organizer_id,
-            organizerName: e.users?.name,
+            bannerUrl: e.banner_url,
           };
           return acc;
         }, {} as Record<string, any>);
+        console.log('[Messages] Events map created:', eventsMap);
       }
     }
 
@@ -141,6 +150,8 @@ export class MessageService {
       post: m.post_id ? postsMap[m.post_id] || null : null,
       event: m.event_id ? eventsMap[m.event_id] || null : null,
     }));
+
+    console.log('[Messages] Final messages with extras:', messagesWithExtras.filter((m: any) => m.event_id));
 
     return messagesWithExtras || [];
   }

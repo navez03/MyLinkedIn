@@ -1,27 +1,13 @@
 import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
-import { notificationAPI } from "../services/notificationsService";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
 import { userAPI, UserSearchResult } from "../services/registerService";
+import { useNotifications } from "./NotificationContext";
 
 const Navigation = () => {
 
-  const [unreadCount, setUnreadCount] = useState(0);
-  useEffect(() => {
-
-    const fetchNotifications = async () => {
-      const userId = localStorage.getItem("userId");
-      if (!userId) return;
-      const response = await notificationAPI.list(userId);
-      if (response.success && response.data?.notifications) {
-        const unread = response.data.notifications.filter(n => !n.is_read);
-        setUnreadCount(unread.length);
-      }
-    };
-    fetchNotifications();
-  }, []);
-
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
