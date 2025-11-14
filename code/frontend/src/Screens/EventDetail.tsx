@@ -240,9 +240,17 @@ export default function EventDetail() {
                 <Card className="p-4">
                   <h3 className="font-semibold text-foreground mb-3">Organizer</h3>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                      {event.organizerAvatar ? null : getUserInitials(event.organizerName)}
-                    </div>
+                    {event.organizerAvatar ? (
+                      <img
+                        src={event.organizerAvatar}
+                        alt={event.organizerName || 'Organizer'}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                        {getUserInitials(event.organizerName)}
+                      </div>
+                    )}
                     <div>
                       <p className="font-medium text-foreground">{event.organizerName || 'Unknown Organizer'}</p>
                       <button

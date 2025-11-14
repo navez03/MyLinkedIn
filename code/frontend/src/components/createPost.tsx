@@ -2,11 +2,10 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Card } from "./card";
 import { Button } from "./button";
-import { Image, Video, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Calendar, Image, X } from "lucide-react";
+import { useState } from "react";
 import { cn } from "../utils";
 import { postsAPI } from "../services/postsService";
-import { userAPI } from "../services/registerService";
 import { useUser } from "./UserContext";
 
 const Dialog = DialogPrimitive.Root;
@@ -238,7 +237,7 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
                 <Image className="w-5 h-5 text-muted-foreground" />
               </button>
               <button className="p-2 hover:bg-secondary rounded-lg transition-colors" disabled>
-                <Video className="w-5 h-5 text-muted-foreground" />
+                <Calendar className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
             <Button onClick={handlePost} disabled={(!content.trim() && !selectedImage) || isLoading}>
@@ -297,8 +296,8 @@ const CreatePostCard = () => {
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-3 py-2 hover:bg-secondary rounded-lg transition-colors"
           >
-            <Video className="w-5 h-5 text-[#5F9B41]" />
-            <span className="text-sm font-medium text-muted-foreground">Video</span>
+            <Calendar className="w-5 h-5 text-[#5F9B41]" />
+            <span className="text-sm font-medium text-muted-foreground">Event</span>
           </button>
         </div>
       </Card>
