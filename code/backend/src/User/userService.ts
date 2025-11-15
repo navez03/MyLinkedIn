@@ -180,10 +180,13 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
+      // Validate token
       await this.getUserFromToken(token);
-      const userClient = this.supabaseService.getClientWithToken(token);
+      
+      // Use admin client to bypass RLS and allow reading other users' profiles
+      const adminClient = this.supabaseService.getAdminClient();
 
-      const { data, error } = await userClient
+      const { data, error } = await adminClient
         .from('users')
         .select('id, name, email, avatar_url')
         .eq('id', userId)
