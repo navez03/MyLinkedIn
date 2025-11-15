@@ -8,20 +8,23 @@ interface Message {
   sender: "user" | "ai";
   timestamp: Date;
 }
-
+const API_BASE_URL = "http://localhost:3000";
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Hi! I'm your AI assistant. How can I help you today?",
+      text: "Hi! I'm your AI assistant. Give a text and I'll help you make it more formal.",
       sender: "ai",
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // se quiseres default sempre PT:
+  const preferredLanguage = "Portuguese (European)";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,33 +34,93 @@ const AIChatWidget = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    // Add user message
+    const userText = inputValue.trim();
+
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: userText,
       sender: "user",
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual AI API call)
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/aiagent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: userText,
+          // preferredLanguage: "Portuguese (European)",
+        }),
+      });
+
+      const raw = await response.text();
+      console.log("AI raw response:", response.status, raw);
+
+      if (!response.ok) {
+        throw new Error(`Status ${response.status} – body: ${raw}`);
+      }
+
+      let data: any;
+      try {
+        data = JSON.parse(raw);
+      } catch (err) {
+        throw new Error(
+          "Falha ao fazer parse do JSON: " + (err as Error).message
+        );
+      }
+
+      const aiText =
+        data.formalText ||
+        "Sorry, I couldn't generate a formal message right now. Please try again.";
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "This is a simulated AI response. You can connect this to your actual AI backend!",
+        text: aiText,
         sender: "ai",
-        timestamp: new Date()
+        timestamp: new Date(),
       };
+
+      const followUpMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "Tens mais algum texto que queiras tornar mais formal?",
+        sender: "ai",
+        timestamp: new Date(),
+      };
+
+      // 1️⃣ Adiciona a resposta principal da IA
       setMessages((prev) => [...prev, aiMessage]);
+
+      // 2️⃣ Espera 10 segundos antes de fazer follow-up
+      setTimeout(() => {
+        const followUpMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          text: "Tens mais algum texto que queiras tornar mais formal?",
+          sender: "ai",
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, followUpMessage]);
+      }, 10000); // 10,000 ms = 10 segundos
+    } catch (error) {
+      console.error("AI assistant error:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 3).toString(),
+        text: "Ocorreu um erro ao falar com o assistente. Tenta outra vez dentro de alguns segundos.",
+        sender: "ai",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -90,7 +153,9 @@ const AIChatWidget = () => {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${
+                    message.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
                     className={`max-w-[75%] rounded-lg px-4 py-2 ${
@@ -103,7 +168,7 @@ const AIChatWidget = () => {
                     <span className="text-xs opacity-70 mt-1 block">
                       {message.timestamp.toLocaleTimeString([], {
                         hour: "2-digit",
-                        minute: "2-digit"
+                        minute: "2-digit",
                       })}
                     </span>
                   </div>
@@ -114,9 +179,18 @@ const AIChatWidget = () => {
                 <div className="flex justify-start">
                   <div className="bg-secondary text-foreground rounded-lg px-4 py-2">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                      <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                      <span
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></span>
+                      <span
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></span>
+                      <span
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></span>
                     </div>
                   </div>
                 </div>
@@ -126,7 +200,10 @@ const AIChatWidget = () => {
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-border bg-card">
+            <form
+              onSubmit={handleSendMessage}
+              className="p-4 border-t border-border bg-card"
+            >
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -137,7 +214,7 @@ const AIChatWidget = () => {
                 />
                 <button
                   type="submit"
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || isTyping}
                   className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
@@ -158,8 +235,7 @@ const AIChatWidget = () => {
         ) : (
           <MessageCircle className="w-6 h-6" />
         )}
-        
-        {/* Notification Badge (optional) */}
+
         {!isOpen && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
             1
