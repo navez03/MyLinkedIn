@@ -30,6 +30,7 @@ interface Message {
     created_at: string;
     authorName?: string;
     authorAvatar?: string | null;
+    imageUrl?: string;
   } | null;
   event?: {
     id: string;
@@ -257,9 +258,9 @@ const Messages: React.FC = () => {
     const sorted = [...relevantMessages].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const lastMessage = sorted[0];
     if (lastMessage.post != null)
-      return "Sent you a post";
+      return lastMessage.post.content;
     else if (lastMessage.event != null)
-      return "Sent you an event";
+      return lastMessage.event.name;
     else
       return lastMessage.content;
   };
@@ -485,6 +486,20 @@ const Messages: React.FC = () => {
                                       }`}
                                     onClick={() => navigate(`/post/${message.post!.id}`)}
                                   >
+                                    {/* Imagem do post, se existir */}
+                                    {message.post.imageUrl && (
+                                      <div className="w-full">
+                                        <img
+                                          src={message.post.imageUrl}
+                                          alt="Post image"
+                                          className="w-full max-h-40 object-cover rounded-lg"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                    
                                     <div className="p-3 flex gap-3">
                                       {/* Avatar do autor do post */}
                                       {message.post.authorAvatar ? (

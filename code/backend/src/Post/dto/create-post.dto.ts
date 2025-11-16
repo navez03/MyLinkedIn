@@ -12,6 +12,10 @@ export class CreatePostDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @IsUUID()
+  @IsOptional()
+  eventId?: string;
 }
 
 export class PostResponseDto {
@@ -23,6 +27,13 @@ export class PostResponseDto {
   authorEmail?: string;
   authorAvatarUrl?: string;
   imageUrl?: string;
+  eventId?: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    bannerUrl?: string;
+  };
 }
 
 export class GetPostsResponseDto {

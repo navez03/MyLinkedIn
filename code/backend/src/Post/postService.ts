@@ -13,6 +13,25 @@ export class PostService {
     private readonly connectionService: ConnectionService,
   ) { }
 
+  private async getEventDetails(eventId: string | null, supabase: any) {
+    if (!eventId) return null;
+    
+    const { data: event } = await supabase
+      .from('events')
+      .select('id, name, date, banner_url')
+      .eq('id', eventId)
+      .single();
+    
+    if (!event) return null;
+    
+    return {
+      id: event.id,
+      name: event.name,
+      date: event.date,
+      bannerUrl: event.banner_url,
+    };
+  }
+
   async createPost(createPostDto: CreatePostDto, token: string): Promise<PostResponseDto> {
     const supabase = this.supabaseService.getClientWithToken(token);
 
@@ -23,6 +42,7 @@ export class PostService {
         user_id: createPostDto.userId,
         content: createPostDto.content,
         image_url: createPostDto.imageUrl || null,
+        event_id: createPostDto.eventId || null,
       })
       .select(`
         *,
@@ -37,6 +57,8 @@ export class PostService {
 
     this.logger.log(`Post created by user: ${post.user_id}`);
 
+    const eventDetails = await this.getEventDetails(post.event_id, supabase);
+
     return {
       id: post.id,
       userId: post.user_id,
@@ -46,6 +68,8 @@ export class PostService {
       authorEmail: post.users?.email,
       authorAvatarUrl: post.users?.avatar_url,
       imageUrl: post.image_url,
+      eventId: post.event_id,
+      event: eventDetails,
     };
   }
 
@@ -65,6 +89,8 @@ export class PostService {
       throw new BadRequestException('Post not found');
     }
 
+    const eventDetails = await this.getEventDetails(post.event_id, supabase);
+
     return {
       id: post.id,
       userId: post.user_id,
@@ -74,6 +100,8 @@ export class PostService {
       authorEmail: post.users?.email,
       authorAvatarUrl: post.users?.avatar_url,
       imageUrl: post.image_url,
+      eventId: post.event_id,
+      event: eventDetails,
     };
   }
 
@@ -94,18 +122,23 @@ export class PostService {
       throw new Error(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
-      id: post.id,
-      userId: post.user_id,
-      content: post.content,
-      createdAt: post.created_at,
-      authorName: post.users?.name,
-      authorEmail: post.users?.email,
-      authorAvatarUrl: post.users?.avatar_url,
-      imageUrl: post.image_url,
-      likes: await this.countLikes(post.id),
-      commentsCount: await this.getCommentsCount(post.id),
-    })));
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => {
+      const eventDetails = await this.getEventDetails(post.event_id, supabase);
+      return {
+        id: post.id,
+        userId: post.user_id,
+        content: post.content,
+        createdAt: post.created_at,
+        authorName: post.users?.name,
+        authorEmail: post.users?.email,
+        authorAvatarUrl: post.users?.avatar_url,
+        imageUrl: post.image_url,
+        eventId: post.event_id,
+        event: eventDetails,
+        likes: await this.countLikes(post.id),
+        commentsCount: await this.getCommentsCount(post.id),
+      };
+    }));
 
     return {
       posts: postResponses,
@@ -130,18 +163,23 @@ export class PostService {
       throw new BadRequestException(`Error fetching posts: ${error.message}`);
     }
 
-    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
-      id: post.id,
-      userId: post.user_id,
-      content: post.content,
-      createdAt: post.created_at,
-      authorName: post.users?.name,
-      authorEmail: post.users?.email,
-      authorAvatarUrl: post.users?.avatar_url,
-      imageUrl: post.image_url,
-      likes: await this.countLikes(post.id),
-      commentsCount: await this.getCommentsCount(post.id),
-    })));
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => {
+      const eventDetails = await this.getEventDetails(post.event_id, supabase);
+      return {
+        id: post.id,
+        userId: post.user_id,
+        content: post.content,
+        createdAt: post.created_at,
+        authorName: post.users?.name,
+        authorEmail: post.users?.email,
+        authorAvatarUrl: post.users?.avatar_url,
+        imageUrl: post.image_url,
+        eventId: post.event_id,
+        event: eventDetails,
+        likes: await this.countLikes(post.id),
+        commentsCount: await this.getCommentsCount(post.id),
+      };
+    }));
 
     return {
       posts: postResponses,
@@ -179,6 +217,7 @@ export class PostService {
     const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => {
       // Verifica se o utilizador atual já deu like neste post
       const likedByCurrentUser = await this.isPostLikedByUser(post.id, userId);
+      const eventDetails = await this.getEventDetails(post.event_id, supabase);
       return {
         id: post.id,
         userId: post.user_id,
@@ -188,6 +227,8 @@ export class PostService {
         authorEmail: post.users?.email,
         authorAvatarUrl: post.users?.avatar_url,
         imageUrl: post.image_url,
+        eventId: post.event_id,
+        event: eventDetails,
         likes: await this.countLikes(post.id),
         commentsCount: await this.getCommentsCount(post.id),
         likedByCurrentUser,
@@ -245,16 +286,22 @@ export class PostService {
 
     console.log('Found posts:', posts); // Debug log
 
-    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => ({
-      id: post.id,
-      userId: post.user_id,
-      content: post.content,
-      createdAt: post.created_at,
-      authorName: post.users?.name,
-      authorEmail: post.users?.email,
-      likes: await this.countLikes(post.id),
-      commentsCount: await this.getCommentsCount(post.id),
-    })));
+    const postResponses: PostResponseDto[] = await Promise.all((posts || []).map(async (post) => {
+      const eventDetails = await this.getEventDetails(post.event_id, supabase);
+      return {
+        id: post.id,
+        userId: post.user_id,
+        content: post.content,
+        createdAt: post.created_at,
+        authorName: post.users?.name,
+        authorEmail: post.users?.email,
+        imageUrl: post.image_url,
+        eventId: post.event_id,
+        event: eventDetails,
+        likes: await this.countLikes(post.id),
+        commentsCount: await this.getCommentsCount(post.id),
+      };
+    }));
 
     return {
       posts: postResponses,

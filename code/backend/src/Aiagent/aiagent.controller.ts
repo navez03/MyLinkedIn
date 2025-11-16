@@ -10,7 +10,7 @@ export class AiAgentController {
   constructor() {
     this.groq = new OpenAI({
       apiKey: process.env.GROQ_API_KEY,
-      baseURL: "https://api.groq.com/openai/v1", // <- ponto chave
+      baseURL: "https://api.groq.com/openai/v1",
     });
   }
 
@@ -25,7 +25,7 @@ export class AiAgentController {
     const language = preferredLanguage || "Portuguese (European)";
 
     const completion = await this.groq.chat.completions.create({
-      model: "llama-3.1-8b-instant", // modelo open-source, rápido e barato
+      model: "llama-3.1-8b-instant",
       messages: [
         {
           role: "system",

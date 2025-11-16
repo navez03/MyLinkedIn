@@ -4,6 +4,7 @@ export interface CreatePostDto {
   userId: string;
   content: string;
   imageUrl?: string;
+  eventId?: string;
 }
 
 export interface PostResponseDto {
@@ -15,6 +16,13 @@ export interface PostResponseDto {
   authorEmail?: string;
   authorAvatarUrl?: string;
   imageUrl?: string;
+  eventId?: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    bannerUrl?: string;
+  };
 }
 
 export interface GetPostsResponseDto {

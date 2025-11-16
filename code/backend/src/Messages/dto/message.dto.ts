@@ -26,6 +26,7 @@ export interface MessageWithPost extends Message {
     user_id: string;
     created_at: string;
     authorName?: string;
+    imageUrl?: string;
   } | null;
 }
 

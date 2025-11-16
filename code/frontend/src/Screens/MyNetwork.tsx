@@ -5,6 +5,7 @@ import { Button } from "../components/button";
 import { Users, UserPlus } from "lucide-react";
 import Navigation from "../components/header";
 import { connectionAPI } from "../services/connectionService";
+import { userAPI } from "../services/registerService";
 import AIChatWidget from "../components/AIChatWidget";
 
 interface Connection {
@@ -23,12 +24,18 @@ interface ConnectionRequest {
   receiver_id: string;
   status: string;
   created_at: string;
+  sender?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url?: string | null;
+  };
 }
 
 const Network = () => {
   const [activeSection, setActiveSection] = useState<'connections' | 'invites'>('connections');
   const [connections, setConnections] = useState<Connection[]>([]);
-  const [invitations, setInvitations] = useState<(ConnectionRequest & { senderName?: string })[]>([]);
+  const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
   const [loading, setLoading] = useState(false);
 
   const currentUserId = localStorage.getItem('userId') || '';
@@ -57,11 +64,44 @@ const Network = () => {
       const response = await connectionAPI.getPendingRequests(currentUserId);
       if (response.success) {
         const received = response.data.pendingRequests.received;
-        const invitationsWithNames = received.map((inv) => {
-          return { ...inv, senderName: inv.sender_id };
-        });
-        console.log('Invitations with names:', invitationsWithNames);
-        setInvitations(invitationsWithNames);
+        
+        // Buscar informações completas de cada sender usando userAPI
+        const invitationsWithSenderData = await Promise.all(
+          received.map(async (inv) => {
+            try {
+              // Usar userAPI.getUserProfileById em vez de fetch direto
+              const userResponse = await userAPI.getUserProfileById(inv.sender_id);
+              
+              if (userResponse.success && userResponse.data) {
+                console.log('User profile loaded:', userResponse.data);
+                return {
+                  ...inv,
+                  sender: {
+                    id: inv.sender_id,
+                    name: userResponse.data.name || 'Unknown User',
+                    email: userResponse.data.email || '',
+                    avatar_url: userResponse.data.avatar_url || null
+                  }
+                };
+              }
+            } catch (error) {
+              console.error(`Error fetching sender data for ${inv.sender_id}:`, error);
+            }
+            
+            return {
+              ...inv,
+              sender: {
+                id: inv.sender_id,
+                name: 'Unknown User',
+                email: '',
+                avatar_url: null
+              }
+            };
+          })
+        );
+        
+        console.log('Invitations with sender data:', invitationsWithSenderData);
+        setInvitations(invitationsWithSenderData);
       }
     } catch (error) {
       console.error('Error loading connection requests:', error);
@@ -148,15 +188,35 @@ const Network = () => {
                       {invitations.map((invitation) => (
                         <div key={invitation.id} className="flex flex-col items-center p-4 border border-border rounded-lg hover:bg-secondary transition-colors cursor-pointer">
                           <div className="flex items-center w-full mb-2">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 bg-primary overflow-hidden">
-                              <span className="text-sm text-primary-foreground font-semibold">
-                                {getInitials(invitation.senderName || invitation.sender_id)}
-                              </span>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg flex-shrink-0 overflow-hidden ${invitation.sender?.avatar_url ? '' : 'bg-primary'}`}>
+                              {invitation.sender?.avatar_url ? (
+                                <img
+                                  src={invitation.sender.avatar_url}
+                                  alt={invitation.sender.name}
+                                  className="w-full h-full object-cover"
+                                  style={{ background: 'none', border: 'none' }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      parent.classList.add('bg-primary');
+                                      const initials = document.createElement('span');
+                                      initials.className = 'text-sm text-white font-semibold';
+                                      initials.textContent = getInitials(invitation.sender?.name || 'Unknown');
+                                      parent.appendChild(initials);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-sm text-white font-semibold">
+                                  {getInitials(invitation.sender?.name || 'Unknown')}
+                                </span>
+                              )}
                             </div>
                             <div className="ml-4 flex-1 min-w-0">
-                              <h3 className="font-semibold truncate">{invitation.senderName}</h3>
+                              <h3 className="font-semibold truncate">{invitation.sender?.name || 'Unknown User'}</h3>
                               <p className="text-sm text-muted-foreground mb-2 truncate">
-                                Sent on {new Date(invitation.created_at).toLocaleDateString()}
+                                {invitation.sender?.email || 'No email'}
                               </p>
                             </div>
                           </div>
