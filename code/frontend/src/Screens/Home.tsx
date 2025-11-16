@@ -2,12 +2,13 @@ import Navigation from "../components/header";
 import CreatePostCard from "../components/createPost";
 import ProfileCard from "../components/profileCard";
 import { Card } from "../components/card";
-import { ThumbsUp, MessageCircle, SendIcon, Share2 } from "lucide-react";
+import { ThumbsUp, MessageCircle, SendIcon, Share2, Calendar, UserPlus, TrendingUp, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
 import { connectionAPI } from "../services/connectionService";
 import { messagesAPI } from "../services/messagesService";
+import { eventsService } from "../services/eventsService";
 import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
 import { useUser } from "../components/UserContext";
@@ -24,6 +25,13 @@ interface Post {
   likes?: number;
   liked?: boolean;
   commentsCount?: number;
+  eventId?: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    bannerUrl?: string;
+  };
 }
 
 export default function Home() {
@@ -31,6 +39,9 @@ export default function Home() {
   const { isLoading: isUserLoading } = useUser();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isPostsLoading, setIsPostsLoading] = useState(true);
+  const [suggestedConnections, setSuggestedConnections] = useState<any[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
 
   const style = document.createElement('style');
   style.innerHTML = `
@@ -85,10 +96,16 @@ export default function Home() {
               likes: (post as any).likes ?? 0,
               liked: (post as any).likedByCurrentUser ?? false,
               commentsCount: (post as any).commentsCount ?? 0,
+              eventId: post.eventId,
+              event: post.event,
             };
           });
 
           setPosts(formattedPosts);
+          
+          // Set trending posts (top 3 by likes)
+          const sorted = [...formattedPosts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          setTrendingPosts(sorted.slice(0, 3));
         }
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -97,7 +114,45 @@ export default function Home() {
       }
     };
 
+    const fetchSuggestedConnections = async () => {
+      try {
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+
+        const response = await connectionAPI.getConnections(userId);
+        if (response.success && response.data?.connections) {
+          // Mock suggested connections - in real app, this would be a separate API
+          // For now, just get some from existing connections or leave empty
+          setSuggestedConnections([]);
+        }
+      } catch (error) {
+        console.error('Error fetching suggested connections:', error);
+      }
+    };
+
+    const fetchUpcomingEvents = async () => {
+      try {
+        const userId = localStorage.getItem('userId');
+        if (!userId) return;
+
+        const response = await eventsService.getAllEvents(50, 0);
+        if (response.success && response.data?.events) {
+          // Get next 3 upcoming events
+          const now = new Date();
+          const upcoming = response.data.events
+            .filter((e: any) => new Date(e.date) >= now)
+            .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 3);
+          setUpcomingEvents(upcoming);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+
     fetchPosts();
+    fetchSuggestedConnections();
+    fetchUpcomingEvents();
   }, [navigate]);
 
   // Comments and per-post UI state
@@ -228,13 +283,13 @@ export default function Home() {
     <>
       <Navigation />
       <div className="min-h-screen bg-background">
-        <div className="max-w-[1128px] mx-auto px-6 py-6 flex gap-6">
-          <div className="hidden md:block w-[225px] flex-shrink-0 space-y-4 sticky top-20">
+        <div className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6 justify-center">
+          <div className="hidden md:block w-[225px] flex-shrink-0 space-y-4 sticky top-20 self-start">
             <ProfileCard />
           </div>
 
           <div
-            className="max-w-[540px] w-full space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
+            className="w-full md:max-w-[540px] space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
             style={{ minHeight: 0 }}
           >
             <CreatePostCard />
@@ -289,6 +344,45 @@ export default function Home() {
                         alt="Post Image"
                         className="w-full rounded-md object-cover max-h-[400px]"
                       />
+                    )}
+
+                    {post.event && (
+                      <div 
+                        className="cursor-pointer transition-all hover:opacity-90"
+                        onClick={() => navigate(`/events/${post.event!.id}`)}
+                      >
+                        {/* Banner Image */}
+                        {post.event.bannerUrl ? (
+                          <div className="relative w-full h-48 rounded-t-lg border border-border border-b-0 overflow-hidden">
+                            <img
+                              src={post.event.bannerUrl}
+                              alt={post.event.name}
+                              className="w-full h-full object-contain bg-gradient-to-br"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-48 bg-gradient-to-br rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
+                            <div className="text-8xl opacity-20">📅</div>
+                          </div>
+                        )}
+                        {/* Event info box */}
+                        <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
+                          <h4 className="text-sm font-semibold text-foreground mb-2">{post.event.name}</h4>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span>{new Date(post.event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                          <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
+                            <span>View event details</span>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Interactions visual only, no logic */}
@@ -392,6 +486,119 @@ export default function Home() {
                   </Card>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20 self-start">
+            {/* Trending Posts */}
+            {trendingPosts.length > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Trending Posts</h3>
+                </div>
+                <div className="space-y-3">
+                  {trendingPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      onClick={() => navigate(`/post/${post.id}`)}
+                      className="cursor-pointer hover:bg-secondary/50 p-2 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        {post.avatarUrl ? (
+                          <img
+                            src={post.avatarUrl}
+                            alt={post.author}
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                            {post.avatar}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{post.author}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                            {post.content}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <ThumbsUp className="w-3 h-3" />
+                              {post.likes}
+                            </span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MessageCircle className="w-3 h-3" />
+                              {post.commentsCount}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Upcoming Events */}
+            {upcomingEvents.length > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Upcoming Events</h3>
+                </div>
+                <div className="space-y-3">
+                  {upcomingEvents.map((event: any) => (
+                    <div
+                      key={event.id}
+                      onClick={() => navigate(`/events/${event.id}`)}
+                      className="cursor-pointer transition-all hover:opacity-90"
+                    >
+                      {/* Banner Image */}
+                      {event.banner_url || event.bannerUrl ? (
+                        <div className="relative w-full h-20 rounded-t-lg border border-border border-b-0 overflow-hidden">
+                          <img
+                            src={event.banner_url || event.bannerUrl}
+                            alt={event.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"><div class="text-6xl opacity-20">📅</div></div>';
+                              }
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative w-full h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
+                          <div className="text-6xl opacity-20">📅</div>
+                        </div>
+                      )}
+                      {/* Event info box */}
+                      <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
+                        <p className="text-sm font-semibold text-foreground mb-1">{event.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span>
+                            {new Date(event.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate('/events')}
+                  className="w-full mt-3 text-sm text-primary hover:underline font-medium"
+                >
+                  View all events →
+                </button>
+              </Card>
             )}
           </div>
         </div>

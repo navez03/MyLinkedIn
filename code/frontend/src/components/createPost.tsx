@@ -7,6 +7,7 @@ import { useState } from "react";
 import { cn } from "../utils";
 import { postsAPI } from "../services/postsService";
 import { useUser } from "./UserContext";
+import { eventsService } from "../services/eventsService";
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
@@ -92,6 +93,10 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showEventSelector, setShowEventSelector] = useState(false);
+  const [myEvents, setMyEvents] = useState<any[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(false);
   const { userData } = useUser();
   const userName = userData?.name || '';
   const userAvatar = userData?.avatar_url || null;
@@ -122,8 +127,36 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
     }
   };
 
+  const handleEventClick = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    setLoadingEvents(true);
+    try {
+      const response = await eventsService.getEventsByOrganizer(userId, 100, 0);
+      if (response.success && response.data) {
+        setMyEvents(response.data.events || []);
+        setShowEventSelector(true);
+      }
+    } catch (error) {
+      console.error('Error loading events:', error);
+      alert('Failed to load your events');
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const handleSelectEvent = (event: any) => {
+    setSelectedEvent(event);
+    setShowEventSelector(false);
+  };
+
+  const handleRemoveEvent = () => {
+    setSelectedEvent(null);
+  };
+
   const handlePost = async () => {
-    if (content.trim() || selectedImage) {
+    if (content.trim() || selectedImage || selectedEvent) {
       try {
         setIsLoading(true);
         const userId = localStorage.getItem('userId');
@@ -151,12 +184,14 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
           userId,
           content: content.trim(),
           imageUrl,
+          eventId: selectedEvent?.id,
         });
 
         if (response.success) {
           setContent("");
           setSelectedImage(null);
           setImagePreview(null);
+          setSelectedEvent(null);
           onOpenChange(false);
           window.location.reload();
         } else {
@@ -219,6 +254,32 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
             </div>
           )}
 
+          {selectedEvent && (
+            <div className="relative border border-border rounded-lg overflow-hidden">
+              <div className="flex gap-3 p-3 bg-secondary/30">
+                <div className="w-32 h-19 bg-gradient-to-br rounded-md flex items-center justify-center flex-shrink-0">
+                  {selectedEvent.bannerUrl ? (
+                    <img src={selectedEvent.bannerUrl} alt={selectedEvent.name} className="max-w-full max-h-full object-contain rounded-md" />
+                  ) : (
+                    <Calendar className="w-8 h-8 text-white" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{selectedEvent.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRemoveEvent}
+                  className="p-1 hover:bg-secondary rounded-full transition-colors self-start"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <input
             ref={fileInputRef}
             type="file"
@@ -226,6 +287,49 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
             onChange={handleImageSelect}
             className="hidden"
           />
+
+          {showEventSelector && (
+            <div className="border border-border rounded-lg p-3 max-h-64 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold">Select an Event</h4>
+                <button
+                  onClick={() => setShowEventSelector(false)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {loadingEvents ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Loading events...</p>
+              ) : myEvents.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">You haven't created any events yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {myEvents.map((event) => (
+                    <button
+                      key={event.id}
+                      onClick={() => handleSelectEvent(event)}
+                      className="w-full flex gap-3 p-2 hover:bg-secondary rounded-lg transition-colors text-left"
+                    >
+                      <div className="w-32 h-19 bg-gradient-to-br rounded-md flex items-center justify-center flex-shrink-0">
+                        {event.bannerUrl ? (
+                          <img src={event.bannerUrl} alt={event.name} className="max-w-full max-h-full object-contain" />
+                        ) : (
+                          <Calendar className="w-6 h-6 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{event.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="flex gap-2">
@@ -236,11 +340,15 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
               >
                 <Image className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button className="p-2 hover:bg-secondary rounded-lg transition-colors" disabled>
+              <button 
+                onClick={handleEventClick}
+                className="p-2 hover:bg-secondary rounded-lg transition-colors" 
+                disabled={isLoading || loadingEvents}
+              >
                 <Calendar className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-            <Button onClick={handlePost} disabled={(!content.trim() && !selectedImage) || isLoading}>
+            <Button onClick={handlePost} disabled={(!content.trim() && !selectedImage && !selectedEvent) || isLoading}>
               {isLoading ? 'Publishing...' : 'Publish'}
             </Button>
           </div>

@@ -57,7 +57,6 @@ const AIChatWidget = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: userText,
-          // preferredLanguage: "Portuguese (European)",
         }),
       });
 
@@ -88,27 +87,8 @@ const AIChatWidget = () => {
         timestamp: new Date(),
       };
 
-      const followUpMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: "Tens mais algum texto que queiras tornar mais formal?",
-        sender: "ai",
-        timestamp: new Date(),
-      };
-
-      // 1️⃣ Adiciona a resposta principal da IA
       setMessages((prev) => [...prev, aiMessage]);
 
-      // 2️⃣ Espera 10 segundos antes de fazer follow-up
-      setTimeout(() => {
-        const followUpMessage: Message = {
-          id: (Date.now() + 2).toString(),
-          text: "Tens mais algum texto que queiras tornar mais formal?",
-          sender: "ai",
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, followUpMessage]);
-      }, 10000); // 10,000 ms = 10 segundos
     } catch (error) {
       console.error("AI assistant error:", error);
       const errorMessage: Message = {

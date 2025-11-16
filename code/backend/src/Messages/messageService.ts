@@ -86,7 +86,7 @@ export class MessageService {
     if (postIds.length > 0) {
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select(`id, content, user_id, created_at, users:user_id (name, email, avatar_url)`)
+        .select(`id, content, user_id, created_at, image_url, users:user_id (name, email, avatar_url)`)
         .in('id', postIds as any[]);
 
       if (!postsError && posts) {
@@ -98,6 +98,7 @@ export class MessageService {
             created_at: p.created_at,
             authorName: p.users?.name,
             authorAvatar: p.users?.avatar_url,
+            imageUrl: p.image_url,
           };
           return acc;
         }, {} as Record<string, any>);
