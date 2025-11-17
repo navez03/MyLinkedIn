@@ -389,65 +389,6 @@ export default function Home() {
                     </p>
                   </div>
                 )}
-                  <div className="flex justify-around pt-2 border-t border-border">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className="flex items-center gap-1 rounded-lg px-2 py-1 transition-colors hover:bg-secondary"
-                      type="button"
-                      tabIndex={0}
-                    >
-                      <ThumbsUp className={`w-4 h-4 ${post.liked ? 'text-primary fill-primary' : ''}`} /> 
-                      Like
-                    </button>
-
-                    <button
-                      onClick={() => toggleComments(post.id)}
-                      className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                      type="button"
-                      tabIndex={0}
-                    >
-                      <MessageCircle className="w-4 h-4" /> 
-                      Comment
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setRepostingPostId(post.id);
-                        setRepostModalOpen(true);
-                      }}
-                      className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                      type="button"
-                      tabIndex={0}
-                    >
-                      <Repeat2 className="w-4 h-4" /> 
-                      Repost
-                    </button>
-                    
-                    <button
-                       className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                       type="button"
-                       tabIndex={0}
-                       onClick={async () => {
-                          setSendModalOpenFor(post.id);
-                          const userId = localStorage.getItem('userId') || '';
-                          try {
-                            const res = await connectionAPI.getConnections(userId);
-                            if (res.success) {
-                              setConnectionsList(res.data.connections || []);
-                            } else {
-                              setConnectionsList([]);
-                            }
-                            setSelectedRecipients({});
-                          } catch (e) {
-                            console.error('Error fetching connections', e);
-                            setConnectionsList([]);
-                          }
-                       }}
-                      >
-                        <SendIcon className="w-4 h-4" /> 
-                       Send
-                      </button>
-                    </div>
 
                     <p className="text-sm text-foreground whitespace-pre-line">
                       {post.content}
@@ -526,6 +467,18 @@ export default function Home() {
                       >
                         <MessageCircle className="w-4 h-4" /> Comment
                       </button>
+                      <button
+                      onClick={() => {
+                        setRepostingPostId(post.id);
+                        setRepostModalOpen(true);
+                      }}
+                      className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <Repeat2 className="w-4 h-4" /> 
+                      Repost
+                    </button>
                       <button
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
