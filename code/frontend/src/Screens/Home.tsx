@@ -2,7 +2,7 @@ import Navigation from "../components/header";
 import CreatePostCard from "../components/createPost";
 import ProfileCard from "../components/profileCard";
 import { Card } from "../components/card";
-import { ThumbsUp, MessageCircle, SendIcon, Share2, Calendar, UserPlus, TrendingUp, Sparkles } from "lucide-react";
+import { ThumbsUp, MessageCircle, SendIcon, Share2, Calendar, UserPlus, TrendingUp, Sparkles, Repeat2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
@@ -32,6 +32,13 @@ interface Post {
     date: string;
     bannerUrl?: string;
   };
+  isRepost?: boolean;
+  repostedBy?: string;
+  repostedByUserId?: string;
+  repostedByAvatar?: string;
+  repostedByAvatarUrl?: string;
+  repostComment?: string;
+  originalPost?: Post; // The original post being reposted
 }
 
 export default function Home() {
@@ -42,6 +49,9 @@ export default function Home() {
   const [suggestedConnections, setSuggestedConnections] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [trendingPosts, setTrendingPosts] = useState<Post[]>([]);
+  const [repostModalOpen, setRepostModalOpen] = useState(false);
+  const [repostingPostId, setRepostingPostId] = useState<string | null>(null);
+  const [repostComment, setRepostComment] = useState("");
 
   const style = document.createElement('style');
   style.innerHTML = `
@@ -64,56 +74,69 @@ export default function Home() {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      try {
-        setIsPostsLoading(true);
-        const userId = localStorage.getItem('userId');
+  try {
+    setIsPostsLoading(true);
+    const userId = localStorage.getItem('userId');
 
-        if (!userId) {
-          console.error('User not logged in');
-          navigate('/');
-          return;
-        }
+    if (!userId) {
+      console.error('User not logged in');
+      navigate('/');
+      return;
+    }
 
-        const response = await postsAPI.getPostsByUserAndConnections(userId);
+    const response = await postsAPI.getPostsByUserAndConnections(userId);
 
-        if (response.success && response.data) {
-          const formattedPosts: Post[] = response.data.posts.map((post: PostResponseDto) => {
-            const initials = post.authorName
-              ? post.authorName.split(' ').map(n => n[0]).join('').toUpperCase()
-              : 'U';
+    if (response.success && response.data) {
+      const formattedPosts: Post[] = response.data.posts.map((post: any) => {
+        const initials = post.authorName
+          ? post.authorName.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+          : 'U';
 
-            const timeAgo = getTimeAgo(post.createdAt);
+        const timeAgo = getTimeAgo(post.createdAt);
 
-            return {
-              id: post.id,
-              author: post.authorName || 'Unknown User',
-              avatar: initials,
-              avatarUrl: post.authorAvatarUrl,
-              content: post.content,
-              image: post.imageUrl,
-              time: timeAgo,
-              userId: post.userId,
-              likes: (post as any).likes ?? 0,
-              liked: (post as any).likedByCurrentUser ?? false,
-              commentsCount: (post as any).commentsCount ?? 0,
-              eventId: post.eventId,
-              event: post.event,
-            };
-          });
+        // Handle repost data
+        const isRepost = !!post.repostedBy;
+        const repostData = isRepost ? {
+          isRepost: true,
+          repostedBy: post.repostedByName || post.repostedBy,
+          repostedByUserId: post.repostedByUserId,
+          repostedByAvatar: post.repostedByName 
+            ? post.repostedByName.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+            : 'U',
+          repostedByAvatarUrl: post.repostedByAvatarUrl,
+          repostComment: post.repostComment,
+        } : {};
 
-          setPosts(formattedPosts);
-          
-          // Set trending posts (top 3 by likes)
-          const sorted = [...formattedPosts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-          setTrendingPosts(sorted.slice(0, 3));
-        }
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      } finally {
-        setIsPostsLoading(false);
-      }
-    };
+        return {
+          id: post.id,
+          author: post.authorName || 'Unknown User',
+          avatar: initials,
+          avatarUrl: post.authorAvatarUrl,
+          content: post.content,
+          image: post.imageUrl,
+          time: timeAgo,
+          userId: post.userId,
+          likes: (post as any).likes ?? 0,
+          liked: (post as any).likedByCurrentUser ?? false,
+          commentsCount: (post as any).commentsCount ?? 0,
+          eventId: post.eventId,
+          event: post.event,
+          ...repostData,
+        };
+      });
 
+      setPosts(formattedPosts);
+      
+      // Set trending posts (top 3 by likes)
+      const sorted = [...formattedPosts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      setTrendingPosts(sorted.slice(0, 3));
+    }
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+  } finally {
+    setIsPostsLoading(false);
+  }
+};
     const fetchSuggestedConnections = async () => {
       try {
         const userId = localStorage.getItem('userId');
@@ -264,6 +287,28 @@ export default function Home() {
     }
   };
 
+  const handleRepost = async (postId: string, withComment: boolean = false) => {
+  const userId = localStorage.getItem('userId');
+  if (!userId) return;
+
+  try {
+    // Call your repost API endpoint
+    const response = await postsAPI.repostPost(postId, userId, withComment ? repostComment : undefined);
+    
+    if (response.success) {
+      console.log('Post reposted successfully');
+      setRepostModalOpen(false);
+      setRepostComment("");
+      setRepostingPostId(null);
+      
+      // Refresh posts to show the repost
+      // You can call your fetchPosts function here or add the repost to the posts array
+    }
+  } catch (error) {
+    console.error('Error reposting:', error);
+  }
+};
+
 
 
   const handleProfileClick = (userId: string) => {
@@ -302,37 +347,48 @@ export default function Home() {
               <div className="space-y-4">
                 {posts.map((post) => (
                   <Card key={post.id} className="p-4 space-y-3">
-                    <div className="flex gap-3 mb-1">
-                      {post.avatarUrl ? (
+                  {post.isRepost && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 pb-2 border-b border-border">
+                    <Repeat2 className="w-4 h-4" />
+                    <span className="font-medium">
+                      {post.repostedByUserId === localStorage.getItem('userId') 
+                        ? 'You reposted this' 
+                        : `${post.repostedBy} reposted this`}
+                    </span>
+                  </div>
+                 )}
+                 {post.isRepost && post.repostComment && (
+                  <div className="mb-3">
+                    <div className="flex gap-3 mb-2">
+                      {post.repostedByAvatarUrl ? (
                         <img
-                          src={post.avatarUrl}
-                          alt={post.author}
-                          onClick={() => handleProfileClick(post.userId)}
-                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            if (e.currentTarget.nextElementSibling) {
-                              e.currentTarget.nextElementSibling.classList.remove('hidden');
-                            }
-                          }}
+                          src={post.repostedByAvatarUrl}
+                          alt={post.repostedBy}
+                          onClick={() => handleProfileClick(post.repostedByUserId!)}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
                         />
-                      ) : null}
-                      <div
-                        onClick={() => handleProfileClick(post.userId)}
-                        className={`w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity ${post.avatarUrl ? 'hidden' : ''}`}
-                      >
-                        {post.avatar}
-                      </div>
+                      ) : (
+                        <div
+                          onClick={() => handleProfileClick(post.repostedByUserId!)}
+                          className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          {post.repostedByAvatar}
+                        </div>
+                      )}
                       <div>
                         <h3
-                          onClick={() => handleProfileClick(post.userId)}
-                          className="font-semibold leading-tight cursor-pointer hover:underline"
+                          onClick={() => handleProfileClick(post.repostedByUserId!)}
+                          className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
                         >
-                          {post.author}
+                          {post.repostedBy}
                         </h3>
-                        <span className="text-[10px] text-muted-foreground">{post.time}</span>
                       </div>
                     </div>
+                    <p className="text-sm text-foreground whitespace-pre-line pl-13">
+                      {post.repostComment}
+                    </p>
+                  </div>
+                )}
 
                     <p className="text-sm text-foreground whitespace-pre-line">
                       {post.content}
@@ -411,6 +467,18 @@ export default function Home() {
                       >
                         <MessageCircle className="w-4 h-4" /> Comment
                       </button>
+                      <button
+                      onClick={() => {
+                        setRepostingPostId(post.id);
+                        setRepostModalOpen(true);
+                      }}
+                      className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                      type="button"
+                      tabIndex={0}
+                    >
+                      <Repeat2 className="w-4 h-4" /> 
+                      Repost
+                    </button>
                       <button
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
@@ -603,6 +671,21 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <RepostModal
+          open={repostModalOpen}
+          onClose={() => {
+          setRepostModalOpen(false);
+          setRepostComment("");
+          setRepostingPostId(null);
+        }}
+          onRepost={(withComment) => {
+          if (repostingPostId) {
+              handleRepost(repostingPostId, withComment);
+          }
+        }}
+        comment={repostComment}
+        setComment={setRepostComment}
+/>
       <AIChatWidget />
       {/* Send post modal */}
       <SendPostModal
@@ -616,6 +699,107 @@ export default function Home() {
         sending={sending}
       />
     </>
+  );
+}
+
+
+export function RepostModal({ 
+  open, 
+  onClose, 
+  onRepost, 
+  comment, 
+  setComment 
+}: { 
+  open: boolean; 
+  onClose: () => void; 
+  onRepost: (withComment: boolean) => void;
+  comment: string;
+  setComment: (comment: string) => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg bg-card rounded-xl border border-border shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-foreground">Repost</h3>
+            <button 
+              onClick={onClose} 
+              className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-secondary rounded-full"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Choose how you want to share this post with your network
+          </p>
+
+          {/* Quick Repost Button */}
+          <button
+            onClick={() => onRepost(false)}
+            className="w-full p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <Repeat2 className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Repost</p>
+                <p className="text-xs text-muted-foreground">Instantly share with your network</p>
+              </div>
+            </div>
+          </button>
+
+          {/* Repost with Comment */}
+          <div className="p-4 rounded-lg border-2 border-border">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MessageCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Repost with your thoughts</p>
+                <p className="text-xs text-muted-foreground">Add a comment to the post</p>
+              </div>
+            </div>
+            
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What do you think about this?"
+              rows={3}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+            
+            <button
+              onClick={() => onRepost(true)}
+              disabled={!comment.trim()}
+              className="w-full mt-3 px-4 py-2 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Repost with comment
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-secondary/30 border-t border-border">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 rounded-lg font-medium border-2 border-border text-foreground hover:bg-secondary transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 // Note: SendPostModal will be rendered by the Home component when needed
