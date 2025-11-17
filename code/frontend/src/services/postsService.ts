@@ -1,4 +1,4 @@
-import { apiHelpers, ApiResponse } from './api';
+import { apiHelpers, ApiResponse, API_BASE_URL } from './api';
 
 export interface CreatePostDto {
   userId: string;
@@ -31,7 +31,26 @@ export interface GetPostsResponseDto {
 }
 
 export const postsAPI = {
+  repostPost: async (postId: string, userId: string, comment?: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/repost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          comment: comment || null
+        }),
+      });
 
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error reposting:', error);
+      return { success: false, error: 'Failed to repost' };
+    }
+  },
   uploadImage: async (file: File): Promise<ApiResponse<{ success: boolean; imageUrl: string }>> => {
     const formData = new FormData();
     formData.append('file', file);
