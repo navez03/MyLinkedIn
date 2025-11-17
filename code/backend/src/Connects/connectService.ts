@@ -157,13 +157,13 @@ export class ConnectionService {
       const otherUserId = conn.user1_id === userId ? conn.user2_id : conn.user1_id;
       const { data: userData } = await supabase
         .from('users')
-        .select('id, name, email')
+        .select('id, name, email, avatar_url')
         .eq('id', otherUserId)
         .single();
 
       return {
         id: conn.id,
-        user: userData || { id: otherUserId, name: 'Unknown User', email: '' },
+        user: userData || { id: otherUserId, name: 'Unknown User', email: '', avatar_url: null },
         connected_at: conn.created_at
       };
     }));

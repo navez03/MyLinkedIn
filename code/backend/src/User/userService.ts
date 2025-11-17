@@ -180,10 +180,13 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
+      // Validate token
       await this.getUserFromToken(token);
-      const userClient = this.supabaseService.getClientWithToken(token);
+      
+      // Use admin client to bypass RLS and allow reading other users' profiles
+      const adminClient = this.supabaseService.getAdminClient();
 
-      const { data, error } = await userClient
+      const { data, error } = await adminClient
         .from('users')
         .select('id, name, email, avatar_url')
         .eq('id', userId)
@@ -328,8 +331,12 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
+      this.logger.log(`updateProfileDto received: ${JSON.stringify(updateProfileDto)}`);
+      this.logger.log(`updateProfileDto.name: ${updateProfileDto.name}`);
+      this.logger.log(`updateProfileDto.avatar_url: ${updateProfileDto.avatar_url}`);
+
       // Validate that at least one field is being updated
-      if (!updateProfileDto.name && !updateProfileDto.avatar_url) {
+      if (!updateProfileDto.name && updateProfileDto.avatar_url === undefined) {
         throw new BadRequestException('At least one field (name or avatar_url) must be provided for update');
       }
 
@@ -362,15 +369,22 @@ export class UserService {
           updateData.avatar_url = updateProfileDto.avatar_url;
         }
 
-        const result = await userClient
-          .from('users')
-          .update(updateData)
-          .eq('id', userId)
-          .select()
-          .maybeSingle();
+        // Check if there's anything to update
+        if (Object.keys(updateData).length === 0) {
+          // Nothing to update, return existing user
+          data = existingUser;
+          error = null;
+        } else {
+          const result = await userClient
+            .from('users')
+            .update(updateData)
+            .eq('id', userId)
+            .select()
+            .single();
 
-        data = result.data;
-        error = result.error;
+          data = result.data;
+          error = result.error;
+        }
       } else {
         // User doesn't exist - insert new record
         const insertData: any = {
@@ -384,7 +398,7 @@ export class UserService {
           .from('users')
           .insert(insertData)
           .select()
-          .maybeSingle();
+          .single();
 
         data = result.data;
         error = result.error;

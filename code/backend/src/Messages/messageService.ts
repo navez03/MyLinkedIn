@@ -5,7 +5,7 @@ import { SupabaseService } from '../config/supabaseClient';
 export class MessageService {
   constructor(private readonly supabaseService: SupabaseService) { }
 
-  async sendMessage(data: { senderId: string; receiverId: string; content: string }, token: string) {
+  async sendMessage(data: { senderId: string; receiverId: string; content?: string; postId?: string; eventId?: string }, token: string) {
     const supabase = this.supabaseService.getClientWithToken(token);
     const { senderId, receiverId, content } = data;
 
@@ -19,14 +19,25 @@ export class MessageService {
       throw new Error('The users are not connected');
     }
 
+    // support optional post_id and allow empty content when sharing a post
+    const insertObj: any = {
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content: content || '',
+      created_at: new Date().toISOString(),
+    };
+
+    if ((data as any).postId) {
+      insertObj.post_id = (data as any).postId;
+    }
+
+    if ((data as any).eventId) {
+      insertObj.event_id = (data as any).eventId;
+    }
+
     const { data: message, error: messageError } = await supabase
       .from('messages')
-      .insert({
-        sender_id: senderId,
-        receiver_id: receiverId,
-        content,
-        created_at: new Date().toISOString()
-      })
+      .insert(insertObj)
       .select('*')
       .single();
 
@@ -65,11 +76,85 @@ export class MessageService {
       .order('created_at', { ascending: true });
 
     if (messagesError) {
-      console.error('Error getting messages:', messagesError.message);
-      return [];
+      throw new Error(`Error getting messages: ${messagesError.message}`);
     }
 
-    return messages || [];
+    // If some messages reference posts, fetch those posts and attach a small preview
+    const postIds = Array.from(new Set((messages || []).filter((m: any) => m.post_id).map((m: any) => m.post_id)));
+
+    let postsMap: Record<string, any> = {};
+    if (postIds.length > 0) {
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select(`id, content, user_id, created_at, image_url, users:user_id (name, email, avatar_url)`)
+        .in('id', postIds as any[]);
+
+      if (!postsError && posts) {
+        postsMap = (posts as any[]).reduce((acc, p) => {
+          acc[p.id] = {
+            id: p.id,
+            content: p.content,
+            user_id: p.user_id,
+            created_at: p.created_at,
+            authorName: p.users?.name,
+            authorAvatar: p.users?.avatar_url,
+            imageUrl: p.image_url,
+          };
+          return acc;
+        }, {} as Record<string, any>);
+      }
+    }
+
+    // attach post preview when available
+    const messagesWithPost = (messages || []).map((m: any) => ({
+      ...m,
+      post: m.post_id ? postsMap[m.post_id] || null : null,
+    }));
+
+    // If some messages reference events, fetch those events and attach a small preview
+    const eventIds = Array.from(new Set((messages || []).filter((m: any) => m.event_id).map((m: any) => m.event_id)));
+
+    let eventsMap: Record<string, any> = {};
+    if (eventIds.length > 0) {
+      console.log('[Messages] Fetching events for IDs:', eventIds);
+      const { data: events, error: eventsError } = await supabase
+        .from('events')
+        .select('id, name, date, time, location_type, organizer_id, banner_url')
+        .in('id', eventIds as any[]);
+
+      if (eventsError) {
+        console.error('[Messages] Error fetching events:', eventsError);
+      } else {
+        console.log('[Messages] Events fetched:', events);
+      }
+
+      if (!eventsError && events) {
+        eventsMap = (events as any[]).reduce((acc, e) => {
+          acc[e.id] = {
+            id: e.id,
+            name: e.name,
+            date: e.date,
+            time: e.time,
+            locationType: e.location_type,
+            organizerId: e.organizer_id,
+            bannerUrl: e.banner_url,
+          };
+          return acc;
+        }, {} as Record<string, any>);
+        console.log('[Messages] Events map created:', eventsMap);
+      }
+    }
+
+    // attach both post and event previews when available
+    const messagesWithExtras = (messages || []).map((m: any) => ({
+      ...m,
+      post: m.post_id ? postsMap[m.post_id] || null : null,
+      event: m.event_id ? eventsMap[m.event_id] || null : null,
+    }));
+
+    console.log('[Messages] Final messages with extras:', messagesWithExtras.filter((m: any) => m.event_id));
+
+    return messagesWithExtras || [];
   }
 
   async getUserConversations(userId: string, token: string) {
@@ -93,7 +178,7 @@ export class MessageService {
 
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, name')
+      .select('id, email, name, avatar_url')
       .in('id', Array.from(userIds));
 
     if (usersError) {

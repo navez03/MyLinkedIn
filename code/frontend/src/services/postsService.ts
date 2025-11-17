@@ -4,6 +4,7 @@ export interface CreatePostDto {
   userId: string;
   content: string;
   imageUrl?: string;
+  eventId?: string;
 }
 
 export interface PostResponseDto {
@@ -15,6 +16,13 @@ export interface PostResponseDto {
   authorEmail?: string;
   authorAvatarUrl?: string;
   imageUrl?: string;
+  eventId?: string;
+  event?: {
+    id: string;
+    name: string;
+    date: string;
+    bannerUrl?: string;
+  };
 }
 
 export interface GetPostsResponseDto {
@@ -77,4 +85,24 @@ export const postsAPI = {
   deletePost: async (id: string, userId: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {
     return apiHelpers.delete<{ success: boolean; message: string }>(`/posts/${id}`, true, { userId });
   },
+
+  // Likes
+  likePost: async (postId: string, userId: string): Promise<ApiResponse<{ liked: boolean; totalLikes: number }>> => {
+    return apiHelpers.post<{ liked: boolean; totalLikes: number }>(`/posts/${postId}/likes`, { userId }, true);
+  },
+
+  unlikePost: async (postId: string, userId: string): Promise<ApiResponse<{ liked: boolean; totalLikes: number }>> => {
+    return apiHelpers.delete<{ liked: boolean; totalLikes: number }>(`/posts/${postId}/likes`, true, { userId });
+  },
+
+  // Comments
+  getComments: async (postId: string, limit = 20, offset = 0): Promise<ApiResponse<{ comments: any[]; total: number }>> => {
+    return apiHelpers.get<{ comments: any[]; total: number }>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`, true);
+  },
+
+  addComment: async (postId: string, content: string, userId: string): Promise<ApiResponse<{ comment: any }>> => {
+    // Backend espera content, user_id e post_id
+    return apiHelpers.post<{ comment: any }>(`/posts/${postId}/comments`, { content, user_id: userId, post_id: postId }, true);
+  },
+
 };

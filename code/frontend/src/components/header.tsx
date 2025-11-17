@@ -1,10 +1,13 @@
-import { Home, Users, Briefcase, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
+import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
 import { userAPI, UserSearchResult } from "../services/registerService";
+import { useNotifications } from "./NotificationContext";
 
 const Navigation = () => {
+
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
@@ -134,10 +137,24 @@ const Navigation = () => {
                           onClick={() => handleUserClick(user.id)}
                           className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors"
                         >
-                          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm text-primary-foreground font-bold">
-                              {getInitials(user.name)}
-                            </span>
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!user.avatar_url ? 'bg-primary' : ''}`}>
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm text-primary-foreground font-bold">
+                                {getInitials(user.name)}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-foreground truncate">{user.name}</p>
@@ -162,7 +179,21 @@ const Navigation = () => {
                 onClick={() => handleNavClick(item.path)}
                 className={`flex flex-col items-center gap-1 px-3 py-1 hover:text-foreground transition-colors cursor-pointer`}
               >
-                <item.icon className="w-5 h-5" />
+                {item.label === "Notifications" ? (
+                  <div className="relative flex items-center justify-center">
+                    <item.icon className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute -top-2 left-full -translate-x-1/2 bg-red-500 text-white font-bold text-[9px] rounded-full w-3 h-3 flex items-center justify-center border-2 border-white shadow"
+                        style={{ minWidth: 18, minHeight: 18 }}
+                      >
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <item.icon className="w-5 h-5" />
+                )}
                 <span className="text-xs font-normal">{item.label}</span>
               </div>
             ))}

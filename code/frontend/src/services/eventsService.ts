@@ -10,6 +10,13 @@ export enum LocationType {
   IN_PERSON = 'in-person',
 }
 
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export interface CreateEventDto {
   name: string;
   date: string;
@@ -34,6 +41,7 @@ export interface EventResponse {
   organizerId: string;
   organizerName?: string;
   organizerAvatar?: string;
+  participants?: Participant[];
   createdAt: string;
   updatedAt: string;
 }
@@ -48,8 +56,15 @@ export interface EventInvitationResponse {
   eventId: string;
   userId: string;
   invitedBy: string;
-  status: 'pending' | 'interested' | 'going' | 'declined';
+  status: 'pending';
   createdAt: string;
+}
+export interface RemoveParticipantResponse {
+  message: string;
+}
+
+export interface PendingInvitationsResponse {
+  invitations: EventInvitationResponse[];
 }
 
 export interface InviteResponse {
@@ -129,5 +144,53 @@ export const eventsService = {
 
   deleteEvent: async (eventId: string): Promise<ApiResponse<{ message: string }>> => {
     return apiHelpers.delete<{ message: string }>(`/events/${eventId}`, true);
+  },
+
+  updateInviteStatus: async (
+    eventId: string,
+    status: 'going' | 'declined'
+  ): Promise<ApiResponse<{ invitation: EventInvitationResponse }>> => {
+    // Backend expects PUT /events/:id/invite-status
+    return apiHelpers.put<{ invitation: EventInvitationResponse }>(
+      `/events/${eventId}/invite-status`,
+      { status },
+      true
+    );
+  },
+
+  getPendingInvitations: async (): Promise<ApiResponse<PendingInvitationsResponse>> => {
+    // GET /events/invitations/pending
+    return apiHelpers.get<PendingInvitationsResponse>(
+      '/events/invitations/pending',
+      true
+    );
+  },
+
+  removeParticipant: async (
+    eventId: string,
+    participantId: string
+  ): Promise<ApiResponse<RemoveParticipantResponse>> => {
+    // DELETE /events/:eventId/participants/:participantId
+    return apiHelpers.delete<RemoveParticipantResponse>(
+      `/events/${eventId}/participants/${participantId}`,
+      true
+    );
+  },
+
+  participateInEvent: async (eventId: string): Promise<ApiResponse<{ message: string }>> => {
+    // POST /events/:eventId/participate
+    return apiHelpers.post<{ message: string }>(
+      `/events/${eventId}/participate`,
+      {},
+      true
+    );
+  },
+
+  leaveEvent: async (eventId: string, userId: string): Promise<ApiResponse<RemoveParticipantResponse>> => {
+    // DELETE /events/:eventId/participants/:userId (user removing themselves)
+    return apiHelpers.delete<RemoveParticipantResponse>(
+      `/events/${eventId}/participants/${userId}`,
+      true
+    );
   },
 };
