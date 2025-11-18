@@ -499,7 +499,7 @@ const Messages: React.FC = () => {
                                         />
                                       </div>
                                     )}
-                                    
+
                                     <div className="p-3 flex gap-3">
                                       {/* Avatar do autor do post */}
                                       {message.post.authorAvatar ? (
@@ -518,7 +518,7 @@ const Messages: React.FC = () => {
                                       <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0 ${message.post.authorAvatar ? 'hidden' : ''}`}>
                                         {message.post.authorName ? message.post.authorName.charAt(0).toUpperCase() : 'P'}
                                       </div>
-                                      
+
                                       {/* Conteúdo do post */}
                                       <div className="flex-1 min-w-0">
                                         <p className="text-xs font-semibold text-foreground mb-1">{message.post.authorName || 'Post'}</p>
@@ -563,7 +563,7 @@ const Messages: React.FC = () => {
                                         </div>
                                       </div>
                                     )}
-                                    
+
                                     {/* Event Details */}
                                     <div className={`px-3 py-3 ${message.sender_id === currentUserId ? 'bg-primary/5' : 'bg-card'}`}>
                                       <h4 className="text-sm font-semibold text-foreground mb-2 line-clamp-2">{message.event.name}</h4>
