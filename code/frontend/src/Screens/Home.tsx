@@ -329,10 +329,12 @@ export default function Home() {
       <Navigation />
       <div className="min-h-screen bg-background">
         <div className="max-w-[1400px] mx-auto px-6 py-6 flex gap-6 justify-center">
+          {/* Left Sidebar (ProfileCard) */}
           <div className="hidden md:block w-[225px] flex-shrink-0 space-y-4 sticky top-20 self-start">
             <ProfileCard />
           </div>
 
+          {/* Main Content Area (Posts) */}
           <div
             className="w-full md:max-w-[540px] space-y-4 h-[calc(100vh-48px-48px)] overflow-y-auto scrollbar-hide"
             style={{ minHeight: 0 }}
@@ -347,53 +349,91 @@ export default function Home() {
               <div className="space-y-4">
                 {posts.map((post) => (
                   <Card key={post.id} className="p-4 space-y-3">
-                  {post.isRepost && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 pb-2 border-b border-border">
-                    <Repeat2 className="w-4 h-4" />
-                    <span className="font-medium">
-                      {post.repostedByUserId === localStorage.getItem('userId') 
-                        ? 'You reposted this' 
-                        : `${post.repostedBy} reposted this`}
-                    </span>
-                  </div>
-                 )}
-                 {post.isRepost && post.repostComment && (
-                  <div className="mb-3">
-                    <div className="flex gap-3 mb-2">
-                      {post.repostedByAvatarUrl ? (
-                        <img
-                          src={post.repostedByAvatarUrl}
-                          alt={post.repostedBy}
-                          onClick={() => handleProfileClick(post.repostedByUserId!)}
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                        />
-                      ) : (
-                        <div
-                          onClick={() => handleProfileClick(post.repostedByUserId!)}
-                          className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                        >
-                          {post.repostedByAvatar}
+                    {/* Repost Indicator */}
+                    {post.isRepost && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 pb-2 border-b border-border">
+                        <Repeat2 className="w-4 h-4" />
+                        <span className="font-medium">
+                          {post.repostedByUserId === localStorage.getItem('userId') 
+                            ? 'You reposted this' 
+                            : `${post.repostedBy} reposted this`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Reposter's Comment (if exists) */}
+                    {post.isRepost && post.repostComment && (
+                      <div className="mb-3">
+                        <div className="flex gap-3 mb-2">
+                          {post.repostedByAvatarUrl ? (
+                            <img
+                              src={post.repostedByAvatarUrl}
+                              alt={post.repostedBy}
+                              onClick={() => handleProfileClick(post.repostedByUserId!)}
+                              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            />
+                          ) : (
+                            <div
+                              onClick={() => handleProfileClick(post.repostedByUserId!)}
+                              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              {post.repostedByAvatar}
+                            </div>
+                          )}
+                          <div>
+                            <h3
+                              onClick={() => handleProfileClick(post.repostedByUserId!)}
+                              className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
+                            >
+                              {post.repostedBy}
+                            </h3>
+                          </div>
                         </div>
-                      )}
+                        <p className="text-sm text-foreground whitespace-pre-line pl-13">
+                          {post.repostComment}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Original Post Author - THIS WAS MISSING! */}
+                    <div className="flex gap-3 mb-1">
+                      {post.avatarUrl ? (
+                        <img
+                          src={post.avatarUrl}
+                          alt={post.author}
+                          onClick={() => handleProfileClick(post.userId)}
+                          className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.classList.remove('hidden');
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        onClick={() => handleProfileClick(post.userId)}
+                        className={`w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-80 transition-opacity ${post.avatarUrl ? 'hidden' : ''}`}
+                      >
+                        {post.avatar}
+                      </div>
                       <div>
                         <h3
-                          onClick={() => handleProfileClick(post.repostedByUserId!)}
-                          className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
+                          onClick={() => handleProfileClick(post.userId)}
+                          className="font-semibold leading-tight cursor-pointer hover:underline"
                         >
-                          {post.repostedBy}
+                          {post.author}
                         </h3>
+                        <span className="text-[10px] text-muted-foreground">{post.time}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-foreground whitespace-pre-line pl-13">
-                      {post.repostComment}
-                    </p>
-                  </div>
-                )}
-
+                    
+                    {/* Post Content */}
                     <p className="text-sm text-foreground whitespace-pre-line">
                       {post.content}
                     </p>
-
+                    
+                    {/* Post Image */}
                     {post.image && (
                       <img
                         src={post.image}
@@ -402,12 +442,12 @@ export default function Home() {
                       />
                     )}
 
+                    {/* Event Card */}
                     {post.event && (
                       <div 
                         className="cursor-pointer transition-all hover:opacity-90"
                         onClick={() => navigate(`/events/${post.event!.id}`)}
                       >
-                        {/* Banner Image */}
                         {post.event.bannerUrl ? (
                           <div className="relative w-full h-48 rounded-t-lg border border-border border-b-0 overflow-hidden">
                             <img
@@ -424,7 +464,6 @@ export default function Home() {
                             <div className="text-8xl opacity-20">📅</div>
                           </div>
                         )}
-                        {/* Event info box */}
                         <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
                           <h4 className="text-sm font-semibold text-foreground mb-2">{post.event.name}</h4>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -441,7 +480,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Interactions visual only, no logic */}
+                    {/* Likes and Comments Count */}
                     <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
                       <div className="flex items-center gap-1">
                         <ThumbsUp className="w-4 h-4 text-muted-foreground" />
@@ -449,7 +488,8 @@ export default function Home() {
                       </div>
                       <span className="text-xs text-muted-foreground">{post.commentsCount ?? 0} comentários</span>
                     </div>
-
+                  
+                    {/* Interaction Buttons */}
                     <div className="flex justify-around pt-2 border-t border-border">
                       <button
                         onClick={() => handleLike(post.id)}
@@ -468,24 +508,23 @@ export default function Home() {
                         <MessageCircle className="w-4 h-4" /> Comment
                       </button>
                       <button
-                      onClick={() => {
-                        setRepostingPostId(post.id);
-                        setRepostModalOpen(true);
-                      }}
-                      className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
-                      type="button"
-                      tabIndex={0}
-                    >
-                      <Repeat2 className="w-4 h-4" /> 
-                      Repost
-                    </button>
+                        onClick={() => {
+                          setRepostingPostId(post.id);
+                          setRepostModalOpen(true);
+                        }}
+                        className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
+                        type="button"
+                        tabIndex={0}
+                      >
+                        <Repeat2 className="w-4 h-4" /> 
+                        Repost
+                      </button>
                       <button
                         className="flex items-center gap-1 hover:bg-secondary rounded-lg px-2 py-1 transition-colors"
                         type="button"
                         tabIndex={0}
                         onClick={async () => {
                           setSendModalOpenFor(post.id);
-                          // fetch connections
                           const userId = localStorage.getItem('userId') || '';
                           try {
                             const res = await connectionAPI.getConnections(userId);
@@ -504,7 +543,8 @@ export default function Home() {
                         <SendIcon className="w-4 h-4" /> Send
                       </button>
                     </div>
-
+                      
+                    {/* Comments Section */}
                     {commentsOpen[post.id] && (
                       <div className="mt-3">
                         <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -534,7 +574,7 @@ export default function Home() {
                             </div>
                           ))}
                         </div>
-
+                        
                         <div className="flex gap-2 mt-2">
                           <input
                             value={commentInputs[post.id] ?? ''}
@@ -553,7 +593,7 @@ export default function Home() {
                     )}
                   </Card>
                 ))}
-              </div>
+              </div> 
             )}
           </div>
 
@@ -669,8 +709,9 @@ export default function Home() {
               </Card>
             )}
           </div>
-        </div>
-      </div>
+        </div> {/* <-- ADDED: Closing div for 'max-w-[1400px]...' flex container */}
+      </div> {/* <-- ADDED: Closing div for 'min-h-screen bg-background' */}
+            
       <RepostModal
           open={repostModalOpen}
           onClose={() => {
@@ -685,7 +726,7 @@ export default function Home() {
         }}
         comment={repostComment}
         setComment={setRepostComment}
-/>
+      />
       <AIChatWidget />
       {/* Send post modal */}
       <SendPostModal
@@ -701,7 +742,6 @@ export default function Home() {
     </>
   );
 }
-
 
 export function RepostModal({ 
   open, 
