@@ -253,6 +253,37 @@ export class JobService {
       throw error;
     }
   }
+  // Obter Jobs por Localização
+  async getJobsByLocation(
+    location: string,
+    token: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{ jobs: JobResponseDto[]; total: number }> {
+    const supabase = this.supabase.getClientWithToken(token);
+
+    try {
+      const { data, error, count } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact" })
+        .eq("location", location) // Filtro pela localização
+        .order("created_at", { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        throw new BadRequestException(
+          `Error fetching jobs by location: ${error.message}`
+        );
+      }
+
+      return {
+        jobs: data.map((job) => this.mapJobToDto(job)),
+        total: count || 0,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 
   // Função de mapeamento do job para DTO
   private mapJobToDto(job: any): JobResponseDto {

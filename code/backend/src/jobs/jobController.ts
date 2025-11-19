@@ -74,4 +74,15 @@ export class JobController {
     jobApplicationDto.jobId = jobId; // Atribui o jobId na DTO
     return this.jobService.applyToJob(jobApplicationDto, token);
   }
+
+  // Obter todos os Jobs por localização
+  @Get("location/:location")
+  async getJobsByLocation(
+    @Param("location") location: string,
+    @Body("token") token: string,
+    @Body("limit") limit: number = 20,
+    @Body("offset") offset: number = 0
+  ) {
+    return this.jobService.getJobsByLocation(location, token, limit, offset);
+  }
 }
