@@ -36,7 +36,7 @@ export class JobService {
           salary_min: createJobDto.salary_min,
           salary_max: createJobDto.salary_max,
           skills: createJobDto.skills,
-          organizer_id: userId, // Supondo que o userId seja o dono da vaga
+          user_id: userId, // Supondo que o userId seja o dono da vaga
         })
         .select()
         .single();
@@ -56,7 +56,6 @@ export class JobService {
   // Obter todos os Jobs
   async getAllJobs(
     token: string,
-    userId: string,
     limit: number = 20,
     offset: number = 0
   ): Promise<{ jobs: JobResponseDto[]; total: number }> {
@@ -66,7 +65,6 @@ export class JobService {
       const { data, error, count } = await supabase
         .from("jobs")
         .select("*", { count: "exact" })
-        .or(`job_type.eq.public,organizer_id.eq.${userId}`)
         .order("created_at", { ascending: true })
         .range(offset, offset + limit - 1);
 
@@ -200,6 +198,10 @@ export class JobService {
     token: string
   ): Promise<string> {
     const { jobId, userId } = jobApplicationDto;
+
+    if (!userId) {
+      throw new BadRequestException("User ID is required to apply.");
+    }
     const supabase = this.supabase.getClientWithToken(token);
 
     try {
@@ -219,14 +221,13 @@ export class JobService {
         await supabase
           .from("job_applications")
           .select("id")
-          .eq("user_id", userId)
+          .eq("applicant_id", userId)
           .eq("job_id", jobId)
-          .single();
+          .maybeSingle(); // usa maybeSingle() para não tratar "0 rows" como erro
 
       if (existingAppError) {
-        throw new BadRequestException("Error checking existing applications");
+        throw new BadRequestException("Error checking existing application");
       }
-
       if (existingApplication) {
         throw new BadRequestException("You have already applied to this job");
       }
@@ -235,7 +236,7 @@ export class JobService {
       const { data, error } = await supabase
         .from("job_applications")
         .insert({
-          user_id: userId,
+          applicant_id: userId,
           job_id: jobId,
           status: "pending", // Status inicial é "pending"
         })
