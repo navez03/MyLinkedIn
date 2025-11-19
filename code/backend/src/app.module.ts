@@ -8,6 +8,7 @@ import { PostModule } from "./Post/post.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { EventModule } from "./Events/event.module";
 import { AiAgentModule } from "./Aiagent/aiagent.module";
+import { JobModule } from "./jobs/job.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AiAgentModule } from "./Aiagent/aiagent.module";
     NotificationsModule,
     EventModule,
     AiAgentModule,
+    JobModule,
   ],
 })
 export class AppModule {}
