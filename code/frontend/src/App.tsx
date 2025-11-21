@@ -13,15 +13,13 @@ import UpdateProfile from './Screens/UpdateProfile';
 import Events from './Screens/Events';
 import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
-import { UserProvider } from './components/UserContext';
-import { NotificationProvider } from './components/NotificationContext';
 import JobListings from './Screens/JobListings';
 import SearchResults from './Screens/SearchResults';
+import { NotificationProvider } from './components/NotificationContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <UserProvider>
         <NotificationProvider>
           <Routes>
         <Route path="/" element={<Landing />} />
@@ -44,7 +42,6 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
         </NotificationProvider>
-      </UserProvider>
     </BrowserRouter>
   );
 }
