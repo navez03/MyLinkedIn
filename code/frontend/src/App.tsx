@@ -16,6 +16,7 @@ import Network from './Screens/MyNetwork';
 import { UserProvider } from './components/UserContext';
 import { NotificationProvider } from './components/NotificationContext';
 import JobListings from './Screens/JobListings';
+import SearchResults from './Screens/SearchResults';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <NotificationProvider>
           <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/search-results" element={<SearchResults />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventId" element={<EventDetail />} />
         <Route path="/register" element={<RegistrationForm />} />
