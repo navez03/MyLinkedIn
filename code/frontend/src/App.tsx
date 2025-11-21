@@ -14,6 +14,7 @@ import Events from './Screens/Events';
 import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
 import { UserProvider } from './components/UserContext';
+import JobListings from './Screens/JobListings';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/set-name" element={<SetName />} />
         <Route path="/feed" element={<Home />} />
+        <Route path="/jobs" element={<JobListings />} />
         <Route path="/backToRegister" element={<BackToRegister />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/network" element={<Network />} />

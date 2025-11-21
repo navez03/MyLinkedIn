@@ -1,4 +1,4 @@
-import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
+import { Home, Users, MessageSquare, Bell, Search, User, LogOut, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
@@ -14,6 +14,7 @@ const Navigation = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/feed" },
+    { icon: Briefcase, label: "Jobs", path: "/jobs" },
     { icon: Users, label: "My Network", path: "/network" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
