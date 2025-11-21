@@ -1,7 +1,7 @@
 import Navigation from "../components/header";
 import ProfileCard from "../components/profileCard";
 import { Card } from "../components/card";
-import { ThumbsUp, MessageCircle, SendIcon, Share2, Search as SearchIcon } from "lucide-react";
+import { ThumbsUp, MessageCircle, SendIcon, Search as SearchIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { postsAPI, PostResponseDto } from "../services/postsService";
@@ -355,7 +355,7 @@ export default function SearchResults() {
                     {post.image && (
                       <img
                         src={post.image}
-                        alt="Post Image"
+                        alt=""
                         className="w-full rounded-md object-cover max-h-[400px]"
                       />
                     )}
