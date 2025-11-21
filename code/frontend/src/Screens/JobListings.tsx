@@ -5,15 +5,12 @@ import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
 import {
   Briefcase,
-  Search,
   MapPin,
   Clock,
   Send,
-  ChevronRight,
   Filter,
 } from "lucide-react"; // Save icon removed from imports
 import { Input } from "../components/input";
-import { useNavigate } from "react-router-dom";
 
 // Placeholder data structure for a job
 interface JobListing {
@@ -63,8 +60,7 @@ const jobService = {
   },
 };
 
-export default function JobView() {
-  const navigate = useNavigate();
+export default function JobListings() {
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
