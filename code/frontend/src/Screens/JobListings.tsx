@@ -21,7 +21,7 @@ interface JobListing {
   title: string;
   company: string;
   location: string;
-  postedTime: string; // e.g., "1d ago"
+  postedTime: string;
   isEasyApply: boolean;
   type: 'Full-time' | 'Part-time' | 'Contract';
 }
@@ -93,8 +93,6 @@ export default function JobView() {
   const handleJobClick = (job: JobListing) => {
     setSelectedJob(job);
   };
-  
-  // Removed handleToggleSave function
 
   if (loading) {
     return <Loading />;
