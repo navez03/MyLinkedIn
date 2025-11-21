@@ -1,20 +1,14 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "../components/header";
-import { Card } from "../components/card";
 import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
 import { Briefcase } from "lucide-react"; 
-
-// --- IMPORTED COMPONENTS ---
 import { CreateJobModal } from '../components/CreateJobModal';
 import { JobFilterSidebar } from '../components/JobFilterSidebar';
 import { JobListItem } from '../components/JobListItem';
 import { JobDetailPanel } from '../components/JobDetailPanel';
+import { JobListing } from "../types/job.types";
 
-// --- IMPORTED TYPES ---
-import { JobListing } from "../types/job.types"; // Assuming types are centralized here now
-
-// --- START Frontend Service & Utilities (Kept here for data fetching/actions) ---
 
 const BASE_URL = "http://localhost:3000";
 
@@ -26,7 +20,6 @@ const getUserId = () => {
     return localStorage.getItem("userId") || "";
 };
 
-// Reused utility function
 const getTimeAgo = (createdAt: string): string => {
     const now = new Date();
     const postDate = new Date(createdAt);
@@ -82,8 +75,6 @@ const frontendJobService = {
       return response.text();
   }
 };
-// --- END Frontend Service & Utilities ---
-
 
 export default function JobListings() {
   const [jobs, setJobs] = useState<JobListing[]>([]);
@@ -118,7 +109,6 @@ export default function JobListings() {
 
   const handleJobCreated = () => {
     alert("Job posted successfully! List refreshing.");
-    // This is the clean way to re-fetch after a successful action
     const fetchJobs = async () => { /* ... */ }; 
     fetchJobs();
   };
