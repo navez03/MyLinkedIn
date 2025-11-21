@@ -34,6 +34,19 @@ export class PostResponseDto {
     date: string;
     bannerUrl?: string;
   };
+  repostId?: string | null;
+  repostedBy?: string;
+  repostedByUserId?: string;
+  repostedByName?: string;
+  repostedByAvatarUrl?: string;
+  repostComment?: string;
+  // Original post data when this is a repost
+  originalPostContent?: string;
+  originalPostAuthorName?: string;
+  originalPostAuthorId?: string;
+  originalPostAuthorAvatarUrl?: string;
+  originalPostImageUrl?: string;
+  originalPostCreatedAt?: string;
 }
 
 export class GetPostsResponseDto {

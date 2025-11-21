@@ -4,6 +4,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { PostService } from './postService';
 import { CreatePostDto, PostResponseDto, GetPostsResponseDto } from './dto/create-post.dto';
 import { CreateCommentDto, CommentResponseDto } from './dto/create-comment.dto';
+import { RepostDto } from './dto/repost.dto';
 import { AuthGuard } from '../User/userGuard';
 import { GetToken, GetUserId } from '../config/decorators';
 import { SupabaseService } from '../config/supabaseClient';
@@ -254,6 +255,24 @@ export class PostController {
     const userId = req.user?.id || req.body.userId;
     const res = await this.postService.unlikePost(postId, userId);
     return { success: true, liked: false, totalLikes: res.totalLikes };
+  }
+
+  @Post(':postId/repost')
+  @HttpCode(HttpStatus.CREATED)
+  async repostPost(
+    @Param('postId') postId: string,
+    @Body(ValidationPipe) repostDto: RepostDto
+  ): Promise<{ success: boolean; post: PostResponseDto }> {
+    try {
+      const post = await this.postService.repostPost(postId, repostDto.userId, repostDto.comment);
+      return {
+        success: true,
+        post,
+      };
+    } catch (error) {
+      this.logger.error('Repost error', error.message);
+      this.handleException(error, 'Error reposting post');
+    }
   }
 
   private handleException(error: any, defaultMessage: string, status: HttpStatus = HttpStatus.BAD_REQUEST) {
