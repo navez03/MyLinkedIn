@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0" version="28.2.9">
+  <diagram name="Page-1" id="929967ad-93f9-6ef4-fab6-5d389245f69c">
+    <mxGraphModel dx="1477" dy="814" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1.5" pageWidth="1169" pageHeight="826" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" style=";html=1;" />
+        <mxCell id="1" style=";html=1;" parent="0" />
+        <mxCell id="oq1vwny3Proggz9qSxNk-1" value="&lt;p style=&quot;margin: 0px ; margin-top: 4px ; margin-left: 10px ; text-align: left&quot;&gt;&lt;b&gt;req&lt;/b&gt;&amp;nbsp;[package] NonFunctionalRequirements&lt;/p&gt;" style="html=1;strokeWidth=1;shape=mxgraph.sysml.package;html=1;overflow=fill;whiteSpace=wrap;fillColor=none;gradientColor=none;fontSize=12;align=center;labelX=327.64;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="370" width="520" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-1" value="&lt;p style=&quot;margin: 0px ; margin-top: 4px ; margin-left: 10px ; text-align: left&quot;&gt;&lt;b&gt;req&lt;/b&gt;&amp;nbsp;[package] FunctionalRequirements&lt;/p&gt;" style="html=1;strokeWidth=1;shape=mxgraph.sysml.package;html=1;overflow=fill;whiteSpace=wrap;fillColor=none;gradientColor=none;fontSize=12;align=center;labelX=327.64;" parent="1" vertex="1">
+          <mxGeometry x="10" y="370" width="880" height="380" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-2" value="MyLinkedIn" style="shape=folder;tabWidth=80;tabHeight=20;tabPosition=left;strokeWidth=1;html=1;whiteSpace=wrap;align=center;fontSize=12;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="820" y="150" width="160" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;endArrow=circlePlus;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="1672d66443f91eb5-1" target="1672d66443f91eb5-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="455" y="310" />
+              <mxPoint x="797" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-4" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Register Account&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=circlePlus;endFill=0;jettySize=auto;orthogonalLoop=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="oq1vwny3Proggz9qSxNk-1" target="1672d66443f91eb5-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1270" y="310" />
+              <mxPoint x="900" y="310" />
+            </Array>
+            <mxPoint x="1310" y="370" as="sourcePoint" />
+            <mxPoint x="910" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-6" value="&lt;p&gt;&amp;lt;&amp;lt;requirement&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Usability&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1290" y="550" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-7" value="&lt;p&gt;&amp;lt;&amp;lt;requirement&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Security&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1070" y="440" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-8" value="&lt;p&gt;&amp;lt;&amp;lt;requirement&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Privacy&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1290" y="440" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="1672d66443f91eb5-9" value="&lt;p&gt;&amp;lt;&amp;lt;requirement&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Performance&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1070" y="550" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-3" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Post a Content&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-4" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Get Notification&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="690" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-5" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Send Message&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="530" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-6" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Add Contact&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="370" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-7" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Add Skill&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="530" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-8" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Interact with Post&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="530" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-9" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Create Group&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="690" y="530" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-10" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Job Listing&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="530" y="530" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-11" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Manage Events&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="370" y="530" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-12" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Group Discovery&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="50" y="630" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-13" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Post and Rate CV&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="370" y="630" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-14" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Group Discovery&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="530" y="630" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-15" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;Search&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="210" y="630" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="oq1vwny3Proggz9qSxNk-16" value="&lt;p&gt;&amp;lt;&amp;lt;package&amp;gt;&amp;gt;&lt;/p&gt;&lt;p&gt;GIF Sharing&lt;/p&gt;" style="shape=rect;html=1;overflow=fill;whiteSpace=wrap;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="690" y="630" width="140" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
