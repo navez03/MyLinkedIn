@@ -37,6 +37,7 @@ export class JobService {
           salary_max: createJobDto.salary_max,
           skills: createJobDto.skills,
           user_id: userId, // Supondo que o userId seja o dono da vaga
+          organizer_id: userId,
         })
         .select()
         .single();
