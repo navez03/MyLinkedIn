@@ -13,22 +13,26 @@ import UpdateProfile from './Screens/UpdateProfile';
 import Events from './Screens/Events';
 import EventDetail from './Screens/EventDetail';
 import Network from './Screens/MyNetwork';
-import { UserProvider } from './components/UserContext';
+import JobListings from './Screens/JobListings';
+import SearchResults from './Screens/SearchResults';
 import { NotificationProvider } from './components/NotificationContext';
+import MyJobs from './Screens/MyJobs';
 
 function App() {
   return (
     <BrowserRouter>
-      <UserProvider>
         <NotificationProvider>
           <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/search-results" element={<SearchResults />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:eventId" element={<EventDetail />} />
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/set-name" element={<SetName />} />
         <Route path="/feed" element={<Home />} />
+        <Route path="/jobs" element={<JobListings />} />
+        <Route path="/my-jobs" element={<MyJobs />} />
         <Route path="/backToRegister" element={<BackToRegister />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/network" element={<Network />} />
@@ -40,7 +44,6 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
         </NotificationProvider>
-      </UserProvider>
     </BrowserRouter>
   );
 }

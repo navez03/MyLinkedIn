@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext, Logger } from '@nestjs/common';
 
 export const CurrentUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
@@ -10,7 +10,17 @@ export const CurrentUser = createParamDecorator(
 export const GetToken = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.token;
+    const authHeader = request.headers.authorization;
+
+    if (!authHeader) return null;
+
+    // Split by space and take the second part (the token)
+    if (authHeader.startsWith('Bearer ')) {
+      return authHeader.split(' ')[1];
+    }
+    
+    // Fallback for cases where Bearer might be missing
+    return authHeader;
   },
 );
 

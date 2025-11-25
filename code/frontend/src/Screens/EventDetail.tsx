@@ -231,7 +231,7 @@ export default function EventDetail() {
                         : "bg-primary text-primary-foreground hover:opacity-90"
                         }`}
                     >
-                      {isAttending ? "Attending ✓" : "Participate"}
+                      {isAttending ? "Attending" : "Participate"}
                     </button>
                   )}
 
@@ -369,11 +369,11 @@ export default function EventDetail() {
                                   setShowShareModal(false);
                                   setSelectedShareConnection("");
                                 } else {
-                                  alert('❌ Error sharing event: ' + (res.error || 'Unknown error'));
+                                  alert('X Error sharing event: ' + (res.error || 'Unknown error'));
                                 }
                               } catch (error) {
                                 setShareLoading(false);
-                                alert('❌ Failed to share event. Please try again.');
+                                alert('X Failed to share event. Please try again.');
                               }
                             }}
                             className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 disabled:shadow-none"
