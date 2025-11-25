@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navigation from "../components/header";
 import { Card } from "../components/card";
-import Loading from "../components/loading";
 import { Briefcase, Trash2, Edit2, MapPin, Clock, Plus, ChevronLeft, Banknote } from "lucide-react";
 import { JobListItem } from '../components/JobListItem';
 import { EditJobModal } from '../components/EditJobModal';
 import { CreateJobModal } from '../components/CreateJobModal'; 
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { JobListing } from "../types/job.types";
 
 const BASE_URL = "http://localhost:3000";
@@ -49,19 +49,19 @@ export default function MyJobs() {
     const [selectedJob, setSelectedJob] = useState<JobListing | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [jobToDelete, setJobToDelete] = useState<JobListing | null>(null); 
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchMyJobs = async () => {
         if (jobs.length === 0) setLoading(true);
-        
         try {
             const data = await myJobsService.getMyJobs();
             setJobs(data);
+
             setSelectedJob(prevSelected => {
                 if (!prevSelected) return data.length > 0 ? data[0] : null;
                 const found = data.find(j => j.id === prevSelected.id);
-                if (found) {
-                    return found; 
-                }
+                if (found) return found; 
                 return data.length > 0 ? data[0] : null;
             });
 
@@ -76,15 +76,22 @@ export default function MyJobs() {
         fetchMyJobs();
     }, []);
 
-    const handleDelete = async (jobId: string) => {
-        if (window.confirm("Are you sure you want to delete this job? This cannot be undone.")) {
-            try {
-                await myJobsService.deleteJob(jobId);
-                // No alert needed, just refresh. The logic in fetchMyJobs handles the selection switch.
-                fetchMyJobs(); 
-            } catch (e: any) {
-                alert(e.message);
-            }
+    const openDeleteModal = (job: JobListing) => {
+        setJobToDelete(job);
+    };
+
+    const executeDelete = async () => {
+        if (!jobToDelete) return;
+        
+        setIsDeleting(true);
+        try {
+            await myJobsService.deleteJob(jobToDelete.id);
+            setJobToDelete(null); // Close modal
+            fetchMyJobs(); // Refresh list
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -148,7 +155,7 @@ export default function MyJobs() {
                             )}
                         </div>
 
-                        {/* Detail Panel (Custom for 'My Jobs') */}
+                        {/* Detail Panel */}
                         <div className="flex-1 space-y-4 hidden md:block">
                             {selectedJob ? (
                                 <Card className="p-6 h-[calc(100vh-140px)] overflow-y-auto scrollbar-hide sticky top-20">
@@ -176,7 +183,7 @@ export default function MyJobs() {
                                                 <Edit2 className="w-4 h-4"/> Edit
                                             </button>
                                             <button 
-                                                onClick={() => handleDelete(selectedJob.id)}
+                                                onClick={() => openDeleteModal(selectedJob)}
                                                 className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg flex items-center gap-2 hover:opacity-90"
                                             >
                                                 <Trash2 className="w-4 h-4"/> Delete
@@ -189,12 +196,10 @@ export default function MyJobs() {
                                             <div className="h-4 w-px bg-border hidden sm:block" />
                                             <span className="flex items-center gap-1"><Briefcase className="w-4 h-4"/> {selectedJob.job_type.toUpperCase()} &bull; {selectedJob.workplace_type.toUpperCase().replace('_', '-')}</span>
                                         </div>
-                                        
                                         <div>
                                             <h3 className="text-lg font-semibold text-foreground mb-3">About the job</h3>
                                             <p className="whitespace-pre-line text-sm text-foreground leading-relaxed">{selectedJob.description || "No description provided."}</p>
                                         </div>
-
                                         {selectedJob.skills.length > 0 && (
                                             <div className="pt-6 border-t border-border">
                                                 <h4 className="font-semibold mb-3">Required Skills</h4>
@@ -219,7 +224,15 @@ export default function MyJobs() {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* Render the Delete Modal */}
+            <DeleteConfirmationModal 
+                isOpen={!!jobToDelete} 
+                onClose={() => setJobToDelete(null)} 
+                onConfirm={executeDelete} 
+                jobTitle={jobToDelete?.title}
+                isDeleting={isDeleting}
+            />
+
             <EditJobModal 
                 isOpen={isEditModalOpen} 
                 onClose={() => setIsEditModalOpen(false)} 
