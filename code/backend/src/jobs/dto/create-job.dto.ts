@@ -76,7 +76,7 @@ export class JobResponseDto {
   salary_min?: number;
   salary_max?: number;
   skills: string[];
-  organizer_id: string;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }

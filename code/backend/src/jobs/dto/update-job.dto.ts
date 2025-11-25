@@ -1,40 +1,23 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
-  IsBoolean,
-  IsDate,
   IsEnum,
   IsInt,
-  IsNumber,
+  IsNotEmpty,
   IsOptional,
-  IsPositive,
   IsString,
-  MaxLength,
-  ArrayNotEmpty,
-  ArrayUnique,
   Min,
-  IsISO8601,
+  MaxLength,
+  ArrayUnique,
+  ArrayNotEmpty
 } from "class-validator";
-
-export enum EmploymentType {
-  FULL_TIME = "FULL_TIME",
-  PART_TIME = "PART_TIME",
-  CONTRACT = "CONTRACT",
-  TEMPORARY = "TEMPORARY",
-  INTERN = "INTERN",
-  FREELANCE = "FREELANCE",
-}
+import { JobType, WorkplaceType } from "./create-job.dto"; // Import enums from create DTO
 
 export class UpdateJobDto {
   @IsOptional()
   @IsString()
   @MaxLength(150)
   title?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(5000)
-  description?: string;
 
   @IsOptional()
   @IsString()
@@ -47,28 +30,34 @@ export class UpdateJobDto {
   location?: string;
 
   @IsOptional()
-  @IsBoolean()
-  remote?: boolean;
+  @IsEnum(JobType)
+  job_type?: JobType;
 
   @IsOptional()
-  @IsEnum(EmploymentType)
-  employmentType?: EmploymentType;
+  @IsEnum(WorkplaceType)
+  workplace_type?: WorkplaceType;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+
+  @IsOptional()
   @Type(() => Number)
-  salary?: number;
+  @IsInt()
+  @Min(0)
+  salary_min?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  salary_max?: number;
 
   @IsOptional()
   @IsArray()
-  @ArrayUnique()
   @ArrayNotEmpty()
+  @ArrayUnique()
   @IsString({ each: true })
   skills?: string[];
-
-  // Accept ISO date strings or Date objects
-  @IsOptional()
-  @IsISO8601()
-  postedAt?: string;
 }

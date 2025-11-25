@@ -64,7 +64,7 @@ const AIChatWidget = () => {
       console.log("AI raw response:", response.status, raw);
 
       if (!response.ok) {
-        throw new Error(`Status ${response.status} – body: ${raw}`);
+        throw new Error(`Status ${response.status} - body: ${raw}`);
       }
 
       let data: any;

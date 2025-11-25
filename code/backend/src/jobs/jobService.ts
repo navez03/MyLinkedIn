@@ -36,7 +36,7 @@ export class JobService {
           salary_min: createJobDto.salary_min,
           salary_max: createJobDto.salary_max,
           skills: createJobDto.skills,
-          user_id: userId, // Supondo que o userId seja o dono da vaga
+          user_id: userId,
         })
         .select()
         .single();
@@ -49,6 +49,78 @@ export class JobService {
       return this.mapJobToDto(data);
     } catch (error) {
       this.logger.error("Create job error", error.message);
+      throw error;
+    }
+  }
+
+  // Obter Jobs que o usuário se candidatou
+  async getAppliedJobs(token: string, userId: string): Promise<string[]> {
+    try {
+      
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { data, error } = await supabase
+        .from("job_applications")
+        .select("job_id")
+        .eq("applicant_id", userId);
+
+      if (error) {
+        this.logger.error("Error fetching applied jobs", error.message);
+        throw new BadRequestException(`Error fetching applied jobs: ${error.message}`);
+      }
+
+      return data.map((app: { job_id: string }) => app.job_id);
+    } catch (error) {
+      this.logger.error("Get applied jobs error", error.message);
+      throw error;
+    }
+  }
+
+  async getJobsByOrganizer(token: string, userId: string): Promise<JobResponseDto[]> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("user_id", userId) // Filter by the creator's ID
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        this.logger.error("Error fetching user's jobs", error.message);
+        throw new BadRequestException(`Error fetching user's jobs: ${error.message}`);
+      }
+
+      return data.map((job) => this.mapJobToDto(job));
+    } catch (error) {
+      this.logger.error("Get user jobs error", error.message);
+      throw error;
+    }
+  }
+
+  // Retirar candidatura (Withdraw application)
+  async withdrawApplication(
+    jobId: string,
+    userId: string,
+    token: string
+  ): Promise<string> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { error } = await supabase
+        .from("job_applications")
+        .delete()
+        .eq("job_id", jobId)
+        .eq("applicant_id", userId);
+
+      if (error) {
+        this.logger.error("Error withdrawing application", error.message);
+        throw new BadRequestException(`Error withdrawing application: ${error.message}`);
+      }
+
+      return "Application withdrawn successfully";
+    } catch (error) {
+      this.logger.error("Withdraw application error", error.message);
       throw error;
     }
   }
@@ -86,6 +158,11 @@ export class JobService {
   // Obter Job por ID
   async getJobById(jobId: string, token: string): Promise<JobResponseDto> {
     try {
+      if (!token || token.split('.').length !== 3) {
+        this.logger.error("Invalid JWT format received.", token);
+        throw new BadRequestException("Invalid authentication token.");
+      }
+      
       const supabase = this.supabase.getClientWithToken(token);
 
       const { data, error } = await supabase
@@ -118,16 +195,16 @@ export class JobService {
 
       // Verificar se o job existe e se o usuário é o organizador
       const { data: job, error: jobError } = await supabase
-        .from("jobs")
-        .select("organizer_id")
-        .eq("id", jobId)
-        .single();
+      .from("jobs")
+      .select("user_id")
+      .eq("id", jobId)
+      .single();
 
       if (jobError || !job) {
         throw new NotFoundException("Job not found");
       }
 
-      if (job.organizer_id !== userId) {
+      if (job.user_id !== userId) {
         throw new BadRequestException(
           "Only the job organizer can update this job"
         );
@@ -164,7 +241,7 @@ export class JobService {
       // Verificar se o job existe e se o usuário é o organizador
       const { data: job, error: jobError } = await supabase
         .from("jobs")
-        .select("id, organizer_id")
+        .select("id, user_id")
         .eq("id", jobId)
         .single();
 
@@ -172,7 +249,7 @@ export class JobService {
         throw new NotFoundException("Job not found");
       }
 
-      if (job.organizer_id !== userId) {
+      if (job.user_id !== userId) {
         throw new BadRequestException(
           "Only the job organizer can delete this job"
         );
@@ -223,7 +300,7 @@ export class JobService {
           .select("id")
           .eq("applicant_id", userId)
           .eq("job_id", jobId)
-          .maybeSingle(); // usa maybeSingle() para não tratar "0 rows" como erro
+          .maybeSingle(); 
 
       if (existingAppError) {
         throw new BadRequestException("Error checking existing application");
@@ -299,7 +376,7 @@ export class JobService {
       salary_min: job.salary_min,
       salary_max: job.salary_max,
       skills: job.skills,
-      organizer_id: job.organizer_id,
+      user_id: job.user_id,
       created_at: job.created_at,
       updated_at: job.updated_at,
     };
