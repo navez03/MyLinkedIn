@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from "../components/card";
-import { Briefcase, MapPin, Clock, Send, Check, Trash2 } from "lucide-react";
+import { Briefcase, MapPin, Clock, Send, Check, Trash2, Banknote } from "lucide-react"; // Added Banknote
 import { JobListing } from "../types/job.types";
 
 interface JobDetailPanelProps {
@@ -30,7 +30,23 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
         );
     }
 
-    // Logic for the main Apply/Status button
+    // Helper to format salary
+    const formatSalary = (min?: number, max?: number) => {
+        if (!min && !max) return null;
+        
+        const format = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+        if (min && max) {
+            return min === max ? format(min) : `${format(min)} - ${format(max)}`;
+        }
+        if (min) return `From ${format(min)}`;
+        if (max) return `Up to ${format(max)}`;
+        return null;
+    };
+
+    const salaryString = formatSalary(selectedJob.salary_min, selectedJob.salary_max);
+
+    // Button Logic
     let buttonContent;
     let buttonClass = "";
     let buttonDisabled = isApplying;
@@ -40,7 +56,6 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
         buttonClass = "bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed";
     } else if (hasApplied) {
         buttonContent = 'Already Applied';
-        // Green style for status
         buttonClass = "bg-green-600/10 text-green-600 border border-green-600 cursor-default";
         buttonDisabled = true;
     } else {
@@ -54,15 +69,24 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                 <div>
                     <h1 className="text-2xl font-bold text-foreground mb-1">{selectedJob.title}</h1>
                     <h2 className="text-lg font-medium text-muted-foreground">{selectedJob.company}</h2>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4" />
-                        {selectedJob.location}
-                    </p>
+                    
+                    {/* Metadata Row 1: Location & Salary */}
+                    <div className="flex flex-col gap-1 mt-2">
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 text-muted-foreground" />
+                            {selectedJob.location}
+                        </p>
+                        {salaryString && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                <Banknote className="w-4 h-4 text-muted-foreground" />
+                                {salaryString}
+                            </p>
+                        )}
+                    </div>
                 </div>
                 
                 {/* ACTIONS COLUMN */}
                 <div className="flex flex-col gap-3 items-end">
-                    {/* 1. Main Apply/Status Button */}
                     <button
                         onClick={() => !hasApplied && handleApply(selectedJob.id)}
                         disabled={buttonDisabled}
@@ -72,13 +96,10 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                         {buttonContent}
                     </button>
 
-                    {/* 2. Withdraw Button (Red, same size/shape) */}
                     {hasApplied && (
                         <button
                             onClick={() => {
-                                if(window.confirm("Are you sure you want to withdraw your application?")) {
-                                    handleWithdraw(selectedJob.id);
-                                }
+                                handleWithdraw(selectedJob.id);
                             }}
                             className="px-5 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 w-full md:w-auto bg-red-600/10 text-red-600 border border-red-600 hover:bg-red-600/20"
                         >
@@ -89,25 +110,37 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                 </div>
             </div>
 
-            <div className="mb-4 flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
+            {/* Metadata Row 2: Time & Type */}
+            <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-secondary/30 p-3 rounded-lg">
+                <div className="flex items-center gap-1.5">
                     <Clock className="w-4 h-4" />
                     <span>Posted: {selectedJob.postedTime}</span>
                 </div>
-                <span>{'\u2022'}</span>
-                <span className="font-medium">{selectedJob.job_type.toUpperCase()} ({selectedJob.workplace_type.toUpperCase()})</span>
+                <div className="h-4 w-px bg-border hidden sm:block" />
+                <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4" />
+                    <span className="font-medium capitalize">
+                        {selectedJob.job_type.replace('-', ' ')} &bull; {selectedJob.workplace_type.replace('_', '-')}
+                    </span>
+                </div>
             </div>
             
-            <h3 className="text-xl font-semibold text-foreground mb-3">Job Description</h3>
-            <div className="space-y-4 text-sm text-foreground leading-relaxed">
-                <p className="whitespace-pre-line">{selectedJob.description}</p>
+            {/* Description Section */}
+            <div className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-3">About the job</h3>
+                    <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                        {selectedJob.description || "No description provided."}
+                    </div>
+                </div>
                 
+                {/* Skills Section */}
                 {selectedJob.skills && selectedJob.skills.length > 0 && (
-                    <div className="pt-2 border-t border-border">
-                        <h4 className="font-semibold mb-2">Required Skills:</h4>
+                    <div className="pt-6 border-t border-border">
+                        <h4 className="font-semibold mb-3">Required Skills</h4>
                         <div className="flex flex-wrap gap-2">
                             {selectedJob.skills.map(skill => (
-                                <span key={skill} className="px-3 py-1 text-xs font-medium bg-secondary text-foreground rounded-full border border-border">
+                                <span key={skill} className="px-3 py-1.5 text-sm font-medium bg-secondary text-foreground rounded-md border border-border">
                                     {skill}
                                 </span>
                             ))}

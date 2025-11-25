@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Ensure useNavigate is imported
+import { useNavigate } from "react-router-dom";
 import Navigation from "../components/header";
 import { Card } from "../components/card";
 import Loading from "../components/loading";
-import { Briefcase, Trash2, Edit2, MapPin, Clock, Plus, ChevronLeft } from "lucide-react"; // Added ChevronLeft
+import { Briefcase, Trash2, Edit2, MapPin, Clock, Plus, ChevronLeft, Banknote } from "lucide-react";
 import { JobListItem } from '../components/JobListItem';
 import { EditJobModal } from '../components/EditJobModal';
 import { CreateJobModal } from '../components/CreateJobModal'; 
@@ -43,7 +43,7 @@ const myJobsService = {
 };
 
 export default function MyJobs() {
-    const navigate = useNavigate(); // Hook for navigation
+    const navigate = useNavigate();
     const [jobs, setJobs] = useState<JobListing[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState<JobListing | null>(null);
@@ -51,12 +51,20 @@ export default function MyJobs() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const fetchMyJobs = async () => {
-        setLoading(true);
+        if (jobs.length === 0) setLoading(true);
+        
         try {
             const data = await myJobsService.getMyJobs();
             setJobs(data);
-            if (data.length > 0 && !selectedJob) setSelectedJob(data[0]);
-            else if (data.length === 0) setSelectedJob(null);
+            setSelectedJob(prevSelected => {
+                if (!prevSelected) return data.length > 0 ? data[0] : null;
+                const found = data.find(j => j.id === prevSelected.id);
+                if (found) {
+                    return found; 
+                }
+                return data.length > 0 ? data[0] : null;
+            });
+
         } catch (error) {
             console.error(error);
         } finally {
@@ -72,7 +80,7 @@ export default function MyJobs() {
         if (window.confirm("Are you sure you want to delete this job? This cannot be undone.")) {
             try {
                 await myJobsService.deleteJob(jobId);
-                alert("Job deleted.");
+                // No alert needed, just refresh. The logic in fetchMyJobs handles the selection switch.
                 fetchMyJobs(); 
             } catch (e: any) {
                 alert(e.message);
@@ -80,13 +88,24 @@ export default function MyJobs() {
         }
     };
 
+    // Helper to format salary
+    const formatSalary = (min?: number, max?: number) => {
+        if (!min && !max) return null;
+        const format = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+        if (min && max) return min === max ? format(min) : `${format(min)} - ${format(max)}`;
+        if (min) return `From ${format(min)}`;
+        if (max) return `Up to ${format(max)}`;
+        return null;
+    };
+
+    const salaryString = selectedJob ? formatSalary(selectedJob.salary_min, selectedJob.salary_max) : null;
+
     return (
         <>
             <Navigation />
             <div className="min-h-screen bg-background">
                 <div className="max-w-[1500px] mx-auto px-6 py-6">
                     
-                    {/* NEW: Back Button */}
                     <button
                         onClick={() => navigate('/jobs')}
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
@@ -137,7 +156,17 @@ export default function MyJobs() {
                                         <div>
                                             <h1 className="text-2xl font-bold">{selectedJob.title}</h1>
                                             <h2 className="text-lg text-muted-foreground">{selectedJob.company}</h2>
-                                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><MapPin className="w-3 h-3"/> {selectedJob.location}</p>
+                                            
+                                            <div className="flex flex-col gap-1 mt-2">
+                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                    <MapPin className="w-4 h-4" /> {selectedJob.location}
+                                                </p>
+                                                {salaryString && (
+                                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                        <Banknote className="w-4 h-4" /> {salaryString}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex gap-2">
                                             <button 
@@ -154,18 +183,27 @@ export default function MyJobs() {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="space-y-4">
-                                        <div className="text-sm text-muted-foreground flex gap-3">
+                                    <div className="space-y-6">
+                                        <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-secondary/30 p-3 rounded-lg">
                                             <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> Posted: {selectedJob.postedTime}</span>
-                                            <span>{'\u2022'} {selectedJob.job_type.toUpperCase()}</span>
+                                            <div className="h-4 w-px bg-border hidden sm:block" />
+                                            <span className="flex items-center gap-1"><Briefcase className="w-4 h-4"/> {selectedJob.job_type.toUpperCase()} &bull; {selectedJob.workplace_type.toUpperCase().replace('_', '-')}</span>
                                         </div>
-                                        <h3 className="text-lg font-semibold">Description</h3>
-                                        <p className="whitespace-pre-line text-sm">{selectedJob.description}</p>
+                                        
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-foreground mb-3">About the job</h3>
+                                            <p className="whitespace-pre-line text-sm text-foreground leading-relaxed">{selectedJob.description || "No description provided."}</p>
+                                        </div>
+
                                         {selectedJob.skills.length > 0 && (
-                                            <div className="pt-4 border-t border-border">
-                                                <h4 className="font-semibold mb-2">Skills</h4>
+                                            <div className="pt-6 border-t border-border">
+                                                <h4 className="font-semibold mb-3">Required Skills</h4>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {selectedJob.skills.map(s => <span key={s} className="px-3 py-1 bg-secondary text-xs rounded-full">{s}</span>)}
+                                                    {selectedJob.skills.map(s => (
+                                                        <span key={s} className="px-3 py-1.5 text-sm font-medium bg-secondary text-foreground rounded-md border border-border">
+                                                            {s}
+                                                        </span>
+                                                    ))}
                                                 </div>
                                             </div>
                                         )}

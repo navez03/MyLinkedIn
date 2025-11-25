@@ -192,11 +192,9 @@ export default function JobListings() {
         
         // Update state locally: Remove this ID from the applied list
         setAppliedJobIds(prev => prev.filter(id => id !== jobId));
-        
-        alert("Application withdrawn.");
+
     } catch (error: any) {
         console.error("Withdraw failed:", error);
-        alert("Withdraw failed: " + error.message);
     }
   };
 
