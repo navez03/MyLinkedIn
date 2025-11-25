@@ -91,6 +91,33 @@ export class PostService {
 
     const eventDetails = await this.getEventDetails(post.event_id, supabase);
 
+    // Handle repost data - if this post is a repost (has repost_id)
+    let repostData: Partial<PostResponseDto> = {};
+    if (post.repost_id) {
+      // This is a repost - fetch the original post data
+      const { data: originalPost } = await supabase
+        .from('posts')
+        .select('*, users:user_id (name, email, avatar_url)')
+        .eq('id', post.repost_id)
+        .single();
+
+      repostData = {
+        repostId: post.repost_id,
+        repostedBy: post.users?.name,
+        repostedByUserId: post.user_id,
+        repostedByName: post.users?.name,
+        repostedByAvatarUrl: post.users?.avatar_url,
+        repostComment: post.content, // The repost comment is stored in the content field
+        // Original post data
+        originalPostContent: originalPost?.content,
+        originalPostAuthorName: originalPost?.users?.name,
+        originalPostAuthorId: originalPost?.user_id,
+        originalPostAuthorAvatarUrl: originalPost?.users?.avatar_url,
+        originalPostImageUrl: originalPost?.image_url,
+        originalPostCreatedAt: originalPost?.created_at,
+      };
+    }
+
     return {
       id: post.id,
       userId: post.user_id,
@@ -102,6 +129,7 @@ export class PostService {
       imageUrl: post.image_url,
       eventId: post.event_id,
       event: eventDetails,
+      ...repostData,
     };
   }
 
@@ -512,6 +540,7 @@ export class PostService {
     }
 
     // Create repost (new post with repost_id and optional comment as content)
+    // Copy image_url and event_id from original post
     const repostContent = comment || ''; // If no comment, content is empty string
     const { data: repost, error: repostError } = await supabase
       .from('posts')
@@ -519,8 +548,8 @@ export class PostService {
         user_id: userId,
         content: repostContent,
         repost_id: originalPostId,
-        image_url: null,
-        event_id: null,
+        image_url: originalPost.image_url, // Copy from original
+        event_id: originalPost.event_id, // Copy from original
       })
       .select(`
         *,

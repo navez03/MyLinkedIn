@@ -283,7 +283,9 @@ export class EventService {
         // Add user to participants array if not already there
         const currentParticipants = event.participants || [];
         if (!currentParticipants.includes(userId)) {
-          const { error: updateError } = await supabase
+          // Use admin client to bypass RLS
+          const adminClient = this.supabase.getAdminClient();
+          const { error: updateError } = await adminClient
             .from('events')
             .update({ participants: [...currentParticipants, userId] })
             .eq('id', eventId);
@@ -375,7 +377,9 @@ export class EventService {
       const currentParticipants = event.participants || [];
       const updatedParticipants = currentParticipants.filter(id => id !== participantId);
 
-      const { error: updateError } = await supabase
+      // Use admin client to bypass RLS
+      const adminClient = this.supabase.getAdminClient();
+      const { error: updateError } = await adminClient
         .from('events')
         .update({ participants: updatedParticipants })
         .eq('id', eventId);
@@ -418,8 +422,9 @@ export class EventService {
         throw new BadRequestException('You are already participating in this event');
       }
 
-      // Add user to participants array
-      const { error: updateError } = await supabase
+      // Use admin client to bypass RLS
+      const adminClient = this.supabase.getAdminClient();
+      const { error: updateError } = await adminClient
         .from('events')
         .update({ participants: [...currentParticipants, userId] })
         .eq('id', eventId);

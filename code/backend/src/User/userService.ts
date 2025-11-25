@@ -182,7 +182,7 @@ export class UserService {
 
       // Validate token
       await this.getUserFromToken(token);
-      
+
       // Use admin client to bypass RLS and allow reading other users' profiles
       const adminClient = this.supabaseService.getAdminClient();
 
@@ -398,10 +398,20 @@ export class UserService {
           .from('users')
           .insert(insertData)
           .select()
-          .single();
+          .maybeSingle();
 
         data = result.data;
         error = result.error;
+
+        if (!data && !error) {
+          const { data: fetchedUser, error: fetchError } = await userClient
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+          data = fetchedUser;
+          error = fetchError;
+        }
       }
 
       if (error) {

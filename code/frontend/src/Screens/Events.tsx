@@ -228,7 +228,6 @@ export default function Events() {
         setSelectedConnections([]);
         // Success feedback - you can replace alert with a toast notification
         const count = selectedConnections.length;
-        alert(`✅ Successfully sent ${count} invitation${count > 1 ? 's' : ''}!`);
       } else {
         alert("❌ Error sending invites: " + response.error);
       }
@@ -316,11 +315,10 @@ export default function Events() {
                         filteredConnections.map((connection) => (
                           <label
                             key={connection.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
-                              selectedConnections.includes(connection.user.id)
-                                ? 'bg-primary/10 border-primary hover:bg-primary/15' 
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${selectedConnections.includes(connection.user.id)
+                                ? 'bg-primary/10 border-primary hover:bg-primary/15'
                                 : 'bg-transparent border-transparent hover:bg-secondary'
-                            }`}
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -329,8 +327,8 @@ export default function Events() {
                               className="w-5 h-5 rounded border-2 border-border text-primary focus:ring-2 focus:ring-primary cursor-pointer"
                             />
                             {connection.user.avatar_url ? (
-                              <img 
-                                src={connection.user.avatar_url} 
+                              <img
+                                src={connection.user.avatar_url}
                                 alt={connection.user.name}
                                 className="w-10 h-10 rounded-full object-cover"
                                 onError={(e) => {
@@ -704,12 +702,12 @@ export default function Events() {
                       {filteredEvents.map((event) => (
                         <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
                           {event.bannerUrl && (
-                            <div className="relative bg-white flex items-center justify-center" style={{height: 192}}>
+                            <div className="relative bg-white flex items-center justify-center" style={{ height: 192 }}>
                               <img
                                 src={event.bannerUrl}
                                 alt={event.name}
                                 className="object-contain mx-auto"
-                                style={{background: 'white', width: '100%', height: '100%', maxHeight: '100%', maxWidth: '100%', display: 'block'}}
+                                style={{ background: 'white', width: '100%', height: '100%', maxHeight: '100%', maxWidth: '100%', display: 'block' }}
                               />
                               <div className="absolute top-3 left-3 flex gap-2">
                                 <span className="text-xs font-medium px-2.5 py-1 bg-card text-foreground rounded shadow-sm">

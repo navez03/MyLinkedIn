@@ -98,8 +98,8 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const { userData } = useUser();
-  const userName = userData?.name || '';
-  const userAvatar = userData?.avatar_url || null;
+  const userName = userData?.name || localStorage.getItem('userName') || '';
+  const userAvatar = userData?.avatar_url || localStorage.getItem('userAvatar') || null;
   const initials = getUserInitials(userName);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -340,9 +340,9 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
               >
                 <Image className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button 
+              <button
                 onClick={handleEventClick}
-                className="p-2 hover:bg-secondary rounded-lg transition-colors" 
+                className="p-2 hover:bg-secondary rounded-lg transition-colors"
                 disabled={isLoading || loadingEvents}
               >
                 <Calendar className="w-5 h-5 text-muted-foreground" />
@@ -361,8 +361,8 @@ const CreatePostModal = ({ open, onOpenChange }: { open: boolean; onOpenChange: 
 const CreatePostCard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { userData } = useUser();
-  const userName = userData?.name || '';
-  const userAvatar = userData?.avatar_url || null;
+  const userName = userData?.name || localStorage.getItem('userName') || '';
+  const userAvatar = userData?.avatar_url || localStorage.getItem('userAvatar') || null;
   const initials = getUserInitials(userName);
 
   return (
