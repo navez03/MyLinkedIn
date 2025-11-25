@@ -3,17 +3,18 @@ import Navigation from "../components/header";
 import Loading from "../components/loading";
 import AIChatWidget from "../components/AIChatWidget";
 import { Briefcase } from "lucide-react"; 
-import { CreateJobModal } from '../components/CreateJobModal';
+import { CreateJobModal } from '../components/CreateJobModal'; 
 import { JobFilterSidebar } from '../components/JobFilterSidebar';
 import { JobListItem } from '../components/JobListItem';
 import { JobDetailPanel } from '../components/JobDetailPanel';
-import { JobListing } from "../types/job.types";
-
+import { JobListing } from "../types/job.types"; 
 
 const BASE_URL = "http://localhost:3000";
 
 const getAuthToken = () => {
-    return localStorage.getItem("token") || "";
+    const token = localStorage.getItem("token");
+    if (!token || token === "null" || token === "undefined") return "";
+    return token.replace(/^"|"$/g, ''); 
 };
 
 const getUserId = () => {
@@ -73,8 +74,31 @@ const frontendJobService = {
           throw new Error(errorData.message || "Failed to apply for job");
       }
       return response.text();
-  }
+  },
+
+  // GET: Fetch all job applications for the current user
+  getAppliedJobs: async (): Promise<string[]> => {
+      const token = getAuthToken();
+      
+      const response = await fetch(`${BASE_URL}/jobs/applied`, {
+          method: 'GET',
+          headers: {
+              'Authorization': `Bearer ${token}`,
+          },
+      });
+
+      if (!response.ok) {
+          // If 401/403, just return an empty array to prevent app crash
+          console.error("Failed to fetch applied jobs status.");
+          return [];
+      }
+      
+      console.log("data response:", response);
+      const data = await response.json();
+      return data; // This should be an array of job IDs (strings)
+  },
 };
+
 
 export default function JobListings() {
   const [jobs, setJobs] = useState<JobListing[]>([]);
@@ -84,33 +108,51 @@ export default function JobListings() {
   const [selectedJob, setSelectedJob] = useState<JobListing | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [isApplying, setIsApplying] = useState(false);
+  const [appliedJobIds, setAppliedJobIds] = useState<string[]>([]); // Tracks applied jobs
 
-  // Define fetchJobs inside useEffect to ensure correct dependency handling
-  useEffect(() => {
-    const fetchJobs = async () => {
-        setLoading(true);
-        try {
-            const fetchedJobs = await frontendJobService.getAllJobs();
-            setJobs(fetchedJobs);
-            if (fetchedJobs.length > 0 && !selectedJob) {
-                setSelectedJob(fetchedJobs[0]);
-            }
-        } catch (error) {
-            console.error("Error fetching job data:", error);
-            setJobs([]);
-        } finally {
-            setLoading(false);
+  
+  // Fetcher combining jobs and application status
+  const fetchAllData = async () => {
+    setLoading(true);
+    const token = getAuthToken(); // Retrieve the token at the start
+
+    try {
+        // 1. Fetch Job Listings (Always attempt, but backend should handle auth)
+        const fetchedJobs = await frontendJobService.getAllJobs();
+        setJobs(fetchedJobs);
+        if (fetchedJobs.length > 0 && !selectedJob) {
+            setSelectedJob(fetchedJobs[0]);
         }
-    };
+        
+        // 2. Fetch Applied Status - CONDITIONAL ON TOKEN
+        let appliedIds: string[] = [];
+        
+        if (token) {
+            appliedIds = await frontendJobService.getAppliedJobs();
+        } else {
+            console.warn("User not authenticated. Skipping applied jobs check.");
+        }
 
-    fetchJobs();
-}, []);
+        setAppliedJobIds(appliedIds);
 
+    } catch (error) {
+        console.error("Error fetching job data:", error);
+        setJobs([]);
+        setAppliedJobIds([]); // Reset on any failure
+    } finally {
+        setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchAllData();
+  }, []); // Run once on mount
 
   const handleJobCreated = () => {
     alert("Job posted successfully! List refreshing.");
-    const fetchJobs = async () => { /* ... */ }; 
-    fetchJobs();
+    // Re-fetch everything after a successful post
+    fetchAllData(); 
   };
 
   const handleApply = async (jobId: string) => {
@@ -118,6 +160,10 @@ export default function JobListings() {
     try {
         const message = await frontendJobService.applyToJob(jobId); 
         alert(message);
+        
+        // On successful application, update the status locally
+        setAppliedJobIds(prev => [...prev, jobId]);
+
     } catch (error: any) {
         console.error("Application failed:", error);
         alert("Application failed: " + error.message);
@@ -140,6 +186,10 @@ export default function JobListings() {
   if (loading) {
     return <Loading />;
   }
+
+  // Check if the currently selected job ID is in the appliedJobIds list
+  const selectedJobHasApplied = selectedJob ? appliedJobIds.includes(selectedJob.id) : false;
+
 
   return (
     <>
@@ -186,6 +236,7 @@ export default function JobListings() {
                   selectedJob={selectedJob}
                   handleApply={handleApply}
                   isApplying={isApplying}
+                  hasApplied={selectedJobHasApplied}
               />
           </div>
         </div>

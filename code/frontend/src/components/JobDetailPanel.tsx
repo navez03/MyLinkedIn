@@ -1,15 +1,16 @@
 import React from 'react';
 import { Card } from "../components/card";
-import { Briefcase, MapPin, Clock, Send } from "lucide-react";
+import { Briefcase, MapPin, Clock, Send, Check } from "lucide-react"; // Added Check icon
 import { JobListing } from "../types/job.types";
 
 interface JobDetailPanelProps {
     selectedJob: JobListing | null;
     handleApply: (jobId: string) => void;
     isApplying: boolean;
+    hasApplied: boolean;
 }
 
-export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({ selectedJob, handleApply, isApplying }) => {
+export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({ selectedJob, handleApply, isApplying, hasApplied }) => {
     if (!selectedJob) {
         return (
             <Card className="p-6 h-full flex items-center justify-center">
@@ -22,29 +23,43 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({ selectedJob, han
         );
     }
 
+    // --- Button Rendering Logic ---
+    let buttonContent;
+    let buttonClass = "";
+    let buttonDisabled = isApplying;
+    
+    if (isApplying) {
+        buttonContent = 'Applying...';
+        buttonClass = "bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed";
+    } else if (hasApplied) {
+        buttonContent = 'Already Applied';
+        buttonClass = "bg-green-600/10 text-green-600 border border-green-600 disabled:opacity-100 disabled:cursor-not-allowed";
+        buttonDisabled = true;
+    } else {
+        buttonContent = 'Apply';
+        buttonClass = "bg-primary text-primary-foreground hover:opacity-90";
+    }
+    
     return (
         <Card className="p-6 h-[calc(100vh-100px)] overflow-y-auto scrollbar-hide sticky top-20">
             <div className="flex items-start justify-between border-b border-border pb-4 mb-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground mb-1">{selectedJob.title}</h1>
-                    <h2 className="text-lg font-medium text-muted-foreground">{selectedJob.company}</h2>
-                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4" />
-                        {selectedJob.location}
-                    </p>
+                    {/* ... other details ... */}
                 </div>
                 <div className="flex gap-2 items-center">
                     <button
                         onClick={() => handleApply(selectedJob.id)}
-                        disabled={isApplying}
-                        className="px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={buttonDisabled}
+                        className={`px-5 py-2 rounded-lg font-medium transition-opacity flex items-center gap-2 ${buttonClass}`}
                     >
-                        <Send className="w-4 h-4" />
-                        {isApplying ? 'Applying...' : 'Apply'} 
+                        {hasApplied ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                        {buttonContent}
                     </button>
                 </div>
             </div>
-
+            {/* ... rest of the detail panel ... */}
+            
             <div className="mb-4 flex items-center gap-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
