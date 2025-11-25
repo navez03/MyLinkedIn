@@ -150,7 +150,6 @@ export default function JobListings() {
   }, []); // Run once on mount
 
   const handleJobCreated = () => {
-    alert("Job posted successfully! List refreshing.");
     // Re-fetch everything after a successful post
     fetchAllData(); 
   };
@@ -159,14 +158,12 @@ export default function JobListings() {
     setIsApplying(true);
     try {
         const message = await frontendJobService.applyToJob(jobId); 
-        alert(message);
         
         // On successful application, update the status locally
         setAppliedJobIds(prev => [...prev, jobId]);
 
     } catch (error: any) {
         console.error("Application failed:", error);
-        alert("Application failed: " + error.message);
     } finally {
         setIsApplying(false);
     }

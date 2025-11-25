@@ -1,7 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { Card } from "../components/card";
 import { Input } from "../components/input";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Briefcase } from "lucide-react"; // Added Briefcase icon
 
 interface JobFilterSidebarProps {
     searchQuery: string;
@@ -18,6 +19,8 @@ export const JobFilterSidebar: React.FC<JobFilterSidebarProps> = ({
     setLocationFilter,
     setIsModalOpen
 }) => {
+    const navigate = useNavigate(); // Initialize navigation hook
+
     return (
         <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20 self-start">
             
@@ -32,6 +35,7 @@ export const JobFilterSidebar: React.FC<JobFilterSidebarProps> = ({
                 </button>
             </Card>
 
+            {/* Job Filters Card */}
             <Card className="p-4 space-y-4">
               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Filter className="w-5 h-5" /> Job Filters
@@ -54,6 +58,17 @@ export const JobFilterSidebar: React.FC<JobFilterSidebarProps> = ({
                   className="bg-secondary border-0 placeholder:text-sm"
                 />
               </div>
+            </Card>
+
+            {/* NEW: Manage My Jobs Button */}
+            <Card className="p-4">
+                <button
+                    onClick={() => navigate('/my-jobs')}
+                    className="w-full px-4 py-2 border border-primary text-primary rounded-lg font-medium hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                >
+                    <Briefcase className="w-4 h-4" />
+                    Manage My Posted Jobs
+                </button>
             </Card>
         </div>
     );

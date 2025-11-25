@@ -16,6 +16,7 @@ import Network from './Screens/MyNetwork';
 import JobListings from './Screens/JobListings';
 import SearchResults from './Screens/SearchResults';
 import { NotificationProvider } from './components/NotificationContext';
+import MyJobs from './Screens/MyJobs';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/set-name" element={<SetName />} />
         <Route path="/feed" element={<Home />} />
         <Route path="/jobs" element={<JobListings />} />
+        <Route path="/my-jobs" element={<MyJobs />} />
         <Route path="/backToRegister" element={<BackToRegister />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/network" element={<Network />} />

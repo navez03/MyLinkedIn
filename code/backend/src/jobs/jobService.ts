@@ -76,6 +76,28 @@ export class JobService {
     }
   }
 
+  async getJobsByOrganizer(token: string, userId: string): Promise<JobResponseDto[]> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("user_id", userId) // Filter by the creator's ID
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        this.logger.error("Error fetching user's jobs", error.message);
+        throw new BadRequestException(`Error fetching user's jobs: ${error.message}`);
+      }
+
+      return data.map((job) => this.mapJobToDto(job));
+    } catch (error) {
+      this.logger.error("Get user jobs error", error.message);
+      throw error;
+    }
+  }
+
   // Obter todos os Jobs
   async getAllJobs(
     token: string,

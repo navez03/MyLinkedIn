@@ -53,6 +53,15 @@ export class JobController {
       return this.jobService.getAppliedJobs(token, userId); 
   }
 
+  @Get("posted") 
+  @UseGuards(AuthGuard)
+  async getMyJobs(
+      @GetToken() token: string,
+      @GetUserId() userId: string
+  ) {
+      return this.jobService.getJobsByOrganizer(token, userId);
+  }
+
   // --- MOVED UP: Specific Static Route ---
   // Ideally, keep all specific GET routes above the generic parameter one
   @Get("/location/:location")
