@@ -76,6 +76,23 @@ const frontendJobService = {
       return response.text();
   },
 
+  withdrawApplication: async (jobId: string): Promise<string> => {
+      const token = getAuthToken();
+      const response = await fetch(`${BASE_URL}/jobs/${jobId}/apply`, {
+          method: 'DELETE',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+      });
+
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to withdraw application");
+      }
+      return response.text();
+  },
+
   // GET: Fetch all job applications for the current user
   getAppliedJobs: async (): Promise<string[]> => {
       const token = getAuthToken();
@@ -169,6 +186,19 @@ export default function JobListings() {
     }
   };
 
+  const handleWithdraw = async (jobId: string) => {
+    try {
+        await frontendJobService.withdrawApplication(jobId);
+        
+        // Update state locally: Remove this ID from the applied list
+        setAppliedJobIds(prev => prev.filter(id => id !== jobId));
+        
+        alert("Application withdrawn.");
+    } catch (error: any) {
+        console.error("Withdraw failed:", error);
+        alert("Withdraw failed: " + error.message);
+    }
+  };
 
   const filteredJobs = jobs.filter(
     (job) =>
@@ -232,6 +262,7 @@ export default function JobListings() {
               <JobDetailPanel
                   selectedJob={selectedJob}
                   handleApply={handleApply}
+                  handleWithdraw={handleWithdraw}
                   isApplying={isApplying}
                   hasApplied={selectedJobHasApplied}
               />

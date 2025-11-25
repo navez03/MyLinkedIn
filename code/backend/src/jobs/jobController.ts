@@ -62,6 +62,17 @@ export class JobController {
       return this.jobService.getJobsByOrganizer(token, userId);
   }
 
+  // Retirar candidatura
+  @Delete(":jobId/apply")
+  @UseGuards(AuthGuard)
+  async withdrawApplication(
+    @Param("jobId") jobId: string,
+    @GetUserId() userId: string,
+    @GetToken() token: string
+  ) {
+    return this.jobService.withdrawApplication(jobId, userId, token);
+  }
+
   // --- MOVED UP: Specific Static Route ---
   // Ideally, keep all specific GET routes above the generic parameter one
   @Get("/location/:location")

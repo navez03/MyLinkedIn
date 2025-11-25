@@ -98,6 +98,33 @@ export class JobService {
     }
   }
 
+  // Retirar candidatura (Withdraw application)
+  async withdrawApplication(
+    jobId: string,
+    userId: string,
+    token: string
+  ): Promise<string> {
+    try {
+      const supabase = this.supabase.getClientWithToken(token);
+
+      const { error } = await supabase
+        .from("job_applications")
+        .delete()
+        .eq("job_id", jobId)
+        .eq("applicant_id", userId);
+
+      if (error) {
+        this.logger.error("Error withdrawing application", error.message);
+        throw new BadRequestException(`Error withdrawing application: ${error.message}`);
+      }
+
+      return "Application withdrawn successfully";
+    } catch (error) {
+      this.logger.error("Withdraw application error", error.message);
+      throw error;
+    }
+  }
+
   // Obter todos os Jobs
   async getAllJobs(
     token: string,
