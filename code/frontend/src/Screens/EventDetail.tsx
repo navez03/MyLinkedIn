@@ -167,12 +167,12 @@ export default function EventDetail() {
               <div className="flex-1 space-y-4">
                 {/* Event Image */}
                 {event.bannerUrl && (
-                  <Card className="overflow-hidden bg-white flex items-center justify-center" style={{height: 400}}>
+                  <Card className="overflow-hidden bg-white flex items-center justify-center" style={{ height: 400 }}>
                     <img
                       src={event.bannerUrl}
                       alt={event.name}
                       className="max-h-full max-w-full object-contain mx-auto"
-                      style={{background: 'white', width: '100%', height: '100%', display: 'block'}}
+                      style={{ background: 'white', width: '100%', height: '100%', display: 'block' }}
                     />
                   </Card>
                 )}
@@ -231,7 +231,7 @@ export default function EventDetail() {
                         : "bg-primary text-primary-foreground hover:opacity-90"
                         }`}
                     >
-                      {isAttending ? "Attending" : "Participate"}
+                      {isAttending ? "✓ Attending" : "Participate"}
                     </button>
                   )}
 
@@ -300,11 +300,10 @@ export default function EventDetail() {
                               ).map((connection) => (
                                 <label
                                   key={connection.id}
-                                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
-                                    selectedShareConnection === connection.user.id 
-                                      ? 'bg-primary/10 border-primary' 
+                                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${selectedShareConnection === connection.user.id
+                                      ? 'bg-primary/10 border-primary'
                                       : 'bg-transparent border-transparent hover:bg-secondary'
-                                  }`}
+                                    }`}
                                 >
                                   <input
                                     type="radio"

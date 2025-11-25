@@ -45,6 +45,24 @@ const RegistrationForm = () => {
           localStorage.setItem('userId', response.data.userId);
           localStorage.setItem('email', response.data.email);
           console.log('Saved userId:', localStorage.getItem('userId'));
+
+          // Carregar dados completos do utilizador e guardar no localStorage
+          try {
+            const profileResponse = await userAPI.getUserProfile();
+            if (profileResponse.success && profileResponse.data) {
+              localStorage.setItem('userName', profileResponse.data.name);
+              if (profileResponse.data.avatar_url) {
+                localStorage.setItem('userAvatar', profileResponse.data.avatar_url);
+              }
+              console.log('User profile loaded:', profileResponse.data);
+            }
+          } catch (profileError) {
+            console.error('Error loading user profile:', profileError);
+          }
+
+          // Disparar evento para notificar que o utilizador fez login
+          window.dispatchEvent(new Event('user-logged-in'));
+
           setTimeout(() => {
             navigate('/feed');
           }, 1000);

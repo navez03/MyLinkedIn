@@ -19,6 +19,7 @@ interface Post {
   avatar: string;
   avatarUrl?: string;
   content: string;
+  createdAt: string;
   image?: string;
   time: string;
   userId: string;
@@ -117,6 +118,7 @@ export default function Home() {
             originalPostAuthorAvatarUrl: post.originalPostAuthorAvatarUrl,
             originalPostImageUrl: post.originalPostImageUrl,
             originalPostCreatedAt: post.originalPostCreatedAt,
+            event: post.event, // Keep event data for reposts
           } : {};
 
           return {
@@ -128,6 +130,7 @@ export default function Home() {
             image: post.imageUrl,
             time: timeAgo,
             userId: post.userId,
+            createdAt: post.createdAt,
             likes: (post as any).likes ?? 0,
             liked: (post as any).likedByCurrentUser ?? false,
             commentsCount: (post as any).commentsCount ?? 0,
@@ -365,7 +368,7 @@ export default function Home() {
                   <Card key={post.id} className="p-4 space-y-3">
                     {/* Repost Indicator */}
                     {post.isRepost && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 pb-2 border-b border-border">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <Repeat2 className="w-4 h-4" />
                         <span className="font-medium">
                           {post.repostedByUserId === localStorage.getItem('userId')
@@ -376,6 +379,7 @@ export default function Home() {
                     )}
 
                     {/* Reposter's Comment (if exists) */}
+
                     {post.isRepost && post.repostComment && (
                       <div className="mb-3">
                         <div className="flex gap-3 mb-2">
@@ -401,6 +405,9 @@ export default function Home() {
                             >
                               {post.repostedBy}
                             </h3>
+                            <span className="text-xs text-muted-foreground">
+                              {post.createdAt && new Date(post.createdAt).toLocaleString()}
+                            </span>
                           </div>
                         </div>
                         <p className="text-sm text-foreground whitespace-pre-line pl-13">
@@ -409,66 +416,91 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Reposter info when no comment (simple repost) */}
-                    {post.isRepost && !post.repostComment && (
-                      <div className="flex gap-3 mb-3">
-                        {post.repostedByAvatarUrl ? (
-                          <img
-                            src={post.repostedByAvatarUrl}
-                            alt={post.repostedBy}
-                            onClick={() => handleProfileClick(post.repostedByUserId!)}
-                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                          />
-                        ) : (
-                          <div
-                            onClick={() => handleProfileClick(post.repostedByUserId!)}
-                            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            {post.repostedByAvatar}
-                          </div>
-                        )}
-                        <div>
-                          <h3
-                            onClick={() => handleProfileClick(post.repostedByUserId!)}
-                            className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
-                          >
-                            {post.repostedBy}
-                          </h3>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Original post header when this is a repost */}
+                    {/* Original post in a card when this is a repost */}
                     {post.isRepost && (
-                      <div className="flex gap-3 mb-2 pt-2 border-t border-border">
-                        {post.originalPostAuthorAvatarUrl ? (
+                      <div className="border-2 border-border rounded-lg p-3 bg-secondary/20">
+                        <div className="flex gap-3 mb-2">
+                          {post.originalPostAuthorAvatarUrl ? (
+                            <img
+                              src={post.originalPostAuthorAvatarUrl}
+                              alt={post.originalPostAuthorName}
+                              onClick={() => handleProfileClick(post.originalPostAuthorId!)}
+                              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            />
+                          ) : (
+                            <div
+                              onClick={() => handleProfileClick(post.originalPostAuthorId!)}
+                              className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              {post.originalPostAuthorName
+                                ? post.originalPostAuthorName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                : 'U'}
+                            </div>
+                          )}
+                          <div>
+                            <h3
+                              onClick={() => handleProfileClick(post.originalPostAuthorId!)}
+                              className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
+                            >
+                              {post.originalPostAuthorName}
+                            </h3>
+                            <span className="text-xs text-muted-foreground">
+                              {post.originalPostCreatedAt && new Date(post.originalPostCreatedAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Original post content */}
+                        <p className="text-sm text-foreground whitespace-pre-line mb-2">
+                          {post.originalPostContent}
+                        </p>
+
+                        {/* Original post image */}
+                        {post.originalPostImageUrl && (
                           <img
-                            src={post.originalPostAuthorAvatarUrl}
-                            alt={post.originalPostAuthorName}
-                            onClick={() => handleProfileClick(post.originalPostAuthorId!)}
-                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            src={post.originalPostImageUrl}
+                            alt="Post Image"
+                            className="w-full rounded-md object-cover max-h-[400px] mb-2"
                           />
-                        ) : (
+                        )}
+
+                        {/* Original post event */}
+                        {post.event && (
                           <div
-                            onClick={() => handleProfileClick(post.originalPostAuthorId!)}
-                            className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                            className="cursor-pointer transition-all hover:opacity-90"
+                            onClick={() => navigate(`/events/${post.event!.id}`)}
                           >
-                            {post.originalPostAuthorName
-                              ? post.originalPostAuthorName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                              : 'U'}
+                            {post.event.bannerUrl ? (
+                              <div className="relative w-full h-48 rounded-t-lg border border-border border-b-0 overflow-hidden">
+                                <img
+                                  src={post.event.bannerUrl}
+                                  alt={post.event.name}
+                                  className="w-full h-full object-contain bg-gradient-to-br"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="relative w-full h-48 bg-gradient-to-br rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
+                                <div className="text-8xl opacity-20">📅</div>
+                              </div>
+                            )}
+                            <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
+                              <h4 className="text-sm font-semibold text-foreground mb-2">{post.event.name}</h4>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                                <span>{new Date(post.event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              </div>
+                              <div className="mt-2 text-xs text-primary font-medium flex items-center gap-1">
+                                <span>View event details</span>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </div>
                           </div>
                         )}
-                        <div>
-                          <h3
-                            onClick={() => handleProfileClick(post.originalPostAuthorId!)}
-                            className="font-semibold text-sm leading-tight cursor-pointer hover:underline"
-                          >
-                            {post.originalPostAuthorName}
-                          </h3>
-                          <span className="text-xs text-muted-foreground">
-                            {post.originalPostCreatedAt && new Date(post.originalPostCreatedAt).toLocaleString()}
-                          </span>
-                        </div>
                       </div>
                     )}
 
@@ -507,22 +539,24 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Post Content */}
-                    <p className="text-sm text-foreground whitespace-pre-line">
-                      {post.isRepost ? post.originalPostContent : post.content}
-                    </p>
+                    {/* Post Content - only for non-reposts */}
+                    {!post.isRepost && (
+                      <p className="text-sm text-foreground whitespace-pre-line">
+                        {post.content}
+                      </p>
+                    )}
 
-                    {/* Post Image */}
-                    {(post.isRepost ? post.originalPostImageUrl : post.image) && (
+                    {/* Post Image - only for non-reposts */}
+                    {!post.isRepost && post.image && (
                       <img
-                        src={post.isRepost ? post.originalPostImageUrl : post.image}
+                        src={post.image}
                         alt="Post Image"
                         className="w-full rounded-md object-cover max-h-[400px]"
                       />
                     )}
 
-                    {/* Event Card */}
-                    {post.event && (
+                    {/* Event Card - only for non-reposts */}
+                    {!post.isRepost && post.event && (
                       <div
                         className="cursor-pointer transition-all hover:opacity-90"
                         onClick={() => navigate(`/events/${post.event!.id}`)}

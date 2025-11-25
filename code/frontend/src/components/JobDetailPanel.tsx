@@ -11,12 +11,12 @@ interface JobDetailPanelProps {
     hasApplied: boolean;
 }
 
-export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({ 
-    selectedJob, 
-    handleApply, 
-    handleWithdraw, 
-    isApplying, 
-    hasApplied 
+export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
+    selectedJob,
+    handleApply,
+    handleWithdraw,
+    isApplying,
+    hasApplied
 }) => {
     if (!selectedJob) {
         return (
@@ -33,7 +33,7 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
     // Helper to format salary
     const formatSalary = (min?: number, max?: number) => {
         if (!min && !max) return null;
-        
+
         const format = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
         if (min && max) {
@@ -50,26 +50,26 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
     let buttonContent;
     let buttonClass = "";
     let buttonDisabled = isApplying;
-    
+
     if (isApplying) {
         buttonContent = 'Applying...';
         buttonClass = "bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed";
     } else if (hasApplied) {
-        buttonContent = 'Already Applied';
+        buttonContent = 'Applied';
         buttonClass = "bg-green-600/10 text-green-600 border border-green-600 cursor-default";
         buttonDisabled = true;
     } else {
         buttonContent = 'Apply';
         buttonClass = "bg-primary text-primary-foreground hover:opacity-90";
     }
-    
+
     return (
         <Card className="p-6 h-[calc(100vh-100px)] overflow-y-auto scrollbar-hide sticky top-20">
             <div className="flex items-start justify-between border-b border-border pb-4 mb-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground mb-1">{selectedJob.title}</h1>
                     <h2 className="text-lg font-medium text-muted-foreground">{selectedJob.company}</h2>
-                    
+
                     {/* Metadata Row 1: Location & Salary */}
                     <div className="flex flex-col gap-1 mt-2">
                         <p className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -84,7 +84,7 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                         )}
                     </div>
                 </div>
-                
+
                 {/* ACTIONS COLUMN */}
                 <div className="flex flex-col gap-3 items-end">
                     <button
@@ -124,7 +124,7 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                     </span>
                 </div>
             </div>
-            
+
             {/* Description Section */}
             <div className="space-y-6">
                 <div>
@@ -133,7 +133,7 @@ export const JobDetailPanel: React.FC<JobDetailPanelProps> = ({
                         {selectedJob.description || "No description provided."}
                     </div>
                 </div>
-                
+
                 {/* Skills Section */}
                 {selectedJob.skills && selectedJob.skills.length > 0 && (
                     <div className="pt-6 border-t border-border">

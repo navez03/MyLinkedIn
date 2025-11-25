@@ -31,6 +31,18 @@ interface Message {
     authorName?: string;
     authorAvatar?: string | null;
     imageUrl?: string;
+    isRepost?: boolean;
+    repostComment?: string;
+    repostedByName?: string;
+    repostedByAvatar?: string | null;
+    originalPost?: {
+      content: string;
+      authorName?: string;
+      authorAvatar?: string | null;
+      imageUrl?: string;
+      userId?: string;
+      createdAt?: string;
+    };
   } | null;
   event?: {
     id: string;
@@ -486,48 +498,76 @@ const Messages: React.FC = () => {
                                       }`}
                                     onClick={() => navigate(`/post/${message.post!.id}`)}
                                   >
-                                    {/* Imagem do post, se existir */}
-                                    {message.post.imageUrl && (
-                                      <div className="w-full">
-                                        <img
-                                          src={message.post.imageUrl}
-                                          alt="Post image"
-                                          className="w-full max-h-40 object-cover rounded-lg"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                          }}
-                                        />
+                                    {/* Se for um repost, mostrar comentário do reposter */}
+                                    {message.post.isRepost && message.post.repostComment && (
+                                      <div className="p-3 border-b border-border">
+                                        <div className="flex gap-2 items-center mb-2">
+                                          {message.post.repostedByAvatar ? (
+                                            <img
+                                              src={message.post.repostedByAvatar}
+                                              alt={message.post.repostedByName || 'User'}
+                                              className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                                              {message.post.repostedByName?.charAt(0).toUpperCase() || 'R'}
+                                            </div>
+                                          )}
+                                          <p className="text-xs font-semibold text-foreground">{message.post.repostedByName}</p>
+                                        </div>
+                                        <p className="text-sm text-foreground">{message.post.repostComment}</p>
                                       </div>
                                     )}
 
-                                    <div className="p-3 flex gap-3">
-                                      {/* Avatar do autor do post */}
-                                      {message.post.authorAvatar ? (
-                                        <img
-                                          src={message.post.authorAvatar}
-                                          alt={message.post.authorName || 'User'}
-                                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                                          onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                            if (e.currentTarget.nextElementSibling) {
-                                              e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                            }
-                                          }}
-                                        />
-                                      ) : null}
-                                      <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0 ${message.post.authorAvatar ? 'hidden' : ''}`}>
-                                        {message.post.authorName ? message.post.authorName.charAt(0).toUpperCase() : 'P'}
-                                      </div>
+                                    {/* Post original (ou card do post original se for repost) */}
+                                    <div className={message.post.isRepost ? 'p-3 bg-secondary/20' : ''}>
+                                      {/* Imagem do post original */}
+                                      {(message.post.isRepost ? message.post.originalPost?.imageUrl : message.post.imageUrl) && (
+                                        <div className="w-full mb-2">
+                                          <img
+                                            src={message.post.isRepost ? message.post.originalPost!.imageUrl! : message.post.imageUrl!}
+                                            alt="Post image"
+                                            className="w-full max-h-40 object-cover rounded-lg"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                            }}
+                                          />
+                                        </div>
+                                      )}
 
-                                      {/* Conteúdo do post */}
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-semibold text-foreground mb-1">{message.post.authorName || 'Post'}</p>
-                                        <p className="text-sm text-foreground line-clamp-3 mb-2">{message.post.content}</p>
-                                        <div className="text-xs text-primary font-medium flex items-center gap-1">
-                                          <span>View post</span>
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                          </svg>
+                                      <div className="p-3 flex gap-3">
+                                        {/* Avatar do autor do post original */}
+                                        {(message.post.isRepost ? message.post.originalPost?.authorAvatar : message.post.authorAvatar) ? (
+                                          <img
+                                            src={message.post.isRepost ? message.post.originalPost!.authorAvatar! : message.post.authorAvatar!}
+                                            alt={(message.post.isRepost ? message.post.originalPost?.authorName : message.post.authorName) || 'User'}
+                                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none';
+                                              if (e.currentTarget.nextElementSibling) {
+                                                e.currentTarget.nextElementSibling.classList.remove('hidden');
+                                              }
+                                            }}
+                                          />
+                                        ) : null}
+                                        <div className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold flex-shrink-0 ${(message.post.isRepost ? message.post.originalPost?.authorAvatar : message.post.authorAvatar) ? 'hidden' : ''}`}>
+                                          {(message.post.isRepost ? message.post.originalPost?.authorName : message.post.authorName)?.charAt(0).toUpperCase() || 'P'}
+                                        </div>
+
+                                        {/* Conteúdo do post original */}
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-semibold text-foreground mb-1">
+                                            {message.post.isRepost ? message.post.originalPost?.authorName : message.post.authorName || 'Post'}
+                                          </p>
+                                          <p className="text-sm text-foreground line-clamp-3 mb-2">
+                                            {message.post.isRepost ? message.post.originalPost?.content : message.post.content}
+                                          </p>
+                                          <div className="text-xs text-primary font-medium flex items-center gap-1">
+                                            <span>View post</span>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>

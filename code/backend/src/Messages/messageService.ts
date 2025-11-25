@@ -86,12 +86,37 @@ export class MessageService {
     if (postIds.length > 0) {
       const { data: posts, error: postsError } = await supabase
         .from('posts')
-        .select(`id, content, user_id, created_at, image_url, users:user_id (name, email, avatar_url)`)
+        .select(`id, content, user_id, created_at, image_url, repost_id, users:user_id (name, email, avatar_url)`)
         .in('id', postIds as any[]);
 
       if (!postsError && posts) {
+        // Fetch original posts for reposts
+        const repostIds = (posts as any[]).filter(p => p.repost_id).map(p => p.repost_id);
+        let originalPostsMap: Record<string, any> = {};
+
+        if (repostIds.length > 0) {
+          const { data: originalPosts, error: originalError } = await supabase
+            .from('posts')
+            .select(`id, content, user_id, created_at, image_url, users:user_id (name, email, avatar_url)`)
+            .in('id', repostIds);
+
+          if (!originalError && originalPosts) {
+            originalPostsMap = (originalPosts as any[]).reduce((acc, op) => {
+              acc[op.id] = {
+                content: op.content,
+                authorName: op.users?.name,
+                authorAvatar: op.users?.avatar_url,
+                imageUrl: op.image_url,
+                userId: op.user_id,
+                createdAt: op.created_at,
+              };
+              return acc;
+            }, {} as Record<string, any>);
+          }
+        }
+
         postsMap = (posts as any[]).reduce((acc, p) => {
-          acc[p.id] = {
+          const postData: any = {
             id: p.id,
             content: p.content,
             user_id: p.user_id,
@@ -100,6 +125,17 @@ export class MessageService {
             authorAvatar: p.users?.avatar_url,
             imageUrl: p.image_url,
           };
+
+          // Add repost data if this is a repost
+          if (p.repost_id && originalPostsMap[p.repost_id]) {
+            postData.isRepost = true;
+            postData.repostComment = p.content;
+            postData.repostedByName = p.users?.name;
+            postData.repostedByAvatar = p.users?.avatar_url;
+            postData.originalPost = originalPostsMap[p.repost_id];
+          }
+
+          acc[p.id] = postData;
           return acc;
         }, {} as Record<string, any>);
       }
