@@ -3,23 +3,17 @@ import { Calendar, MapPin, Share2, ChevronLeft, Video, Search } from "lucide-rea
 import Navigation from "../components/header";
 import { Card } from "../components/card";
 import { useState, useEffect } from "react";
-import { eventsService, EventResponse, LocationType } from "../services/eventsService";
+import { eventsService, EventResponse } from "../services/eventsService";
 import { messagesAPI } from "../services/messagesService";
+import { ThumbsUp, MessageCircle, SendIcon, UserPlus, TrendingUp, Sparkles, Repeat2 } from "lucide-react";
 import { connectionAPI } from "../services/connectionService";
 import Loading from "../components/loading";
 
-
-// Helper to get initials (same logic as used elsewhere)
-
 // Helper to get initials (same logic as used elsewhere)
 function getUserInitials(name?: string): string {
-  if (!name) {
-    return 'OR';
-  }
+  if (!name) return 'OR';
   const parts = name.trim().split(' ');
-  if (parts.length > 1) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  if (parts.length > 1) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return parts[0][0].toUpperCase();
 }
 
@@ -31,14 +25,35 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const [showShareModal, setShowShareModal] = useState(false);
   const [connections, setConnections] = useState<any[]>([]);
   const [shareSearchQuery, setShareSearchQuery] = useState("");
   const [selectedShareConnection, setSelectedShareConnection] = useState<string>("");
   const [shareLoading, setShareLoading] = useState(false);
 
+  // NEW: Likes & Comments states
+  const [comments, setComments] = useState<string[]>([]);
+  const [newComment, setNewComment] = useState("");
+
+  const [likes, setLikes] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+
+const handleLike = () => {
+  if (isLiked) {
+    setLikes(likes - 1);
+  } else {
+    setLikes(likes + 1);
+  }
+  setIsLiked(!isLiked);
+};  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+    setComments((prev) => [...prev, newComment]);
+    setNewComment("");
+  };
+
+  // Load user
   useEffect(() => {
-    // Get current user ID from localStorage
     const userId = localStorage.getItem('userId');
     setCurrentUserId(userId);
     if (userId) {
@@ -48,6 +63,7 @@ export default function EventDetail() {
     }
   }, []);
 
+  // Load event
   useEffect(() => {
     const loadEvent = async () => {
       if (!eventId) {
@@ -63,7 +79,6 @@ export default function EventDetail() {
         setEvent(response.data.event);
         setError(null);
 
-        // Check if current user is already participating
         if (currentUserId && response.data.event.participants) {
           const isParticipating = response.data.event.participants.some(
             (p) => p.id === currentUserId
@@ -79,9 +94,7 @@ export default function EventDetail() {
     loadEvent();
   }, [eventId, currentUserId]);
 
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
   if (error || !event) {
     return (
@@ -118,11 +131,9 @@ export default function EventDetail() {
 
     try {
       if (isAttending) {
-        // Leave event
         const response = await eventsService.leaveEvent(eventId, currentUserId);
         if (response.success) {
           setIsAttending(false);
-          // Update event participants list
           if (event) {
             setEvent({
               ...event,
@@ -131,15 +142,11 @@ export default function EventDetail() {
           }
         }
       } else {
-        // Join event
         const response = await eventsService.participateInEvent(eventId);
         if (response.success) {
           setIsAttending(true);
-          // Reload event to get updated participants
           const eventResponse = await eventsService.getEventById(eventId);
-          if (eventResponse.success) {
-            setEvent(eventResponse.data.event);
-          }
+          if (eventResponse.success) setEvent(eventResponse.data.event);
         }
       }
     } catch (error) {
@@ -153,6 +160,7 @@ export default function EventDetail() {
         <Navigation />
         <div className="min-h-screen bg-background">
           <div className="max-w-[1128px] mx-auto px-6 py-6">
+
             {/* Back Button */}
             <button
               onClick={() => navigate('/events')}
@@ -163,9 +171,10 @@ export default function EventDetail() {
             </button>
 
             <div className="flex gap-6">
-              {/* Main Content */}
+
+              {/* LEFT SIDE — MAIN CONTENT */}
               <div className="flex-1 space-y-4">
-                {/* Event Image */}
+
                 {event.bannerUrl && (
                   <Card className="overflow-hidden bg-white flex items-center justify-center" style={{ height: 400 }}>
                     <img
@@ -180,56 +189,95 @@ export default function EventDetail() {
                 {/* Event Header */}
                 <Card className="p-6">
                   <div className="flex items-start gap-2 mb-3">
-                    <span className="text-xs font-medium px-2.5 py-1 bg-white text-black rounded border border-border">
+                    <span className="text-xs font-medium px-2.5 py-1 bg-white text-black rounded border-border border">
                       {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
                     </span>
-                    <span className="text-xs font-medium px-2.5 py-1 bg-white text-black rounded border border-border">
+                    <span className="text-xs font-medium px-2.5 py-1 bg-white text-black rounded border-border border">
                       {event.locationType.charAt(0).toUpperCase() + event.locationType.slice(1)}
                     </span>
                   </div>
 
-                  <h1 className="text-3xl font-bold text-foreground mb-6">{event.name}</h1>
+                  <h1 className="text-3xl font-bold mb-6">{event.name}</h1>
 
-                  {/* Event Details */}
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-3">
-                      <Calendar className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-foreground font-medium">
-                          {formatDate(event.date)} at {event.time}
-                        </p>
-                      </div>
+                      <Calendar className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      <p className="font-medium">
+                        {formatDate(event.date)} at {event.time}
+                      </p>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-foreground font-medium">{event.location}</p>
-                      </div>
+                      <MapPin className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      <p className="font-medium">{event.location}</p>
                     </div>
                   </div>
                 </Card>
 
-                {/* About Event */}
+                {/* About */}
                 <Card className="p-6">
-                  <h2 className="text-xl font-semibold text-foreground mb-4">About the event</h2>
-                  <p className="text-foreground whitespace-pre-line leading-relaxed">{event.description}</p>
+                  <h2 className="text-xl font-semibold mb-4">About the event</h2>
+                  <p className="whitespace-pre-line leading-relaxed">{event.description}</p>
                 </Card>
               </div>
 
-              {/* Sidebar */}
+              {/* RIGHT SIDE — SIDEBAR */}
               <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20 self-start">
+
+                <Card className="p-6 space-y-4">
+                 <button
+                    onClick={handleLike}
+                    className={`flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+                      isLiked 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    } active:scale-95`}
+                  >
+                    <ThumbsUp className="w-4 h-4" />
+                    {isLiked ? 'Liked' : 'Like'} {likes > 0 && `(${likes})`}
+                  </button>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Comments</h3>
+
+                    <div className="space-y-2 mb-4">
+                      {comments.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No comments yet.</p>
+                      )}
+
+                      {comments.map((c, i) => (
+                        <div key={i} className="p-3 border border-border rounded-lg bg-secondary/30 text-sm">
+                          {c}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment..."
+                        className="flex-1 px-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none"
+                      />
+                      <button
+                        onClick={handleAddComment}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
+                        ><MessageCircle/>
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Action Card */}
                 <Card className="p-4">
-                  {/* Only show Participate button if user is not the organizer */}
                   {currentUserId && event.organizerId !== currentUserId && (
                     <button
                       type="button"
                       onClick={handleParticipate}
-                      className={`w-full px-4 py-3 rounded-lg font-semibold transition-all mb-3 ${isAttending
-                        ? "bg-secondary text-foreground border-2 border-primary"
-                        : "bg-primary text-primary-foreground hover:opacity-90"
-                        }`}
+                      className={`w-full px-4 py-3 rounded-lg font-semibold mb-3 transition ${
+                        isAttending
+                          ? "bg-secondary text-foreground border-2 border-primary"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      }`}
                     >
                       {isAttending ? "✓ Attending" : "Participate"}
                     </button>
@@ -239,12 +287,12 @@ export default function EventDetail() {
                     type="button"
                     onClick={() => {
                       if (!currentUserId) {
-                        alert('You must be logged in to share this event');
+                        alert("Login required!");
                         return;
                       }
                       setShowShareModal(true);
                     }}
-                    className="w-full px-4 py-2 border border-border text-foreground rounded-lg font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-2 mb-2"
+                    className="w-full px-4 py-2 border border-border rounded-lg hover:bg-secondary flex items-center justify-center gap-2"
                   >
                     <Share2 className="w-4 h-4" />
                     Share
@@ -395,76 +443,66 @@ export default function EventDetail() {
 
                 {/* Organizer Card */}
                 <Card className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Organizer</h3>
+                  <h3 className="font-semibold mb-3">Organizer</h3>
                   <div className="flex items-center gap-3">
                     {event.organizerAvatar ? (
                       <img
                         src={event.organizerAvatar}
-                        alt={event.organizerName || 'Organizer'}
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-semibold">
                         {getUserInitials(event.organizerName)}
                       </div>
                     )}
+
                     <div>
-                      <p className="font-medium text-foreground">{event.organizerName || 'Unknown Organizer'}</p>
-                      <button
-                        type="button"
-                        className="text-sm text-primary hover:underline"
-                        onClick={() => {
-                          if (event.organizerId) {
-                            navigate(`/profile/${event.organizerId}`);
-                          }
-                        }}
-                      >
-                        View Profile
-                      </button>
+                      <p className="font-medium">{event.organizerName}</p>
+                      {event.organizerId && (
+                        <button
+                          onClick={() => navigate(`/profile/${event.organizerId}`)}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          View Profile
+                        </button>
+                      )}
                     </div>
                   </div>
                 </Card>
+
                 {/* Attendance Card */}
                 <Card className="p-4">
-                  <h3 className="font-semibold text-foreground mb-3">
-                    Attendance {event.participants && event.participants.length > 0 && `(${event.participants.length})`}
+                  <h3 className="font-semibold mb-3">
+                    Attendance {event.participants?.length ? `(${event.participants.length})` : ""}
                   </h3>
+
                   {event.participants && event.participants.length > 0 ? (
                     <>
                       <div className="flex -space-x-2 mb-3">
-                        {event.participants.slice(0, 5).map((participant) => (
+                        {event.participants.slice(0, 5).map((p) => (
                           <div
-                            key={participant.id}
-                            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold border-2 border-card"
-                            title={participant.name}
+                            key={p.id}
+                            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs border-2 border-card"
                           >
-                            {participant.avatarUrl ? (
-                              <img
-                                src={participant.avatarUrl}
-                                alt={participant.name}
-                                className="w-full h-full rounded-full object-cover"
-                              />
+                            {p.avatarUrl ? (
+                              <img src={p.avatarUrl} className="rounded-full object-cover" />
                             ) : (
-                              getUserInitials(participant.name)
+                              getUserInitials(p.name)
                             )}
                           </div>
                         ))}
                         {event.participants.length > 5 && (
-                          <div className="w-8 h-8 rounded-full bg-secondary text-foreground flex items-center justify-center text-xs font-semibold border-2 border-card">
+                          <div className="w-8 h-8 rounded-full bg-secondary text-xs flex items-center justify-center border-2 border-card">
                             +{event.participants.length - 5}
                           </div>
                         )}
                       </div>
-                      {event.participants.length > 5 && (
-                        <button type="button" className="text-sm text-primary hover:underline">
-                          View All {event.participants.length} Participants
-                        </button>
-                      )}
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">No participants yet</p>
                   )}
                 </Card>
+
               </div>
             </div>
           </div>
