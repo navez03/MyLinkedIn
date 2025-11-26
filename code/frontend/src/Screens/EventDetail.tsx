@@ -181,7 +181,7 @@ const handleLike = () => {
                       src={event.bannerUrl}
                       alt={event.name}
                       className="max-h-full max-w-full object-contain mx-auto"
-                      style={{ background: 'white', width: '100%', height: '100%' }}
+                      style={{ background: 'white', width: '100%', height: '100%', display: 'block' }}
                     />
                   </Card>
                 )}
@@ -279,7 +279,7 @@ const handleLike = () => {
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
                       }`}
                     >
-                      {isAttending ? "Attending ✓" : "Participate"}
+                      {isAttending ? "✓ Attending" : "Participate"}
                     </button>
                   )}
 
@@ -348,11 +348,10 @@ const handleLike = () => {
                               ).map((connection) => (
                                 <label
                                   key={connection.id}
-                                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
-                                    selectedShareConnection === connection.user.id 
-                                      ? 'bg-primary/10 border-primary' 
+                                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${selectedShareConnection === connection.user.id
+                                      ? 'bg-primary/10 border-primary'
                                       : 'bg-transparent border-transparent hover:bg-secondary'
-                                  }`}
+                                    }`}
                                 >
                                   <input
                                     type="radio"
@@ -417,11 +416,11 @@ const handleLike = () => {
                                   setShowShareModal(false);
                                   setSelectedShareConnection("");
                                 } else {
-                                  alert('❌ Error sharing event: ' + (res.error || 'Unknown error'));
+                                  alert('X Error sharing event: ' + (res.error || 'Unknown error'));
                                 }
                               } catch (error) {
                                 setShareLoading(false);
-                                alert('❌ Failed to share event. Please try again.');
+                                alert('X Failed to share event. Please try again.');
                               }
                             }}
                             className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 disabled:shadow-none"

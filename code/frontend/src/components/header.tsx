@@ -1,4 +1,4 @@
-import { Home, Users, MessageSquare, Bell, Search, User, LogOut } from "lucide-react";
+import { Home, Users, MessageSquare, Bell, Search, User, LogOut, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "./input";
 import { useState, useEffect, useRef } from "react";
@@ -17,6 +17,7 @@ const Navigation = () => {
 
   const navItems = [
     { icon: Home, label: "Home", path: "/feed" },
+    { icon: Briefcase, label: "Jobs", path: "/jobs" },
     { icon: Users, label: "My Network", path: "/network" },
     { icon: MessageSquare, label: "Messages", path: "/messages" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
@@ -86,6 +87,16 @@ const Navigation = () => {
     navigate(`/profile/${userId}`);
   };
 
+  const handleTopicSearch = () => {
+    if (searchQuery.trim().length > 0) {
+      setShowDropdown(false);
+      navigate(`/search-results?query=${encodeURIComponent(searchQuery.trim())}`);
+      
+      setSearchQuery("");
+      setSearchResults([]);
+    }
+  };
+
   const getInitials = (name: string): string => {
     const parts = name.trim().split(' ');
     if (parts.length >= 2) {
@@ -116,59 +127,72 @@ const Navigation = () => {
             <div className="relative" ref={searchRef}>
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search"
-                className="pl-8 w-[280px] bg-secondary border-0 h-[44px]"
-                value={searchQuery}
-                onChange={handleSearchChange}
+              placeholder="Search"
+              className="pl-8 w-[280px] bg-secondary border-0 h-[44px] placeholder:text-sm text-sm !text-sm"
+              value={searchQuery}
+              onChange={handleSearchChange}
               />
 
               {/* Search Dropdown */}
               {showDropdown && (
-                <div className="absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-[400px] overflow-y-auto">
-                  {isSearching ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                      Searching...
-                    </div>
-                  ) : searchResults.length > 0 ? (
-                    <div className="py-2">
-                      {searchResults.map((user) => (
-                        <div
-                          key={user.id}
-                          onClick={() => handleUserClick(user.id)}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors"
-                        >
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!user.avatar_url ? 'bg-primary' : ''}`}>
-                            {user.avatar_url ? (
-                              <img
-                                src={user.avatar_url}
-                                alt={user.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  if (e.currentTarget.nextElementSibling) {
-                                    e.currentTarget.nextElementSibling.classList.remove('hidden');
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <span className="text-sm text-primary-foreground font-bold">
-                                {getInitials(user.name)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">{user.name}</p>
-                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-muted-foreground">
-                      No users found
-                    </div>
-                  )}
+              <div className="absolute top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-[400px] overflow-y-auto">
+                
+                {searchQuery.trim().length > 0 && (
+                <div
+                  onClick={handleTopicSearch}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors border-b border-border/60"
+                >
+                  <Search className="w-5 h-5 text-primary" />
+                  <p className="font-medium text-primary">
+                  See posts about: <span className="font-bold">"{searchQuery}"</span>
+                  </p>
                 </div>
+                )}
+
+                {isSearching ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Searching...
+                </div>
+                ) : searchResults.length > 0 ? (
+                <div className="py-2">
+                  {searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => handleUserClick(user.id)}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-secondary cursor-pointer transition-colors"
+                  >
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${!user.avatar_url ? 'bg-primary' : ''}`}>
+                    {user.avatar_url ? (
+                      <img
+                      src={user.avatar_url}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.classList.remove('hidden');
+                        }
+                      }}
+                      />
+                    ) : (
+                      <span className="text-sm text-primary-foreground font-bold">
+                      {getInitials(user.name)}
+                      </span>
+                    )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{user.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  </div>
+                  ))}
+                </div>
+                ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  No users found
+                </div>
+                )}
+              </div>
               )}
             </div>
           </div>

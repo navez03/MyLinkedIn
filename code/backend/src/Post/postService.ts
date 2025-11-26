@@ -15,15 +15,15 @@ export class PostService {
 
   private async getEventDetails(eventId: string | null, supabase: any) {
     if (!eventId) return null;
-    
+
     const { data: event } = await supabase
       .from('events')
       .select('id, name, date, banner_url')
       .eq('id', eventId)
       .single();
-    
+
     if (!event) return null;
-    
+
     return {
       id: event.id,
       name: event.name,
@@ -91,6 +91,33 @@ export class PostService {
 
     const eventDetails = await this.getEventDetails(post.event_id, supabase);
 
+    // Handle repost data - if this post is a repost (has repost_id)
+    let repostData: Partial<PostResponseDto> = {};
+    if (post.repost_id) {
+      // This is a repost - fetch the original post data
+      const { data: originalPost } = await supabase
+        .from('posts')
+        .select('*, users:user_id (name, email, avatar_url)')
+        .eq('id', post.repost_id)
+        .single();
+
+      repostData = {
+        repostId: post.repost_id,
+        repostedBy: post.users?.name,
+        repostedByUserId: post.user_id,
+        repostedByName: post.users?.name,
+        repostedByAvatarUrl: post.users?.avatar_url,
+        repostComment: post.content, // The repost comment is stored in the content field
+        // Original post data
+        originalPostContent: originalPost?.content,
+        originalPostAuthorName: originalPost?.users?.name,
+        originalPostAuthorId: originalPost?.user_id,
+        originalPostAuthorAvatarUrl: originalPost?.users?.avatar_url,
+        originalPostImageUrl: originalPost?.image_url,
+        originalPostCreatedAt: originalPost?.created_at,
+      };
+    }
+
     return {
       id: post.id,
       userId: post.user_id,
@@ -102,6 +129,7 @@ export class PostService {
       imageUrl: post.image_url,
       eventId: post.event_id,
       event: eventDetails,
+      ...repostData,
     };
   }
 
@@ -218,6 +246,34 @@ export class PostService {
       // Verifica se o utilizador atual já deu like neste post
       const likedByCurrentUser = await this.isPostLikedByUser(post.id, userId);
       const eventDetails = await this.getEventDetails(post.event_id, supabase);
+
+      // Handle repost data - if this post is a repost (has repost_id)
+      let repostData: Partial<PostResponseDto> = {};
+      if (post.repost_id) {
+        // This is a repost - fetch the original post data
+        const { data: originalPost } = await supabase
+          .from('posts')
+          .select('*, users:user_id (name, email, avatar_url)')
+          .eq('id', post.repost_id)
+          .single();
+
+        repostData = {
+          repostId: post.repost_id,
+          repostedBy: post.users?.name,
+          repostedByUserId: post.user_id,
+          repostedByName: post.users?.name,
+          repostedByAvatarUrl: post.users?.avatar_url,
+          repostComment: post.content, // The repost comment is stored in the content field
+          // Original post data
+          originalPostContent: originalPost?.content,
+          originalPostAuthorName: originalPost?.users?.name,
+          originalPostAuthorId: originalPost?.user_id,
+          originalPostAuthorAvatarUrl: originalPost?.users?.avatar_url,
+          originalPostImageUrl: originalPost?.image_url,
+          originalPostCreatedAt: originalPost?.created_at,
+        };
+      }
+
       return {
         id: post.id,
         userId: post.user_id,
@@ -232,6 +288,7 @@ export class PostService {
         likes: await this.countLikes(post.id),
         commentsCount: await this.getCommentsCount(post.id),
         likedByCurrentUser,
+        ...repostData,
       };
     }));
 
@@ -455,6 +512,73 @@ export class PostService {
       .select('*', { count: 'exact' })
       .eq('post_id', postId);
     return count || 0;
+  }
+
+  async repostPost(originalPostId: string, userId: string, comment?: string | null): Promise<PostResponseDto> {
+    const supabase = this.supabaseService.getClient();
+
+    // Verify original post exists
+    const { data: originalPost, error: originalPostError } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', originalPostId)
+      .single();
+
+    if (originalPostError || !originalPost) {
+      throw new BadRequestException('Original post not found');
+    }
+
+    // Get user info
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, name, email, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (userError || !user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Create repost (new post with repost_id and optional comment as content)
+    // Copy image_url and event_id from original post
+    const repostContent = comment || ''; // If no comment, content is empty string
+    const { data: repost, error: repostError } = await supabase
+      .from('posts')
+      .insert({
+        user_id: userId,
+        content: repostContent,
+        repost_id: originalPostId,
+        image_url: originalPost.image_url, // Copy from original
+        event_id: originalPost.event_id, // Copy from original
+      })
+      .select(`
+        *,
+        users:user_id (name, email, avatar_url)
+      `)
+      .single();
+
+    if (repostError) {
+      this.logger.error('Error creating repost', repostError.message);
+      throw new BadRequestException(`Error creating repost: ${repostError.message}`);
+    }
+
+    this.logger.log(`Post reposted by user: ${userId}`);
+
+    // Get event details if original post had one
+    const eventDetails = await this.getEventDetails(repost.event_id, supabase);
+
+    return {
+      id: repost.id,
+      userId: repost.user_id,
+      content: repost.content,
+      createdAt: repost.created_at,
+      authorName: repost.users?.name,
+      authorEmail: repost.users?.email,
+      authorAvatarUrl: repost.users?.avatar_url,
+      imageUrl: repost.image_url,
+      eventId: repost.event_id,
+      event: eventDetails,
+    };
   }
 
 }

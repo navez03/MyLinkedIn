@@ -16,8 +16,9 @@ const ProfileCard: React.FC = () => {
     navigate('/profile');
   };
 
-  const currentUserName = userData?.name || 'Meu Perfil';
-  const userAvatarUrl = userData?.avatar_url || null;
+  // Tentar obter do contexto primeiro, depois do localStorage como fallback
+  const currentUserName = userData?.name || localStorage.getItem('userName') || 'Meu Perfil';
+  const userAvatarUrl = userData?.avatar_url || localStorage.getItem('userAvatar') || null;
 
   // Função para obter as iniciais
   const getInitials = (name: string): string => {
