@@ -3,6 +3,7 @@ import { SupabaseService } from '../config/supabaseClient';
 import { ConnectionService } from '../Connects/connectService';
 import { CreateEventDto, EventResponseDto } from './dto/create-event.dto';
 import { InviteToEventDto, EventInvitationResponseDto } from './dto/invite-event.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class EventService {
@@ -75,7 +76,7 @@ export class EventService {
     }
   }
 
-  async getEventById(eventId: string, token: string): Promise<EventResponseDto> {
+  async getEventById(eventId: string, token: string, userId?: string): Promise<EventResponseDto> {
     try {
       const supabase = this.supabase.getClientWithToken(token);
 
@@ -107,7 +108,11 @@ export class EventService {
         participants = participantUsers || [];
       }
 
-      return this.mapEventToDto(data, user, participants);
+      // Get likes count and check if current user liked
+      const totalLikes = await this.countLikes(eventId);
+      const likedByCurrentUser = userId ? await this.isEventLikedByUser(eventId, userId) : false;
+
+      return this.mapEventToDto(data, user, participants, totalLikes, likedByCurrentUser);
     } catch (error) {
       this.logger.error('Get event error', error.message);
       throw error;
@@ -477,7 +482,135 @@ export class EventService {
     }
   }
 
-  private mapEventToDto(event: any, user?: any, participants?: any[]): EventResponseDto {
+  async likeEvent(eventId: string, userId: string) {
+    const supabase = this.supabase.getClient();
+
+    const { error: insertErr } = await supabase
+      .from('event_likes')
+      .insert({ event_id: eventId, user_id: userId });
+
+    if (insertErr && insertErr.code !== '23505') { // 23505 = unique_violation
+      throw new Error(`Error liking post: ${insertErr.message}`);
+    }
+
+    const { count } = await supabase
+      .from('event_likes')
+      .select('*', { count: 'exact', head: false })
+      .eq('event_id', eventId);
+
+    return { liked: true, totalLikes: count || 0 };
+  }
+
+  async unlikeEvent(eventId: string, userId: string) {
+    const supabase = this.supabase.getClient();
+    const { error: deleteErr } = await supabase
+      .from('event_likes')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('user_id', userId);
+    if (deleteErr) {
+      throw new Error(`Error unliking post: ${deleteErr.message}`);
+    }
+    const { count } = await supabase
+      .from('event_likes')
+      .select('*', { count: 'exact', head: false })
+      .eq('event_id', eventId);
+    return { liked: false, totalLikes: count || 0 };
+  }
+
+  async countLikes(eventId: string) {
+    const supabase = this.supabase.getClient();
+    const { count } = await supabase
+      .from('event_likes')
+      .select('*', { count: 'exact' })
+      .eq('event_id', eventId);
+
+    return count || 0;
+  }
+
+  async isEventLikedByUser(eventId: string, userId: string) {
+    const supabase = this.supabase.getClient();
+    const { data } = await supabase
+      .from('event_likes')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .limit(1);
+
+    return (data && data.length > 0);
+  }
+
+  async addComment(createCommentDto: CreateCommentDto) {
+    const supabase = this.supabase.getClient();
+
+    const { data, error } = await supabase
+      .from('event_comments')
+      .insert([createCommentDto])
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    // Buscar o nome do utilizador
+    const { data: user } = await supabase
+      .from('users')
+      .select('name, email, avatar_url')
+      .eq('id', createCommentDto.user_id)
+      .single();
+
+    return {
+      ...data,
+      authorName: user?.name,
+      authorEmail: user?.email,
+      authorAvatarUrl: user?.avatar_url,
+    };
+  }
+
+  async getComments(eventId: string, limit = 10, offset = 0) {
+    const supabase = this.supabase.getClient();
+
+    const { data: comments, error, count } = await supabase
+      .from('event_comments')
+      .select('*', { count: 'exact' })
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw new Error(`Error fetching comments: ${error.message}`);
+
+    // Fetch user data separately for each comment
+    const mapped = await Promise.all((comments || []).map(async (c) => {
+      const { data: user } = await supabase
+        .from('users')
+        .select('name, email, avatar_url')
+        .eq('id', c.user_id)
+        .single();
+
+      return {
+        id: c.id,
+        eventId: c.event_id,
+        userId: c.user_id,
+        content: c.content,
+        createdAt: c.created_at,
+        user_name: user?.name || 'Unknown User',
+        authorEmail: user?.email,
+        authorAvatarUrl: user?.avatar_url,
+      };
+    }));
+
+    return { comments: mapped, total: count || 0 };
+  }
+
+  async getCommentsCount(eventId: string) {
+    const supabase = this.supabase.getClient();
+    const { count } = await supabase
+      .from('event_comments')
+      .select('*', { count: 'exact' })
+      .eq('event_id', eventId);
+    return count || 0;
+  }
+
+  private mapEventToDto(event: any, user?: any, participants?: any[], likes?: number, likedByCurrentUser?: boolean): EventResponseDto {
     return {
       id: event.id,
       name: event.name,
@@ -497,6 +630,8 @@ export class EventService {
         email: p.email,
         avatarUrl: p.avatar_url,
       })) || [],
+      likes: likes || 0,
+      likedByCurrentUser: likedByCurrentUser || false,
       createdAt: event.created_at,
       updatedAt: event.created_at,
     };

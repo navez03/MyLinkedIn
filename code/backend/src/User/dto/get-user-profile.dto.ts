@@ -13,6 +13,7 @@ export interface UserProfileResponseDto {
     name: string;
     email: string;
     avatar_url?: string | null;
+    description?: string | null;
   };
   message?: string;
 }

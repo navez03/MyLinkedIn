@@ -22,12 +22,14 @@ const UpdateProfile: React.FC = () => {
     name: '',
     email: '',
     avatar_url: '',
+    description: '',
   });
 
   const [originalData, setOriginalData] = useState({
     name: '',
     email: '',
     avatar_url: '',
+    description: '',
   });
 
   const getInitials = (name: string): string => {
@@ -52,6 +54,7 @@ const UpdateProfile: React.FC = () => {
             name: response.data.name || '',
             email: response.data.email || '',
             avatar_url: response.data.avatar_url || '',
+            description: response.data.description || '',
           };
           setFormData(userData);
           setOriginalData(userData);
@@ -69,7 +72,7 @@ const UpdateProfile: React.FC = () => {
     fetchUserProfile();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -115,6 +118,7 @@ const UpdateProfile: React.FC = () => {
   const hasChanges = (): boolean => {
     return (
       formData.name !== originalData.name ||
+      formData.description !== originalData.description ||
       avatarFile !== null
     );
   };
@@ -165,7 +169,7 @@ const UpdateProfile: React.FC = () => {
         }
       }
 
-      const updateData: { name?: string; avatar_url?: string } = {};
+      const updateData: { name?: string; avatar_url?: string; description?: string } = {};
 
       if (formData.name !== originalData.name) {
         updateData.name = formData.name.trim();
@@ -175,9 +179,14 @@ const UpdateProfile: React.FC = () => {
         updateData.avatar_url = avatarUrl;
       }
 
+      if (formData.description !== originalData.description) {
+        updateData.description = formData.description.trim() || undefined;
+      }
+
       const response = await userAPI.updateProfile(
         updateData.name,
-        updateData.avatar_url
+        updateData.avatar_url,
+        updateData.description
       );
 
       if (response.success) {
@@ -299,6 +308,24 @@ const UpdateProfile: React.FC = () => {
                       maxLength={50}
                       className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
+                  </div>
+
+                  {/* Description Input */}
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-foreground mb-3">
+                      About
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description ?? ''}
+                      onChange={handleInputChange}
+                      placeholder="Tell us about yourself..."
+                      maxLength={500}
+                      rows={10}
+                      className="w-full h-50 px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{(formData.description ?? '').length}/500</p>
                   </div>
 
                   {/* Action Buttons */}

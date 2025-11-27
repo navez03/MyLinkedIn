@@ -5,6 +5,7 @@ interface UserData {
   name: string;
   avatar_url: string | null;
   userId: string;
+  description?: string | null;
 }
 
 interface UserContextType {
@@ -35,6 +36,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           name: profileResponse.data.name || '',
           avatar_url: profileResponse.data.avatar_url || null,
           userId: userId,
+          description: profileResponse.data.description || null,
         });
       }
     } catch (e) {

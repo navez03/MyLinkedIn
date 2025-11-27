@@ -369,7 +369,6 @@ export class PostService {
   async likePost(postId: string, userId: string) {
     const supabase = this.supabaseService.getClient();
 
-    // Tentar inserir; caso já exista, trata como idempotente
     const { error: insertErr } = await supabase
       .from('post_likes')
       .insert({ post_id: postId, user_id: userId });
@@ -378,7 +377,6 @@ export class PostService {
       throw new Error(`Error liking post: ${insertErr.message}`);
     }
 
-    // Contar likes
     const { count } = await supabase
       .from('post_likes')
       .select('*', { count: 'exact', head: false })
@@ -389,20 +387,18 @@ export class PostService {
 
   async unlikePost(postId: string, userId: string) {
     const supabase = this.supabaseService.getClient();
-
-    const { error } = await supabase
+    const { error: deleteErr } = await supabase
       .from('post_likes')
       .delete()
       .eq('post_id', postId)
       .eq('user_id', userId);
-
-    if (error) throw new Error(`Error unliking post: ${error.message}`);
-
+    if (deleteErr) {
+      throw new Error(`Error unliking post: ${deleteErr.message}`);
+    }
     const { count } = await supabase
       .from('post_likes')
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'exact', head: false })
       .eq('post_id', postId);
-
     return { liked: false, totalLikes: count || 0 };
   }
 
@@ -483,28 +479,6 @@ export class PostService {
     return { comments: mapped, total: count || 0 };
   }
 
-  async deleteComment(commentId: string, userId: string) {
-    const supabase = this.supabaseService.getClient();
-
-    const { data: existing, error: fetchErr } = await supabase
-      .from('post_comments')
-      .select('user_id')
-      .eq('id', commentId)
-      .single();
-
-    if (fetchErr || !existing) throw new Error('Comment not found');
-    if (existing.user_id !== userId) throw new Error('Forbidden');
-
-    const { error } = await supabase
-      .from('post_comments')
-      .delete()
-      .eq('id', commentId);
-
-    if (error) throw new Error(`Error deleting comment: ${error.message}`);
-
-    return { success: true };
-  }
-
   async getCommentsCount(postId: string) {
     const supabase = this.supabaseService.getClient();
     const { count } = await supabase
@@ -517,7 +491,6 @@ export class PostService {
   async repostPost(originalPostId: string, userId: string, comment?: string | null): Promise<PostResponseDto> {
     const supabase = this.supabaseService.getClient();
 
-    // Verify original post exists
     const { data: originalPost, error: originalPostError } = await supabase
       .from('posts')
       .select('*')
@@ -528,7 +501,6 @@ export class PostService {
       throw new BadRequestException('Original post not found');
     }
 
-    // Get user info
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, name, email, avatar_url')
@@ -539,17 +511,15 @@ export class PostService {
       throw new BadRequestException('User not found');
     }
 
-    // Create repost (new post with repost_id and optional comment as content)
-    // Copy image_url and event_id from original post
-    const repostContent = comment || ''; // If no comment, content is empty string
+    const repostContent = comment || '';
     const { data: repost, error: repostError } = await supabase
       .from('posts')
       .insert({
         user_id: userId,
         content: repostContent,
         repost_id: originalPostId,
-        image_url: originalPost.image_url, // Copy from original
-        event_id: originalPost.event_id, // Copy from original
+        image_url: originalPost.image_url,
+        event_id: originalPost.event_id,
       })
       .select(`
         *,
@@ -564,7 +534,6 @@ export class PostService {
 
     this.logger.log(`Post reposted by user: ${userId}`);
 
-    // Get event details if original post had one
     const eventDetails = await this.getEventDetails(repost.event_id, supabase);
 
     return {

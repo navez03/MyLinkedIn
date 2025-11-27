@@ -1,5 +1,4 @@
-import { IsString, MinLength, IsOptional, IsUrl, ValidateIf } from 'class-validator';
-import { MaxLength } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsUrl, ValidateIf, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdateProfileDto {
@@ -21,4 +20,10 @@ export class UpdateProfileDto {
   @ValidateIf((o) => o.avatar_url !== null && o.avatar_url !== undefined)
   @IsUrl({}, { message: 'Invalid avatar URL' })
   avatar_url?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'Description is too long' })
+  @Transform(({ value }) => value?.trim() || null)
+  description?: string | null;
 }
