@@ -236,13 +236,6 @@ export class PostController {
     return { success: true, comments: result.comments, total: result.total };
   }
 
-  @Delete(':postId/comments/:commentId')
-  async deleteComment(@Param('commentId') commentId: string, @Req() req) {
-    const userId = req.user?.id || req.body.userId;
-    await this.postService.deleteComment(commentId, userId);
-    return { success: true };
-  }
-
   @Post(':postId/likes')
   async likePost(@Param('postId') postId: string, @Req() req) {
     const userId = req.user?.id || req.body.userId;

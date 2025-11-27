@@ -33,23 +33,54 @@ export default function EventDetail() {
   const [shareLoading, setShareLoading] = useState(false);
 
   // NEW: Likes & Comments states
-  const [comments, setComments] = useState<string[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
 
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
-const handleLike = () => {
-  if (isLiked) {
-    setLikes(likes - 1);
-  } else {
-    setLikes(likes + 1);
-  }
-  setIsLiked(!isLiked);
-};  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-    setComments((prev) => [...prev, newComment]);
-    setNewComment("");
+  const handleLike = async () => {
+    if (!eventId || !currentUserId) return;
+
+    try {
+      if (!isLiked) {
+        // Like the event
+        const response = await eventsService.likeEvent(eventId, currentUserId);
+        if (response.success) {
+          const total = response.data?.totalLikes ?? (likes || 0) + 1;
+          setIsLiked(true);
+          setLikes(total);
+        }
+      } else {
+        // Unlike the event
+        const response = await eventsService.unlikeEvent(eventId, currentUserId);
+        if (response.success) {
+          const total = response.data?.totalLikes ?? Math.max((likes || 1) - 1, 0);
+          setIsLiked(false);
+          setLikes(total);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling like on event:", error);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !eventId || !currentUserId) return;
+
+    try {
+      const response = await eventsService.addComment(eventId, newComment, currentUserId);
+      if (response.success) {
+        setNewComment("");
+        // Reload comments to get the full data including author info
+        const commentsResponse = await eventsService.getComments(eventId);
+        if (commentsResponse.success) {
+          setComments(commentsResponse.data.comments);
+        }
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
   };
 
   // Load user
@@ -79,7 +110,9 @@ const handleLike = () => {
         setEvent(response.data.event);
         setError(null);
 
-        if (currentUserId && response.data.event.participants) {
+        // Set initial like state from event data
+        setLikes(response.data.event.likes || 0);
+        setIsLiked(response.data.event.likedByCurrentUser || false); if (currentUserId && response.data.event.participants) {
           const isParticipating = response.data.event.participants.some(
             (p) => p.id === currentUserId
           );
@@ -93,6 +126,20 @@ const handleLike = () => {
 
     loadEvent();
   }, [eventId, currentUserId]);
+
+  // Load comments
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!eventId) return;
+
+      const response = await eventsService.getComments(eventId);
+      if (response.success) {
+        setComments(response.data.comments);
+      }
+    };
+
+    loadComments();
+  }, [eventId]);
 
   if (loading) return <Loading />;
 
@@ -225,28 +272,50 @@ const handleLike = () => {
               <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20 self-start">
 
                 <Card className="p-6 space-y-4">
-                 <button
-                    onClick={handleLike}
-                    className={`flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
-                      isLiked 
-                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    } active:scale-95`}
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                    {isLiked ? 'Liked' : 'Like'} {likes > 0 && `(${likes})`}
-                  </button>
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Comments</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold">Comments</h3>
+                      <button
+                        onClick={handleLike}
+                        className="flex items-center gap-1 px-2 py-1 rounded transition-all duration-200"
+                        style={{ background: 'transparent' }}
+                      >
+                        <ThumbsUp
+                          className={`w-4 h-4 ${isLiked ? 'text-primary' : 'text-gray-400'}`}
+                          style={isLiked ? { fill: 'hsl(var(--primary))', stroke: 'hsl(var(--primary))' } : {}}
+                        />
+                        <span className="ml-1 font-medium text-sm">{likes}</span>
+                      </button>
+                    </div>
 
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
                       {comments.length === 0 && (
                         <p className="text-sm text-muted-foreground">No comments yet.</p>
                       )}
 
                       {comments.map((c, i) => (
-                        <div key={i} className="p-3 border border-border rounded-lg bg-secondary/30 text-sm">
-                          {c}
+                        <div key={c.id || i} className="p-2 rounded">
+                          <div className="flex items-start gap-3">
+                            {c.authorAvatarUrl ? (
+                              <img
+                                src={c.authorAvatarUrl}
+                                alt={c.user_name || 'Avatar'}
+                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold flex-shrink-0">
+                                {(c.user_name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex flex-col flex-1">
+                              <div className="flex justify-between items-center w-full">
+                                <span className="text-[12px] font-medium text-black">{c.user_name || 'User'}</span>
+                                <span className="text-[10px] text-muted-foreground">{new Date(c.createdAt || Date.now()).toLocaleDateString()}</span>
+                              </div>
+                              <span className="text-sm text-foreground whitespace-pre-line mt-1">{c.content}</span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -255,13 +324,20 @@ const handleLike = () => {
                       <input
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Add a comment..."
-                        className="flex-1 px-3 py-2 bg-secondary border border-border rounded-lg text-sm outline-none"
+                        placeholder="Write a comment..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                        className="flex-1 rounded-md border border-border px-3 py-2"
                       />
                       <button
                         onClick={handleAddComment}
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
-                        ><MessageCircle/>
+                        className="bg-primary text-primary-foreground px-3 rounded-md hover:bg-primary/90 transition flex items-center justify-center"
+                      >
+                        <SendIcon className="w-5 h-5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: 'rotate(45deg) translate(-2px, 2px)' }} />
                       </button>
                     </div>
                   </div>
@@ -273,11 +349,10 @@ const handleLike = () => {
                     <button
                       type="button"
                       onClick={handleParticipate}
-                      className={`w-full px-4 py-3 rounded-lg font-semibold mb-3 transition ${
-                        isAttending
-                          ? "bg-secondary text-foreground border-2 border-primary"
-                          : "bg-primary text-primary-foreground hover:bg-primary/90"
-                      }`}
+                      className={`w-full px-4 py-3 rounded-lg font-semibold mb-3 transition ${isAttending
+                        ? "bg-secondary text-foreground border-2 border-primary"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        }`}
                     >
                       {isAttending ? "✓ Attending" : "Participate"}
                     </button>
@@ -349,8 +424,8 @@ const handleLike = () => {
                                 <label
                                   key={connection.id}
                                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${selectedShareConnection === connection.user.id
-                                      ? 'bg-primary/10 border-primary'
-                                      : 'bg-transparent border-transparent hover:bg-secondary'
+                                    ? 'bg-primary/10 border-primary'
+                                    : 'bg-transparent border-transparent hover:bg-secondary'
                                     }`}
                                 >
                                   <input

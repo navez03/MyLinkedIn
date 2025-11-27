@@ -139,7 +139,7 @@ export class UserService {
 
       const { data, error } = await userClient
         .from('users')
-        .select('id, name, email, avatar_url')
+        .select('id, name, email, avatar_url, description')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -188,7 +188,7 @@ export class UserService {
 
       const { data, error } = await adminClient
         .from('users')
-        .select('id, name, email, avatar_url')
+        .select('id, name, email, avatar_url, description')
         .eq('id', userId)
         .maybeSingle();
 
@@ -331,13 +331,9 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
-      this.logger.log(`updateProfileDto received: ${JSON.stringify(updateProfileDto)}`);
-      this.logger.log(`updateProfileDto.name: ${updateProfileDto.name}`);
-      this.logger.log(`updateProfileDto.avatar_url: ${updateProfileDto.avatar_url}`);
-
       // Validate that at least one field is being updated
-      if (!updateProfileDto.name && updateProfileDto.avatar_url === undefined) {
-        throw new BadRequestException('At least one field (name or avatar_url) must be provided for update');
+      if (!updateProfileDto.name && updateProfileDto.avatar_url === undefined && updateProfileDto.description === undefined) {
+        throw new BadRequestException('At least one field (name, avatar_url or description) must be provided for update');
       }
 
       // Get user info from auth to have email
@@ -369,6 +365,10 @@ export class UserService {
           updateData.avatar_url = updateProfileDto.avatar_url;
         }
 
+        if (updateProfileDto.description !== undefined) {
+          updateData.description = updateProfileDto.description;
+        }
+
         // Check if there's anything to update
         if (Object.keys(updateData).length === 0) {
           // Nothing to update, return existing user
@@ -392,6 +392,7 @@ export class UserService {
           email: authUser.user.email,
           name: updateProfileDto.name?.trim() || authUser.user.email?.split('@')[0] || 'User',
           avatar_url: updateProfileDto.avatar_url || null,
+          description: updateProfileDto.description || null,
         };
 
         const result = await userClient

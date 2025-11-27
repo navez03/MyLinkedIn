@@ -22,6 +22,7 @@ export interface UserProfileDto {
   name: string;
   email: string;
   avatar_url?: string | null;
+  description?: string | null;
 }
 
 export interface UserProfileResponseDto {
@@ -216,7 +217,7 @@ export const userAPI = {
     return response;
   },
 
-  updateProfile: async (name?: string, avatar_url?: string): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+  updateProfile: async (name?: string, avatar_url?: string, description?: string | null): Promise<ApiResponse<{ success: boolean; message: string }>> => {
     const updateData: any = {};
 
     if (name !== undefined && name.trim() !== '') {
@@ -229,6 +230,11 @@ export const userAPI = {
       if (avatar_url === null || avatar_url.trim() !== '') {
         updateData.avatar_url = avatar_url;
       }
+    }
+
+    // Add description
+    if (description !== undefined) {
+      updateData.description = description;
     }
 
     // Don't send empty objects

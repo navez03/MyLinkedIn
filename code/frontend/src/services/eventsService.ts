@@ -44,6 +44,8 @@ export interface EventResponse {
   participants?: Participant[];
   createdAt: string;
   updatedAt: string;
+  likes?: number;
+  likedByCurrentUser?: boolean;
 }
 
 export interface InviteToEventDto {
@@ -192,5 +194,23 @@ export const eventsService = {
       `/events/${eventId}/participants/${userId}`,
       true
     );
+  },
+
+  likeEvent: async (eventId: string, userId: string): Promise<ApiResponse<{ liked: boolean; totalLikes: number }>> => {
+    return apiHelpers.post<{ liked: boolean; totalLikes: number }>(`/events/${eventId}/likes`, { userId }, true);
+  },
+
+  unlikeEvent: async (eventId: string, userId: string): Promise<ApiResponse<{ liked: boolean; totalLikes: number }>> => {
+    return apiHelpers.delete<{ liked: boolean; totalLikes: number }>(`/events/${eventId}/likes`, true, { userId });
+  },
+
+
+  getComments: async (eventId: string, limit = 20, offset = 0): Promise<ApiResponse<{ comments: any[]; total: number }>> => {
+    return apiHelpers.get<{ comments: any[]; total: number }>(`/events/${eventId}/comments?limit=${limit}&offset=${offset}`, true);
+  },
+
+  addComment: async (eventId: string, content: string, userId: string): Promise<ApiResponse<{ comment: any }>> => {
+    // Backend espera content, user_id e post_id
+    return apiHelpers.post<{ comment: any }>(`/events/${eventId}/comments`, { content, user_id: userId, event_id: eventId }, true);
   },
 };

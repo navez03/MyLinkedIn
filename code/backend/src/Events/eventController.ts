@@ -1,13 +1,14 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, ValidationPipe, HttpCode, HttpStatus, HttpException, UseGuards, Logger, UseInterceptors, UploadedFile, BadRequestException, Put } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, Query, ValidationPipe, HttpCode, HttpStatus, HttpException, UseGuards, Logger, UseInterceptors, UploadedFile, BadRequestException, Put, Req } from '@nestjs/common';
 import { Express } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EventService } from './eventService';
-import { CreateEventDto, EventResponseDto, GetEventsResponseDto } from './dto/create-event.dto';
+import { CreateEventDto, EventResponseDto } from './dto/create-event.dto';
 import { InviteToEventDto, InviteResponseDto } from './dto/invite-event.dto';
 import { AuthGuard } from '../User/userGuard';
 import { GetToken, GetUserId } from '../config/decorators';
 import { SupabaseService } from '../config/supabaseClient';
 import 'multer';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Controller('events')
 export class EventController {
@@ -89,10 +90,11 @@ export class EventController {
   @UseGuards(AuthGuard)
   async getEventById(
     @Param('id') id: string,
-    @GetToken() token: string
+    @GetToken() token: string,
+    @GetUserId() userId: string
   ): Promise<{ success: boolean; event: EventResponseDto }> {
     try {
-      const event = await this.eventService.getEventById(id, token);
+      const event = await this.eventService.getEventById(id, token, userId);
       return {
         success: true,
         event,
@@ -257,6 +259,44 @@ export class EventController {
       this.logger.error('Participate in event error', error.message);
       this.handleException(error, 'Error participating in event');
     }
+  }
+
+  @Post(':eventId/comments')
+  async addComment(
+    @Param('eventId') eventId: string,
+    @Body(new ValidationPipe({ whitelist: true })) createCommentDto: CreateCommentDto
+  ) {
+    try {
+      createCommentDto.event_id = eventId;
+      const comment = await this.eventService.addComment(createCommentDto);
+      return { success: true, comment };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get(':eventId/comments')
+  async getComments(
+    @Param('eventId') eventId: string,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number
+  ) {
+    const result = await this.eventService.getComments(eventId, limit ? Number(limit) : 10, offset ? Number(offset) : 0);
+    return { success: true, comments: result.comments, total: result.total };
+  }
+
+  @Post(':eventId/likes')
+  async likePost(@Param('eventId') eventId: string, @Req() req) {
+    const userId = req.user?.id || req.body.userId;
+    const res = await this.eventService.likeEvent(eventId, userId);
+    return { success: true, liked: true, totalLikes: res.totalLikes };
+  }
+
+  @Delete(':eventId/likes')
+  async unlikeEvent(@Param('eventId') eventId: string, @Req() req) {
+    const userId = req.user?.id || req.body.userId;
+    const res = await this.eventService.unlikeEvent(eventId, userId);
+    return { success: true, liked: false, totalLikes: res.totalLikes };
   }
 
 

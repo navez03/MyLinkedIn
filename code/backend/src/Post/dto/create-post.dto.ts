@@ -40,7 +40,6 @@ export class PostResponseDto {
   repostedByName?: string;
   repostedByAvatarUrl?: string;
   repostComment?: string;
-  // Original post data when this is a repost
   originalPostContent?: string;
   originalPostAuthorName?: string;
   originalPostAuthorId?: string;

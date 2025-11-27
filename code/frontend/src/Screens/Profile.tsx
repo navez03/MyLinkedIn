@@ -25,6 +25,7 @@ const Profile: React.FC = () => {
     name: 'Loading...',
     email: '',
     avatar_url: null as string | null,
+    description: null as string | null,
   });
 
   const getInitials = (name: string): string => {
@@ -61,19 +62,21 @@ const Profile: React.FC = () => {
         }
 
         if (userProfileResponse.success && userProfileResponse.data) {
-          // Response.data is now UserProfileDto: { id, name, email, avatar_url }
+          // Response.data is now UserProfileDto: { id, name, email, avatar_url, description }
           const userData = userProfileResponse.data;
 
           setProfileData({
             name: userData.name || 'Unknown User',
             email: userData.email || '',
             avatar_url: userData.avatar_url || null,
+            description: userData.description || null,
           });
         } else {
           setProfileData({
             name: 'Unknown User',
             email: '',
             avatar_url: null,
+            description: null,
           });
         }
 
@@ -171,192 +174,140 @@ const Profile: React.FC = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navigation />
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navigation />
 
-      {/* Scrollable content wrapper */}
-      <div className="flex-1 overflow-y-auto max-h-[calc(100vh-64px)]"> {/* Adjust 64px if Navigation height changes */}
-        <div className="max-w-[1128px] mx-auto px-4 py-6">
-          <div className="max-w-[880px] mx-auto space-y-2">
-            {/* Profile Card */}
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              {/* Cover Image */}
-              <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/40 relative">
-              </div>
-
-              {/* Profile Info */}
-              <div className="px-6 pb-6">
-                {/* Avatar */}
-                <div className="relative -mt-16 mb-4">
-                  {profileData.avatar_url ? (
-                    <img
-                      src={profileData.avatar_url}
-                      alt={profileData.name}
-                      className="w-32 h-32 rounded-full border-4 border-card object-cover"
-                      onError={(e) => {
-                        // Fallback para iniciais se a imagem falhar
-                        e.currentTarget.style.display = 'none';
-                        if (e.currentTarget.nextElementSibling) {
-                          e.currentTarget.nextElementSibling.classList.remove('hidden');
-                        }
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-32 h-32 rounded-full bg-primary border-4 border-card flex items-center justify-center ${profileData.avatar_url ? 'hidden' : ''}`}>
-                    <span className="text-3xl text-primary-foreground font-bold">
-                      {initials}
-                    </span>
-                  </div>
+        {/* Scrollable content wrapper */}
+        <div className="flex-1 overflow-y-auto max-h-[calc(100vh-64px)]"> {/* Adjust 64px if Navigation height changes */}
+          <div className="max-w-[1128px] mx-auto px-4 py-6">
+            <div className="max-w-[880px] mx-auto space-y-2">
+              {/* Profile Card */}
+              <div className="bg-card rounded-lg border border-border overflow-hidden">
+                {/* Cover Image */}
+                <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/40 relative">
                 </div>
 
-                {/* Name and Headline */}
-                <div className="mb-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h1 className="text-2xl font-bold text-foreground">{profileData.name}</h1>
-                    {isOwnProfile ? (
-                      <button
-                        onClick={() => navigate('/update-profile')}
-                        className="p-2 hover:bg-secondary rounded-full transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    ) : (
-                      <div className="flex gap-2">
-                        {isConnected ? (
-                          <>
+                {/* Profile Info */}
+                <div className="px-6 pb-6">
+                  {/* Avatar */}
+                  <div className="relative -mt-16 mb-4">
+                    {profileData.avatar_url ? (
+                      <img
+                        src={profileData.avatar_url}
+                        alt={profileData.name}
+                        className="w-32 h-32 rounded-full border-4 border-card object-cover"
+                        onError={(e) => {
+                          // Fallback para iniciais se a imagem falhar
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.classList.remove('hidden');
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-32 h-32 rounded-full bg-primary border-4 border-card flex items-center justify-center ${profileData.avatar_url ? 'hidden' : ''}`}>
+                      <span className="text-3xl text-primary-foreground font-bold">
+                        {initials}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Name and Headline */}
+                  <div className="mb-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h1 className="text-2xl font-bold text-foreground">{profileData.name}</h1>
+                      {isOwnProfile ? (
+                        <button
+                          onClick={() => navigate('/update-profile')}
+                          className="p-2 hover:bg-secondary rounded-full transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      ) : (
+                        <div className="flex gap-2">
+                          {isConnected ? (
+                            <>
+                              <button
+                                disabled
+                                className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
+                              >
+                                <Check className="w-4 h-4" />
+                                <span className="font-medium">Connected</span>
+                              </button>
+                              <button
+                                onClick={handleRemoveConnection}
+                                disabled={isRemovingConnection}
+                                className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <UserMinus className="w-4 h-4" />
+                                <span className="font-medium">
+                                  {isRemovingConnection ? 'Removing...' : 'Remove'}
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  window.location.href = `/messages?userId=${profileUserId}`;
+                                }}
+
+                                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Mail className="w-4 h-4" />
+                                <span className="font-medium">Send Message</span>
+                              </button>
+                            </>
+                          ) : hasPendingRequest ? (
                             <button
                               disabled
                               className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
                             >
                               <Check className="w-4 h-4" />
-                              <span className="font-medium">Connected</span>
+                              <span className="font-medium">Request Sent</span>
                             </button>
+                          ) : (
                             <button
-                              onClick={handleRemoveConnection}
-                              disabled={isRemovingConnection}
-                              className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <UserMinus className="w-4 h-4" />
-                              <span className="font-medium">
-                                {isRemovingConnection ? 'Removing...' : 'Remove'}
-                              </span>
-                            </button>
-                            <button
-                              onClick={() => {
-                                window.location.href = `/messages?userId=${profileUserId}`;
-                              }}
-
+                              onClick={handleSendConnectionRequest}
+                              disabled={isSendingRequest}
                               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Mail className="w-4 h-4" />
-                              <span className="font-medium">Send Message</span>
+                              <UserPlus className="w-4 h-4" />
+                              <span className="font-medium">
+                                {isSendingRequest ? 'Sending...' : 'Add'}
+                              </span>
                             </button>
-                          </>
-                        ) : hasPendingRequest ? (
-                          <button
-                            disabled
-                            className="flex items-center gap-2 px-4 py-2 bg-secondary text-muted-foreground rounded-full cursor-not-allowed"
-                          >
-                            <Check className="w-4 h-4" />
-                            <span className="font-medium">Request Sent</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleSendConnectionRequest}
-                            disabled={isSendingRequest}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                            <span className="font-medium">
-                              {isSendingRequest ? 'Sending...' : 'Add'}
-                            </span>
-                          </button>
-                        )}
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {profileData.email && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                        <Mail className="w-4 h-4" />
+                        <span>{profileData.email}</span>
                       </div>
                     )}
+                    <p className="text-sm text-primary font-medium">
+                      {`${connectionsCount} connection${connectionsCount !== 1 ? 's' : ''}`}
+                    </p>
                   </div>
-                  {profileData.email && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                      <Mail className="w-4 h-4" />
-                      <span>{profileData.email}</span>
-                    </div>
-                  )}
-                  <p className="text-sm text-primary font-medium">
-                    {`${connectionsCount} connection${connectionsCount !== 1 ? 's' : ''}`}
-                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* About Section */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">About</h2>
-                {isOwnProfile && (
-                  <button className="p-2 hover:bg-secondary rounded-full transition-colors">
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
-                  </button>
+              {/* About Section */}
+              <div className="bg-card rounded-lg border border-border p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-foreground">About</h2>
+
+                </div>
+                {profileData.description && (
+                  <p className="text-base text-foreground whitespace-pre-line w-full break-words min-h-[200px]">
+                    {profileData.description}
+                  </p>
                 )}
               </div>
             </div>
-
-            {/* Experience Section */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Experience</h2>
-                {isOwnProfile && (
-                  <button className="p-2 hover:bg-secondary rounded-full transition-colors">
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-6">
-              </div>
-            </div>
-
-            {/* Education Section */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Education</h2>
-                {isOwnProfile && (
-                  <button className="p-2 hover:bg-secondary rounded-full transition-colors">
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-6">
-              </div>
-            </div>
-
-            {/* Skills Section */}
-            <div className="bg-card rounded-lg border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-foreground">Skills</h2>
-                {isOwnProfile && (
-                  <button className="p-2 hover:bg-secondary rounded-full transition-colors">
-                    <Edit2 className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill, index) => (
-                  <span
-                    key={index}
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
-    </div >
-    <AIChatWidget />
+      </div >
+      <AIChatWidget />
     </>
   );
 };

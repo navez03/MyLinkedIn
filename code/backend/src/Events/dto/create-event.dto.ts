@@ -65,6 +65,8 @@ export class EventResponseDto {
   organizerName?: string;
   organizerAvatar?: string;
   participants?: ParticipantDto[];
+  likes?: number;
+  likedByCurrentUser?: boolean;
   createdAt: string;
   updatedAt: string;
 }
