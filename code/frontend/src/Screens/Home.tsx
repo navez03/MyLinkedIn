@@ -710,8 +710,8 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right Sidebar */}
-          <div className="hidden lg:block w-[300px] flex-shrink-0 space-y-4 sticky top-20 self-start">
+          {/* Right Sidebar - scrollable together */}
+          <div className="hidden lg:block w-[300px] flex-shrink-0 h-[calc(100vh-80px)] overflow-y-auto scrollbar-hide space-y-4 sticky top-20 self-start">
             {/* Trending Posts */}
             {trendingPosts.length > 0 && (
               <Card className="p-4">
@@ -786,7 +786,7 @@ export default function Home() {
                               e.currentTarget.style.display = 'none';
                               const parent = e.currentTarget.parentElement;
                               if (parent) {
-                                parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"><div class="text-6xl opacity-20">📅</div></div>';
+                                parent.innerHTML = '<div class=\"w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center\"><div class=\"text-6xl opacity-20\">📅</div></div>';
                               }
                             }}
                           />
@@ -821,6 +821,8 @@ export default function Home() {
                 </button>
               </Card>
             )}
+            {/* Espaço vazio abaixo do Upcoming Events, dentro do scroll */}
+            <span className="block w-full h-8" />
           </div>
         </div> {/* <-- ADDED: Closing div for 'max-w-[1400px]...' flex container */}
       </div> {/* <-- ADDED: Closing div for 'min-h-screen bg-background' */}

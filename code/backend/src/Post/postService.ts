@@ -90,6 +90,11 @@ export class PostService {
     }
 
     const eventDetails = await this.getEventDetails(post.event_id, supabase);
+    const likes = await this.countLikes(post.id);
+    const commentsCount = await this.getCommentsCount(post.id);
+    // Verifica se o utilizador atual já deu like neste post
+    const userId = post.user_id;
+    const likedByCurrentUser = await this.isPostLikedByUser(post.id, userId);
 
     // Handle repost data - if this post is a repost (has repost_id)
     let repostData: Partial<PostResponseDto> = {};
@@ -129,6 +134,9 @@ export class PostService {
       imageUrl: post.image_url,
       eventId: post.event_id,
       event: eventDetails,
+      likes,
+      commentsCount,
+      likedByCurrentUser,
       ...repostData,
     };
   }
