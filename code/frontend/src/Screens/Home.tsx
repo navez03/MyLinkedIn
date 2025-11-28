@@ -483,7 +483,7 @@ export default function Home() {
                               </div>
                             ) : (
                               <div className="relative w-full h-48 bg-gradient-to-br rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
-                                <div className="text-8xl opacity-20">📅</div>
+                                <div className="text-8xl opacity-20">{'\u{1F4C5}'}</div>
                               </div>
                             )}
                             <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
@@ -574,7 +574,7 @@ export default function Home() {
                           </div>
                         ) : (
                           <div className="relative w-full h-48 bg-gradient-to-br rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
-                            <div className="text-8xl opacity-20">📅</div>
+                            <div className="text-8xl opacity-20">{'\u{1F4C5}'}</div>
                           </div>
                         )}
                         <div className="p-3 bg-white rounded-b-lg border border-border border-t-0">
@@ -786,14 +786,14 @@ export default function Home() {
                               e.currentTarget.style.display = 'none';
                               const parent = e.currentTarget.parentElement;
                               if (parent) {
-                                parent.innerHTML = '<div class=\"w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center\"><div class=\"text-6xl opacity-20\">📅</div></div>';
+                                parent.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center"><div class="text-6xl opacity-20">{\'\u{1F4C5}\'}</div></div>';
                               }
                             }}
                           />
                         </div>
                       ) : (
                         <div className="relative w-full h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-t-lg border border-border border-b-0 overflow-hidden flex items-center justify-center">
-                          <div className="text-6xl opacity-20">📅</div>
+                          <div className="text-6xl opacity-20">{'\u{1F4C5}'}</div>
                         </div>
                       )}
                       {/* Event info box */}
@@ -817,7 +817,7 @@ export default function Home() {
                   onClick={() => navigate('/events')}
                   className="w-full mt-3 text-sm text-primary hover:underline font-medium"
                 >
-                  View all events →
+                  View all events {'\u2192'}
                 </button>
               </Card>
             )}
