@@ -380,7 +380,7 @@ export class UserService {
             .update(updateData)
             .eq('id', userId)
             .select()
-            .single();
+            .maybeSingle();
 
           data = result.data;
           error = result.error;
