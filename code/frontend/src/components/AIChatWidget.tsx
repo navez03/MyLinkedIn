@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { Card } from "./card";
+import { aiService } from "../services/aiService";
 
 interface Message {
   id: string;
@@ -8,7 +9,7 @@ interface Message {
   sender: "user" | "ai";
   timestamp: Date;
 }
-const API_BASE_URL = "http://localhost:3000";
+// ...existing code...
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -23,7 +24,6 @@ const AIChatWidget = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // se quiseres default sempre PT:
   const preferredLanguage = "Portuguese (European)";
 
   const scrollToBottom = () => {
@@ -52,33 +52,16 @@ const AIChatWidget = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/aiagent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: userText,
-        }),
-      });
-
-      const raw = await response.text();
-      console.log("AI raw response:", response.status, raw);
-
-      if (!response.ok) {
-        throw new Error(`Status ${response.status} - body: ${raw}`);
-      }
-
-      let data: any;
-      try {
-        data = JSON.parse(raw);
-      } catch (err) {
-        throw new Error(
-          "Falha ao fazer parse do JSON: " + (err as Error).message
-        );
-      }
-
+      console.log("[AIChatWidget] Enviando para AI:", userText, preferredLanguage);
+      const data = await aiService.sendMessage(userText, preferredLanguage);
+      console.log("[AIChatWidget] Resposta da AI:", data);
       const aiText =
         data.formalText ||
         "Sorry, I couldn't generate a formal message right now. Please try again.";
+
+      if (!data.formalText) {
+        console.warn("[AIChatWidget] formalText vazio ou não definido. Resposta completa:", data);
+      }
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -88,9 +71,8 @@ const AIChatWidget = () => {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-
     } catch (error) {
-      console.error("AI assistant error:", error);
+      console.error("[AIChatWidget] AI assistant error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 3).toString(),
         text: "Ocorreu um erro ao falar com o assistente. Tenta outra vez dentro de alguns segundos.",
@@ -133,16 +115,14 @@ const AIChatWidget = () => {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${
-                    message.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
                 >
                   <div
-                    className={`max-w-[75%] rounded-lg px-4 py-2 ${
-                      message.sender === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground"
-                    }`}
+                    className={`max-w-[75%] rounded-lg px-4 py-2 ${message.sender === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-foreground"
+                      }`}
                   >
                     <p className="text-sm">{message.text}</p>
                     <span className="text-xs opacity-70 mt-1 block">
