@@ -25,8 +25,8 @@ import { JobModule } from "./jobs/job.module";
     PostModule,
     NotificationsModule,
     EventModule,
-    // AiAgentModule,
+    AiAgentModule,
     JobModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
