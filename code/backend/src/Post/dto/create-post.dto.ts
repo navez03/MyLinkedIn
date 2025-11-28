@@ -46,6 +46,9 @@ export class PostResponseDto {
   originalPostAuthorAvatarUrl?: string;
   originalPostImageUrl?: string;
   originalPostCreatedAt?: string;
+  likes?: number;
+  commentsCount?: number;
+  likedByCurrentUser?: boolean;
 }
 
 export class GetPostsResponseDto {

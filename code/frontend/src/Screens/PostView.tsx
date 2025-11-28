@@ -5,6 +5,12 @@ import ProfileCard from '../components/profileCard';
 import Loading from '../components/loading';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postsAPI, PostResponseDto } from '../services/postsService';
+
+type PostViewState = PostResponseDto & {
+  likes: number;
+  liked: boolean;
+  commentsCount: number;
+};
 import { connectionAPI } from '../services/connectionService';
 import { messagesAPI } from '../services/messagesService';
 import { eventsService } from '../services/eventsService';
@@ -14,7 +20,7 @@ import { ThumbsUp, MessageCircle, SendIcon, TrendingUp, Calendar, Repeat2 } from
 const PostView: React.FC = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const [post, setPost] = useState<PostResponseDto | null>(null);
+  const [post, setPost] = useState<PostViewState | null>(null);
   const [loading, setLoading] = useState(true);
   const [commentsOpen, setCommentsOpen] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
@@ -38,7 +44,14 @@ const PostView: React.FC = () => {
         // Load post
         const res = await postsAPI.getPostById(postId);
         if (res.success && res.data.post) {
-          setPost(res.data.post);
+          const p = res.data.post;
+          setPost({
+            ...p,
+            likes: (p as any).likes ?? 0,
+            liked: (p as any).likedByCurrentUser ?? false,
+            commentsCount: (p as any).commentsCount ?? 0,
+            // outros campos podem ser mapeados aqui se necessário
+          });
 
           // Load comments immediately
           const commentsRes = await postsAPI.getComments(postId);
@@ -493,7 +506,7 @@ const PostView: React.FC = () => {
               {/* Interactions: likes and comments */}
               <div className="flex justify-between items-center text-sm text-muted-foreground pt-2 border-t border-border">
                 <div className="flex items-center gap-1">
-                  <ThumbsUp className="w-4 h-4 text-primary fill-primary" />
+                  <ThumbsUp className="w-4 h-4 text-muted-foreground" />
                   <span className="font-medium text-foreground">{postLikes}</span>
                 </div>
                 <span className="text-xs text-muted-foreground">{postCommentsCount} comentários</span>
@@ -506,7 +519,7 @@ const PostView: React.FC = () => {
                   type="button"
                   tabIndex={0}
                 >
-                  <ThumbsUp className="w-4 h-4" /> {postLiked ? 'Liked' : 'Like'}
+                  <ThumbsUp className={`w-4 h-4 ${postLiked ? 'text-primary fill-primary' : ''}`} /> Like
                 </button>
                 <button
                   onClick={toggleComments}
