@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="pt-PT">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gantt Chart — Sprint 2</title>
+  <style>
+    :root {
+      --day-width: 28px;
+      --row-height: 32px;
+      --label-width: 320px;
+      --gap: 6px;
+    }
+
+    body {
+      font-family: Inter, Roboto, Arial, sans-serif;
+      margin: 20px;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .gantt-wrap {
+      overflow: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .gantt {
+      position: relative;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    /* coluna das labels com header "Tarefa" */
+    .labels {
+      width: var(--label-width);
+      flex: 0 0 var(--label-width);
+      box-sizing: border-box;
+      border-right: 1px solid #eee;
+      background: #fff;
+    }
+
+    .labels-header {
+      height: 56px;
+      /* será ajustado dinamicamente para coincidir com o header do timeline */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .labels-rows {
+      box-sizing: border-box;
+    }
+
+    .labels-rows .row {
+      height: var(--row-height);
+      line-height: var(--row-height);
+      padding: 0 8px;
+      border-bottom: 1px solid #eee;
+      box-sizing: border-box;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .timeline {
+      position: relative;
+      min-width: 600px;
+      padding-bottom: 20px;
+      background: transparent;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 6;
+      background: #fff;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+      box-sizing: border-box;
+    }
+
+    .months {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .month {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      border-right: 1px solid #f0f0f0;
+      box-sizing: border-box;
+    }
+
+    .days {
+      display: flex;
+      border-bottom: 1px solid #eee;
+    }
+
+    .day {
+      width: var(--day-width);
+      height: 28px;
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      box-sizing: border-box;
+      border-right: 1px solid #f6f6f6;
+      padding-top: 6px;
+    }
+
+    .rows {
+      position: relative;
+    }
+
+    .rows .row {
+      height: var(--row-height);
+      border-bottom: 1px solid #f3f3f3;
+      box-sizing: border-box;
+    }
+
+    .bar {
+      position: absolute;
+      height: 18px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #4f8ef7, #2b6fd6);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+      color: #fff;
+      font-size: 12px;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .bar .label {
+      display: none;
+    }
+
+    .bar:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      transition: transform .12s;
+    }
+
+    .svg-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .legend {
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: #222;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: none;
+      pointer-events: none;
+    }
+
+    @media (max-width:700px) {
+      :root {
+        --day-width: 22px;
+        --label-width: 220px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Gantt Chart Sprint 2</h1>
+  <div class="gantt-wrap">
+    <div class="gantt" id="ganttRoot">
+      <div class="labels" id="labelsContainer">
+        <div class="labels-header" id="labelsHeader">Tarefa</div>
+        <div class="labels-rows" id="labelsCol"></div>
+      </div>
+
+      <div class="timeline" id="timelineCol">
+        <div class="header" id="headerArea">
+          <div class="months" id="monthsRow"></div>
+          <div class="days" id="daysRow"></div>
+        </div>
+
+        <div class="rows" id="rowsArea"></div>
+        <svg class="svg-overlay" id="svgOverlay"></svg>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Dados (TaskID, Nome, Dependências, Duration, Start, End) */
+    const rawTasks = [
+      { id: 1, name: "Fix BPMNs", deps: [], dur: 3, start: "5-nov", end: "7-nov" },
+      { id: 2, name: "Use Case Diagram", deps: [], dur: 2, start: "8-nov", end: "9-nov" },
+      { id: 3, name: "Backend and Frontend Avatars", deps: [], dur: 3, start: "31-out", end: "2-nov" },
+      { id: 4, name: "Backend Interact With Posts", deps: [], dur: 3, start: "7-nov", end: "9-nov" },
+      { id: 5, name: "Backend Manage Events", deps: [], dur: 4, start: "7-nov", end: "10-nov" },
+      { id: 6, name: "Frontend Manage Events", deps: [5], dur: 3, start: "12-nov", end: "14-nov" },
+      { id: 7, name: "Backend AI Agent", deps: [], dur: 4, start: "9-nov", end: "12-nov" },
+      { id: 8, name: "Frontend AI Agent", deps: [7], dur: 3, start: "13-nov", end: "15-nov" },
+      { id: 9, name: "Backend Job Listings", deps: [], dur: 3, start: "6-nov", end: "8-nov" },
+      { id: 10, name: "Frontend Job Listings", deps: [9], dur: 3, start: "18-nov", end: "20-nov" },
+      { id: 11, name: "Backend Seach Posts", deps: [], dur: 2, start: "12-nov", end: "13-nov" },
+      { id: 12, name: "Frontend Seach Posts", deps: [], dur: 2, start: "16-nov", end: "17-nov" },
+      { id: 13, name: "Context Diagram", deps: [], dur: 1, start: "14-nov", end: "14-nov" },
+      { id: 14, name: "Terminar implementação", deps: [], dur: 5, start: "18-nov", end: "22-nov" },
+      { id: 15, name: "Development View BDD", deps: [2, 14], dur: 2, start: "25-nov", end: "26-nov" },
+      { id: 16, name: "Development View IBD", deps: [2, 14], dur: 2, start: "30-nov", end: "1-dez" },
+      { id: 17, name: "Deployment View", deps: [14], dur: 2, start: "26-nov", end: "27-nov" },
+      { id: 18, name: "Feature Model", deps: [14], dur: 2, start: "25-nov", end: "26-nov" },
+      { id: 19, name: "Logical View", deps: [14], dur: 2, start: "30-nov", end: "1-dez" },
+      { id: 20, name: "Sequence Diagram: Search Posts/People", deps: [14], dur: 2, start: "26-nov", end: "27-nov" },
+      { id: 21, name: "Sequence Diagram: Interact with posts", deps: [14], dur: 2, start: "24-nov", end: "25-nov" },
+      { id: 22, name: "Sequence Diagram: Events", deps: [14], dur: 2, start: "27-nov", end: "28-nov" },
+      { id: 23, name: "Sequence Diagram: Jobs", deps: [14], dur: 2, start: "26-nov", end: "27-nov" },
+      { id: 24, name: "Sequence Diagram: AI Assistant", deps: [14], dur: 2, start: "24-nov", end: "25-nov" },
+      { id: 25, name: "Test Backend", deps: [14], dur: 2, start: "29-nov", end: "30-nov" },
+      { id: 26, name: "Test UX", deps: [14], dur: 1, start: "30-nov", end: "30-nov" },
+      { id: 27, name: "Test UI", deps: [14], dur: 1, start: "30-nov", end: "30-nov" },
+      { id: 28, name: "Gantt Chart", deps: [], dur: 1, start: "2-dez", end: "2-dez" },
+      { id: 29, name: "Relatório", deps: [], dur: 2, start: "2-dez", end: "3-dez" }
+    ];
+
+    /* Mapeamento meses PT (abreviaturas) para número (0-based) */
+    const monthMap = {
+      'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+      'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+    };
+
+    function parseDatePortuguese(str) {
+      const parts = str.trim().toLowerCase().split('-');
+      if (parts.length !== 2) return null;
+      const day = parseInt(parts[0], 10);
+      const mon = monthMap[parts[1]];
+      const year = new Date().getFullYear();
+      return new Date(year, mon, day);
+    }
+
+    /* Converter e preparar */
+    const tasks = rawTasks.map(t => {
+      const s = parseDatePortuguese(t.start);
+      const e = parseDatePortuguese(t.end);
+      return { ...t, startDate: s, endDate: e };
+    });
+
+    /* Forçar início do eixo em 27 de outubro do ano corrente */
+    const year = new Date().getFullYear();
+    const forcedStart = new Date(year, 9, 27); // mês 9 = outubro (0-based)
+
+    /* calcular maxDate a partir das tasks */
+    const maxDateFromTasks = new Date(Math.max(...tasks.map(t => t.startDate.getTime()), ...tasks.map(t => t.endDate.getTime())));
+    maxDateFromTasks.setHours(0, 0, 0, 0);
+
+    /* definir minDate como forcedStart (mesmo que seja anterior às tasks) */
+    let minDate = new Date(forcedStart);
+    minDate.setHours(0, 0, 0, 0);
+    let maxDate = new Date(maxDateFromTasks);
+
+    /* Gerar array de dias entre minDate e maxDate inclusive */
+    function daysBetween(a, b) {
+      const arr = [];
+      const cur = new Date(a);
+      while (cur <= b) {
+        arr.push(new Date(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      return arr;
+    }
+    const days = daysBetween(minDate, maxDate);
+
+    /* Elementos DOM */
+    const labelsCol = document.getElementById('labelsCol');
+    const labelsHeader = document.getElementById('labelsHeader');
+    const monthsRow = document.getElementById('monthsRow');
+    const daysRow = document.getElementById('daysRow');
+    const rowsArea = document.getElementById('rowsArea');
+    const svgOverlay = document.getElementById('svgOverlay');
+    const tooltip = document.getElementById('tooltip');
+    const headerArea = document.getElementById('headerArea');
+    const timelineCol = document.getElementById('timelineCol');
+
+    let headerHeight = 0;
+
+    const dayWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--day-width')) || 28;
+    const rowHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--row-height')) || 32;
+    const labelWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--label-width')) || 320;
+
+    /* Montar cabeçalho de meses (agrupar dias por mês) */
+    function buildMonthHeaders() {
+      const groups = [];
+      days.forEach(d => {
+        const key = d.getMonth() + '-' + d.getFullYear();
+        const label = d.toLocaleString('pt-PT', { month: 'long' });
+        const existing = groups.find(g => g.key === key);
+        if (existing) existing.count++;
+        else groups.push({ key, label, count: 1, month: d.getMonth(), year: d.getFullYear() });
+      });
+      monthsRow.innerHTML = '';
+      groups.forEach(g => {
+        const el = document.createElement('div');
+        el.className = 'month';
+        el.style.width = (g.count * dayWidth) + 'px';
+        el.textContent = g.label.charAt(0).toUpperCase() + g.label.slice(1);
+        monthsRow.appendChild(el);
+      });
+    }
+    buildMonthHeaders();
+
+    /* preencher dias no topo (apenas números) */
+    daysRow.innerHTML = '';
+    days.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'day';
+      el.textContent = d.getDate();
+      daysRow.appendChild(el);
+    });
+
+    /* criar linhas (labels à esquerda; linhas de fundo na timeline) */
+    labelsCol.innerHTML = '';
+    rowsArea.innerHTML = '';
+    tasks.forEach((t, idx) => {
+      // label
+      const lab = document.createElement('div');
+      lab.className = 'row';
+      lab.textContent = `${t.id} — ${t.name}`;
+      labelsCol.appendChild(lab);
+
+      // row placeholder na timeline (apenas para grelha)
+      const row = document.createElement('div');
+      row.className = 'row';
+      rowsArea.appendChild(row);
+    });
+
+    /* função que (re)posiciona barras, SVG e labels com base na altura do header */
+    function layoutAndRender() {
+      // calcular headerHeight dinamicamente (months + days)
+      headerHeight = headerArea.getBoundingClientRect().height || 56;
+
+      // ajustar altura do header da coluna de labels para alinhar
+      labelsHeader.style.height = headerHeight + 'px';
+      labelsHeader.style.lineHeight = headerHeight + 'px';
+
+      // limpar barras existentes no timeline (mantemos rowsArea)
+      Array.from(timelineCol.querySelectorAll('.bar')).forEach(el => el.remove());
+
+      // criar barras posicionadas com offset do header
+      tasks.forEach((t, idx) => {
+        const startIndex = Math.round((t.startDate - minDate) / (1000 * 60 * 60 * 24));
+        const endIndex = Math.round((t.endDate - minDate) / (1000 * 60 * 60 * 24));
+        const left = startIndex * dayWidth;
+        const width = (endIndex - startIndex + 1) * dayWidth - 6;
+
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.left = (left + 2) + 'px';
+        // top inclui headerHeight para alinhar com as linhas
+        bar.style.top = (headerHeight + idx * rowHeight + 7) + 'px';
+        bar.style.width = Math.max(18, width) + 'px';
+        bar.dataset.taskId = t.id;
+        bar.dataset.rowIndex = idx;
+        bar.dataset.startIndex = startIndex;
+        bar.dataset.endIndex = endIndex;
+        bar.innerHTML = `<span class="label">${t.name} (${t.dur}d)</span>`;
+        timelineCol.appendChild(bar);
+
+        // tooltip handlers
+        bar.addEventListener('mouseenter', (ev) => {
+          tooltip.style.display = 'block';
+          tooltip.textContent = `Task ${t.id}: ${t.name} — ${t.dur} dias — ${formatDate(t.startDate)} → ${formatDate(t.endDate)}`;
+        });
+        bar.addEventListener('mousemove', (ev) => {
+          tooltip.style.left = (ev.pageX + 12) + 'px';
+          tooltip.style.top = (ev.pageY + 12) + 'px';
+        });
+        bar.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+      });
+
+      // ajustar SVG overlay tamanho e limpar
+      const w = days.length * dayWidth + 40;
+      const h = headerHeight + tasks.length * rowHeight + 60;
+      svgOverlay.setAttribute('width', w);
+      svgOverlay.setAttribute('height', h);
+      svgOverlay.style.width = w + 'px';
+      svgOverlay.style.height = h + 'px';
+      svgOverlay.innerHTML = '';
+
+      // desenhar dependências
+      drawDependencies();
+    }
+
+    /* Desenhar dependências em forma de L (horizontal → vertical → horizontal) */
+    function drawDependencies() {
+      const svgNS = "http://www.w3.org/2000/svg";
+      // definir marcador de seta
+      const defs = document.createElementNS(svgNS, 'defs');
+      const marker = document.createElementNS(svgNS, 'marker');
+      marker.setAttribute('id', 'arrowhead');
+      marker.setAttribute('markerWidth', '8');
+      marker.setAttribute('markerHeight', '8');
+      marker.setAttribute('refX', '6');
+      marker.setAttribute('refY', '3');
+      marker.setAttribute('orient', 'auto');
+      const arrowPath = document.createElementNS(svgNS, 'path');
+      arrowPath.setAttribute('d', 'M0,0 L0,6 L6,3 z');
+      arrowPath.setAttribute('fill', '#b33');
+      marker.appendChild(arrowPath);
+      defs.appendChild(marker);
+      svgOverlay.appendChild(defs);
+
+      tasks.forEach((t) => {
+        if (!t.deps || t.deps.length === 0) return;
+        t.deps.forEach(depId => {
+          const dep = tasks.find(x => x.id === depId);
+          if (!dep) return;
+          const fromBar = document.querySelector(`.bar[data-task-id='${dep.id}']`);
+          const toBar = document.querySelector(`.bar[data-task-id='${t.id}']`);
+          if (!fromBar || !toBar) return;
+
+          // calcular pontos relativos ao svg (usando estilos left/top)
+          const fromX = parseFloat(fromBar.style.left) + parseFloat(fromBar.style.width); // fim da barra
+          const fromY = parseFloat(fromBar.style.top) + 9;
+          const toX = parseFloat(toBar.style.left); // início da barra
+          const toY = parseFloat(toBar.style.top) + 9;
+
+          // escolher um ponto intermédio X para a primeira horizontal
+          let midX = (fromX + toX) / 2;
+          const minGap = 18;
+          if (midX - fromX < minGap) midX = fromX + minGap;
+          if (toX - midX < minGap) midX = toX - minGap;
+
+          // construir caminho em segmentos retos (L shape with two horizontals and one vertical)
+          const path = document.createElementNS(svgNS, 'path');
+          const d = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`;
+          path.setAttribute('d', d);
+          path.setAttribute('stroke', '#b33');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('fill', 'none');
+          path.setAttribute('marker-end', 'url(#arrowhead)');
+          svgOverlay.appendChild(path);
+        });
+      });
+    }
+
+    /* util */
+    function formatDate(d) {
+      return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+    }
+
+    /* inicializar layout após DOM paint */
+    window.addEventListener('load', () => {
+      // pequeno timeout para garantir estilos aplicados
+      setTimeout(() => { layoutAndRender(); }, 40);
+    });
+
+    /* redesenhar ao redimensionar (recalcula headerHeight e reposiciona tudo) */
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => { layoutAndRender(); }, 120);
+    });
+  </script>
+</body>
+
+</html>
