@@ -515,7 +515,7 @@ const PostView: React.FC = () => {
               <div className="flex justify-around pt-2 border-t border-border">
                 <button
                   onClick={handleLike}
-                  className={`flex items-center gap-1 rounded-lg px-2 py-1 transition-colors ${postLiked ? 'bg-primary/10' : 'hover:bg-secondary'}`}
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1 transition-colors`}
                   type="button"
                   tabIndex={0}
                 >
