@@ -5,16 +5,16 @@ import ProfileCard from '../components/profileCard';
 import Loading from '../components/loading';
 import { useParams, useNavigate } from 'react-router-dom';
 import { postsAPI, PostResponseDto } from '../services/postsService';
+import { connectionAPI } from '../services/connectionService';
+import { messagesAPI } from '../services/messagesService';
+import { eventsService } from '../services/eventsService';
+import { ThumbsUp, MessageCircle, SendIcon, TrendingUp, Calendar, Repeat2 } from 'lucide-react';
 
 type PostViewState = PostResponseDto & {
   likes: number;
   liked: boolean;
   commentsCount: number;
 };
-import { connectionAPI } from '../services/connectionService';
-import { messagesAPI } from '../services/messagesService';
-import { eventsService } from '../services/eventsService';
-import { ThumbsUp, MessageCircle, SendIcon, TrendingUp, Calendar, Repeat2 } from 'lucide-react';
 
 
 const PostView: React.FC = () => {
