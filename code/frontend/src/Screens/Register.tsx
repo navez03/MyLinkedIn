@@ -46,7 +46,6 @@ const RegistrationForm = () => {
           localStorage.setItem('email', response.data.email);
           console.log('Saved userId:', localStorage.getItem('userId'));
 
-          // Carregar dados completos do utilizador e guardar no localStorage
           try {
             const profileResponse = await userAPI.getUserProfile();
             if (profileResponse.success && profileResponse.data) {
@@ -55,17 +54,27 @@ const RegistrationForm = () => {
                 localStorage.setItem('userAvatar', profileResponse.data.avatar_url);
               }
               console.log('User profile loaded:', profileResponse.data);
+
+              // Disparar evento para notificar que o utilizador fez login
+              window.dispatchEvent(new Event('user-logged-in'));
+
+              setTimeout(() => {
+                navigate('/feed');
+              }, 1000);
+            } else {
+              // Perfil não existe - redirecionar para SetName para criar perfil
+              console.log('User profile not found, redirecting to SetName');
+              setTimeout(() => {
+                navigate('/set-name');
+              }, 1000);
             }
           } catch (profileError) {
             console.error('Error loading user profile:', profileError);
+            // Em caso de erro, assumir que o perfil não existe
+            setTimeout(() => {
+              navigate('/set-name');
+            }, 1000);
           }
-
-          // Disparar evento para notificar que o utilizador fez login
-          window.dispatchEvent(new Event('user-logged-in'));
-
-          setTimeout(() => {
-            navigate('/feed');
-          }, 1000);
         } else {
           setErrorMsg("Invalid credentials. Please try again.");
         }
@@ -73,15 +82,7 @@ const RegistrationForm = () => {
         const response = await userAPI.register(email, password);
 
         if (response.success) {
-          if (response.data?.user?.id) {
-            localStorage.setItem('userId', response.data.user.id);
-          }
-          if (response.data?.user?.email) {
-            localStorage.setItem('email', response.data.user.email);
-          }
-          setTimeout(() => {
-            navigate('/verify-email', { state: { userId: response.data?.user?.id, email: response.data?.user?.email } });
-          }, 1000);
+          navigate('/verify-email');
         } else {
           if (
             response.error?.toLowerCase().includes('password') &&

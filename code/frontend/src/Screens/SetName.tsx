@@ -26,6 +26,12 @@ const SetName = () => {
       const response = await userAPI.createProfile(userId, fullName, email);
 
       if (response.success) {
+        // Guardar o nome no localStorage
+        localStorage.setItem('userName', fullName);
+
+        // Disparar evento para notificar que o utilizador fez login
+        window.dispatchEvent(new Event('user-logged-in'));
+
         setTimeout(() => {
           window.location.href = '/feed';
         }, 1000);

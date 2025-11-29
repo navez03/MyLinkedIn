@@ -185,9 +185,12 @@ export const userAPI = {
     const response = await apiHelpers.post<{ success: boolean; message: string }>('/user/logout', {}, true);
 
     if (response.success) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('email');
+        localStorage.removeItem('userAvatar');
     }
 
     return response;
@@ -220,19 +223,28 @@ export const userAPI = {
   updateProfile: async (name?: string, avatar_url?: string, description?: string | null): Promise<ApiResponse<{ success: boolean; message: string }>> => {
     const updateData: any = {};
 
-    if (name !== undefined && name.trim() !== '') {
-      updateData.name = name;
-    }
-
-    // Only send avatar_url if it's a valid non-empty string or null
-    if (avatar_url !== undefined) {
-      // If it's an empty string, don't send it (backend will reject it)
-      if (avatar_url === null || avatar_url.trim() !== '') {
-        updateData.avatar_url = avatar_url;
+    // Only add name if it's provided and non-empty
+    if (name !== undefined && name !== null) {
+      const trimmedName = name.trim();
+      if (trimmedName !== '') {
+        updateData.name = trimmedName;
       }
     }
 
-    // Add description
+    // Only add avatar_url if it's explicitly provided (string or null)
+    if (avatar_url !== undefined) {
+      if (avatar_url === null) {
+        // Allow null to clear avatar
+        updateData.avatar_url = null;
+      } else {
+        const trimmedUrl = avatar_url.trim();
+        if (trimmedUrl !== '') {
+          updateData.avatar_url = trimmedUrl;
+        }
+      }
+    }
+
+    // Only add description if it's explicitly provided
     if (description !== undefined) {
       updateData.description = description;
     }

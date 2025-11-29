@@ -1,39 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../components/button";
 import { Card } from "../components/card";
 import registerImage from "../images/register.png";
-import { userAPI } from "../services/registerService";
 
 const VerifyEmail = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [isVerifying, setIsVerifying] = useState(true);
-  const userId = location.state?.userId;
-
-  useEffect(() => {
-    const checkVerification = async () => {
-      if (!userId) {
-        setIsVerifying(false);
-        return;
-      }
-
-      try {
-        const response = await userAPI.checkEmailVerified(userId);
-
-        if (response.success && response.data?.isVerified) {
-          navigate('/set-name', { state: { userId, email: location.state?.email } });
-        } else {
-          setIsVerifying(false);
-          setTimeout(checkVerification, 3000);
-        }
-      } catch (error) {
-        console.error('Error checking email verification:', error);
-        setIsVerifying(false);
-      }
-    };
-
-    checkVerification();
-  }, [userId, navigate, location.state?.email]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col">
@@ -87,19 +58,19 @@ const VerifyEmail = () => {
                       We've sent a confirmation email to your inbox.
                     </p>
                     <p className="text-base text-muted-foreground">
-                      Please check your email.
+                      Please check your email and click the verification link.
                     </p>
                   </div>
-                  {isVerifying && (
-                    <div className="pt-6">
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-3 h-3 bg-primary rounded-full animate-bounce"></div>
-                        <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-4">Waiting for verification...</p>
-                    </div>
-                  )}
+                  
+                  <div className="pt-6">
+                    <Button
+                      onClick={() => navigate('/register')}
+                      className="w-full h-14 text-base font-semibold shadow-md hover:shadow-lg transition-all"
+                      size="lg"
+                    >
+                      Back to Login
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

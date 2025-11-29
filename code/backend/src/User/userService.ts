@@ -148,15 +148,9 @@ export class UserService {
       }
 
       if (!data) {
-        const fallbackProfile = {
-          id: user.id,
-          name: user.email?.split('@')[0] || 'Unknown User',
-          email: user.email || '',
-          avatar_url: user.user_metadata?.avatar_url || null,
-        };
-
-        this.logger.log(`Profile retrieved for user: ${user.id}`);
-        return fallbackProfile;
+        // User não existe na tabela users - retornar erro para indicar que precisa criar perfil
+        this.logger.log(`Profile not found for user: ${user.id}`);
+        throw new BadRequestException('Profile not found. Please complete your profile setup.');
       }
 
       this.logger.log(`Profile retrieved for user: ${user.id}`);
@@ -479,7 +473,7 @@ export class UserService {
   }
 
   private isStrongPassword(password: string): boolean {
-    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#.])[A-Za-z\d@$!%*?&#.]{8,}$/;
     return strongRegex.test(password);
   }
 }
