@@ -23,10 +23,11 @@ const RegistrationForm = () => {
       setErrorMsg("Please fill in all fields.");
       return;
     }
-    if (!isLogin && password.length < 6) {
-      setErrorMsg("The password must have at least 6 characters.");
+    if (!isLogin && !isStrongPassword(password)) {
+      setErrorMsg("Password must be at least 6 characters and contain uppercase, lowercase, number and special character");
       return;
     }
+
     setErrorMsg("");
     setIsLoading(true);
 
@@ -103,7 +104,12 @@ const RegistrationForm = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+  
+    const isStrongPassword = (password: string): boolean => {
+      const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#.])[A-Za-z\d@$!%*?&#.]{8,}$/;
+      return strongRegex.test(password);
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col">
