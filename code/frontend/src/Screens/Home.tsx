@@ -60,6 +60,9 @@ export default function Home() {
   const [repostModalOpen, setRepostModalOpen] = useState(false);
   const [repostingPostId, setRepostingPostId] = useState<string | null>(null);
   const [repostComment, setRepostComment] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const postsPerPage = 20;
 
   const style = document.createElement('style');
   style.innerHTML = `
@@ -91,7 +94,8 @@ export default function Home() {
         return;
       }
 
-      const response = await postsAPI.getPostsByUserAndConnections(userId);
+      const offset = (currentPage - 1) * postsPerPage;
+      const response = await postsAPI.getPostsByUserAndConnections(userId, postsPerPage, offset);
 
       if (response.success && response.data) {
         const formattedPosts: Post[] = response.data.posts.map((post: any) => {
@@ -141,6 +145,7 @@ export default function Home() {
         });
 
         setPosts(formattedPosts);
+        setTotalPosts(response.data.total || 0);
 
         // Set trending posts (top 3 by likes)
         const sorted = [...formattedPosts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
@@ -193,7 +198,7 @@ export default function Home() {
     fetchPosts();
     fetchSuggestedConnections();
     fetchUpcomingEvents();
-  }, [navigate]);
+  }, [navigate, currentPage]);
 
   // Comments and per-post UI state
   const [commentsMap, setCommentsMap] = useState<Record<string, any[]>>({});
@@ -708,9 +713,45 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Right Sidebar - scrollable together */}
+            {/* Pagination */}
+            {totalPosts > postsPerPage && (
+              <div className="flex items-center justify-center gap-2 mt-6 pb-4">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                >
+                  ← Previous
+                </button>
+
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.ceil(totalPosts / postsPerPage) }, (_, i) => i + 1)
+                    .slice(Math.max(0, currentPage - 2), Math.min(Math.ceil(totalPosts / postsPerPage), currentPage + 2))
+                    .map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-2 rounded-lg border transition-colors ${currentPage === page
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'border-border text-foreground hover:bg-secondary'
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalPosts / postsPerPage), prev + 1))}
+                  disabled={currentPage === Math.ceil(totalPosts / postsPerPage)}
+                  className="px-3 py-2 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </div>          {/* Right Sidebar - scrollable together */}
           <div className="hidden lg:block w-[300px] flex-shrink-0 h-[calc(100vh-80px)] overflow-y-auto scrollbar-hide space-y-4 sticky top-20 self-start">
             {/* Trending Posts */}
             {trendingPosts.length > 0 && (
