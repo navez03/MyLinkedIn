@@ -720,9 +720,10 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-2 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                  className="px-4 py-2 rounded-lg border border-border text-foreground font-semibold bg-background hover:bg-secondary active:scale-95 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  ← Previous
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  <span className="hidden sm:inline">Anterior</span>
                 </button>
 
                 <div className="flex gap-1">
@@ -732,10 +733,11 @@ export default function Home() {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg border transition-colors ${currentPage === page
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'border-border text-foreground hover:bg-secondary'
+                        className={`px-4 py-2 rounded-lg border font-semibold transition-all flex items-center justify-center ${currentPage === page
+                            ? 'bg-primary text-primary-foreground border-primary scale-105 shadow'
+                            : 'bg-background text-foreground border-border hover:bg-secondary active:scale-95'
                           }`}
+                        style={{ minWidth: 40 }}
                       >
                         {page}
                       </button>
@@ -745,9 +747,10 @@ export default function Home() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalPosts / postsPerPage), prev + 1))}
                   disabled={currentPage === Math.ceil(totalPosts / postsPerPage)}
-                  className="px-3 py-2 rounded-lg border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-secondary transition-colors"
+                  className="px-4 py-2 rounded-lg border border-border text-foreground font-semibold bg-background hover:bg-secondary active:scale-95 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Next →
+                  <span className="hidden sm:inline">Próxima</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
               </div>
             )}
