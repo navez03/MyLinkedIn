@@ -316,8 +316,8 @@ export default function Events() {
                           <label
                             key={connection.id}
                             className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${selectedConnections.includes(connection.user.id)
-                                ? 'bg-primary/10 border-primary hover:bg-primary/15'
-                                : 'bg-transparent border-transparent hover:bg-secondary'
+                              ? 'bg-primary/10 border-primary hover:bg-primary/15'
+                              : 'bg-transparent border-transparent hover:bg-secondary'
                               }`}
                           >
                             <input
@@ -529,9 +529,10 @@ export default function Events() {
                     {/* Description */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Description (optional)
+                        Description *
                       </label>
                       <textarea
+                        required
                         value={newEvent.description}
                         onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                         placeholder="Describe your event..."
